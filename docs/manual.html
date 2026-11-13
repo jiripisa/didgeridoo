@@ -180,15 +180,15 @@
         <h2>Settings</h2>
         <dl class="controls">
           <dt>MIDI input › Device</dt>
-          <dd><b>All devices</b> (the default), <b>None</b>, or one connected keyboard or controller.</dd>
+          <dd><b>All devices</b> (the default), <b>None</b>, or one connected keyboard or controller. A chosen device that is unplugged stays in the list as “not connected”; the app listens to it again as soon as it is back.</dd>
           <dt>MIDI input › Channel</dt>
           <dd><b>All channels</b> or one of 1–16; messages on other channels are ignored.</dd>
           <dt>The “Didgeridoo” MIDI port</dt>
           <dd>While the app runs, other applications can send MIDI to a port called <b>Didgeridoo</b>. It is always on and obeys the channel setting.</dd>
           <dt>Audio output › Device</dt>
-          <dd><b>System default</b> or a specific audio device.</dd>
+          <dd><b>System default</b> or a specific audio device. System default follows the output chosen in macOS, also when it changes while the app runs (when you plug in headphones, for example). A chosen device that is unplugged stays in the list as “not connected”: the sound goes to the system default until the device is back.</dd>
           <dt>Audio output › Channels</dt>
-          <dd>Shown for devices with more than two outputs: the pair of channels the sound goes to. The instrument is mono; both channels carry the same signal.</dd>
+          <dd>Shown for a chosen device with four or more outputs: the pair of channels the sound goes to. A newly chosen device starts on its first pair. The instrument is mono; both channels carry the same signal.</dd>
           <dt>Audio Unit plug-in</dt>
           <dd>Shows whether the plug-in is installed and in which version; <span class="ui">Install Audio Unit</span> installs or updates it.</dd>
         </dl>

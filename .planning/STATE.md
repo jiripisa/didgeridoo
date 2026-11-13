@@ -1,5 +1,9 @@
 # Didgeridoo — State
 
+- 2026-11-13 — phase 03 done: fixes from a review of phase 02 and a test
+  that guards the sound (`SoundRegressionTests`). See
+  `phases/03-review-fixes/VERIFICATION.md`; its "Not verified" list adds a few
+  hands-on checks to those of phase 02.
 - 2026-11-13 — phase 02 done: the sound engine (bit-identical to the MPC
   plugin), the standalone app and the Audio Unit. See
   `phases/02-engine-app-audiounit/VERIFICATION.md` for what was and was not

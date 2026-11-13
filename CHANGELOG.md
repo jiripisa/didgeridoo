@@ -10,3 +10,10 @@
 - Audio Unit instrument for Ableton Live, Logic Pro and other hosts,
   installed from the app's Settings window. It uses the host's standard
   parameter view; it has no window of its own yet.
+- The app follows the audio hardware: it moves with the system default
+  output, and when a chosen device is unplugged it plays on the default until
+  the device is back.
+- Pitch drift wanders equally fast at every sample rate. This is the one
+  deliberate difference from the MPC plugin "Didgeridoo", whose drift speeds
+  up with the rate; at 44.1 kHz the two sound identical.
+- For Macs with Apple silicon, macOS 14 or later.
