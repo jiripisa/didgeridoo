@@ -72,16 +72,34 @@ public final class Synth: @unchecked Sendable {
         didge_post_midi(engine, Int32(status), Int32(data1), Int32(data2), 0)
     }
 
+    /// Notes and velocities outside 0...127 count as the nearest valid one; the
+    /// softest hit is velocity 1, because 0 means note-off in MIDI.
     public func noteOn(_ note: Int, velocity: Int = 100) {
-        postMIDI(status: 0x90, data1: UInt8(clamping: note), data2: UInt8(clamping: max(1, velocity)))
+        postMIDI(status: 0x90, data1: Self.dataByte(note), data2: max(1, Self.dataByte(velocity)))
     }
 
     public func noteOff(_ note: Int) {
-        postMIDI(status: 0x80, data1: UInt8(clamping: note), data2: 0)
+        postMIDI(status: 0x80, data1: Self.dataByte(note), data2: 0)
+    }
+
+    /// A MIDI data byte: 0...127.
+    private static func dataByte(_ value: Int) -> UInt8 {
+        UInt8(min(max(value, 0), 127))
     }
 
     public func allNotesOff() {
         postMIDI(status: 0xB0, data1: 123, data2: 0)
+    }
+
+    /// Lets go of everything a MIDI source may have left behind when it went
+    /// away: the sustain pedal, every note, pitch bend, the mod wheel and
+    /// aftertouch.
+    public func releaseAll() {
+        postMIDI(status: 0xB0, data1: 64, data2: 0)         // sustain pedal up
+        allNotesOff()
+        postMIDI(status: 0xE0, data1: 0, data2: 0x40)       // pitch bend centred
+        postMIDI(status: 0xB0, data1: 1, data2: 0)          // mod wheel down
+        postMIDI(status: 0xD0, data1: 0, data2: 0)          // no aftertouch
     }
 
     // MARK: Audio

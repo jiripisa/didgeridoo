@@ -180,15 +180,15 @@
         <h2>Nastavení</h2>
         <dl class="controls">
           <dt>MIDI input › Device</dt>
-          <dd><b>All devices</b> (výchozí, všechna zařízení), <b>None</b> (žádné), nebo jedna připojená klaviatura či kontrolér.</dd>
+          <dd><b>All devices</b> (výchozí, všechna zařízení), <b>None</b> (žádné), nebo jedna připojená klaviatura či kontrolér. Vybrané zařízení, které odpojíte, zůstane v seznamu s poznámkou „not connected“; jakmile ho znovu připojíte, aplikace ho začne zase poslouchat.</dd>
           <dt>MIDI input › Channel</dt>
           <dd><b>All channels</b> (všechny kanály) nebo jeden z kanálů 1–16; zprávy na ostatních kanálech se ignorují.</dd>
           <dt>MIDI port „Didgeridoo“</dt>
           <dd>Dokud aplikace běží, mohou jiné aplikace posílat MIDI do portu <b>Didgeridoo</b>. Je vždy zapnutý a řídí se nastavením kanálu.</dd>
           <dt>Audio output › Device</dt>
-          <dd><b>System default</b> (výchozí výstup systému) nebo konkrétní zvukové zařízení.</dd>
+          <dd><b>System default</b> (výchozí výstup systému) nebo konkrétní zvukové zařízení. System default sleduje výstup zvolený v macOS, i když se změní za běhu aplikace (například když připojíte sluchátka). Vybrané zařízení, které odpojíte, zůstane v seznamu s poznámkou „not connected“: zvuk jde do výchozího výstupu systému, dokud zařízení znovu nepřipojíte.</dd>
           <dt>Audio output › Channels</dt>
-          <dd>Zobrazí se u zařízení s více než dvěma výstupy: dvojice kanálů, do které zvuk půjde. Nástroj je mono; oba kanály nesou stejný signál.</dd>
+          <dd>Zobrazí se u vybraného zařízení se čtyřmi a více výstupy: dvojice kanálů, do které zvuk půjde. Nově vybrané zařízení začíná na první dvojici. Nástroj je mono; oba kanály nesou stejný signál.</dd>
           <dt>Audio Unit plug-in</dt>
           <dd>Ukazuje, jestli je plugin nainstalovaný a v jaké verzi; <span class="ui">Install Audio Unit</span> ho nainstaluje nebo aktualizuje.</dd>
         </dl>

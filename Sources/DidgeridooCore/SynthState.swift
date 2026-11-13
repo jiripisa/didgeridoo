@@ -30,31 +30,3 @@ public struct SynthState: Codable, Equatable, Sendable {
         }
     }
 }
-
-/// Which MIDI channels the standalone app listens to.
-public enum MIDIChannelFilter: Hashable, Sendable {
-    case omni
-    case channel(Int)     // 1...16
-
-    /// Stored form: 0 = omni, 1...16 = that channel.
-    public init(storedValue: Int) {
-        self = (1...16).contains(storedValue) ? .channel(storedValue) : .omni
-    }
-
-    public var storedValue: Int {
-        switch self {
-        case .omni: 0
-        case .channel(let channel): channel
-        }
-    }
-
-    /// Whether a message with this status byte should reach the instrument.
-    /// System messages (0xF0 and above) never do.
-    public func accepts(status: UInt8) -> Bool {
-        guard status >= 0x80, status < 0xF0 else { return false }
-        switch self {
-        case .omni: return true
-        case .channel(let channel): return Int(status & 0x0F) + 1 == channel
-        }
-    }
-}

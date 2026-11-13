@@ -12,21 +12,14 @@
 
 #include <AudioUnitSDK/MusicDeviceBase.h>
 
+#include <cstring>
 #include <vector>
 
 namespace {
 
-// Groups shown by hosts that draw a generic parameter view: the same three pages as the app.
-enum Clump : UInt32 { kClumpMouth = 1, kClumpLips, kClumpRhythm };
-
-Clump clumpOf(const char* identifier)
-{
-    static const char* const mouth[] = { "volume", "vowel", "formant", "reso", "tone", "wobblerate", "wobbledepth", "wheelvowel" };
-    static const char* const rhythm[] = { "rhythmdiv", "rhydepth", "rhyvowel", "rhydecay", "bendrange" };
-    for (const char* id : mouth) if (!std::strcmp(id, identifier)) return kClumpMouth;
-    for (const char* id : rhythm) if (!std::strcmp(id, identifier)) return kClumpRhythm;
-    return kClumpLips;
-}
+// Groups shown by hosts that draw a generic parameter view ("clumps"): the engine's sections,
+// the same as the app's panels. Clump 0 means "no group", so section n is clump n + 1.
+UInt32 clumpOf(const DidgeParamInfo& info) { return static_cast<UInt32>(info.section) + 1; }
 
 AudioUnitParameterUnit unitOf(const DidgeParamInfo& info)
 {
@@ -97,7 +90,7 @@ public:
 
     OSStatus Reset(AudioUnitScope scope, AudioUnitElement element) override
     {
-        didge_reset(engine_);
+        didge_request_reset(engine_);     // left to the render thread: a host may reset while it renders
         return Base::Reset(scope, element);
     }
 
@@ -111,7 +104,7 @@ public:
 
         out.flags = kAudioUnitParameterFlag_IsReadable | kAudioUnitParameterFlag_IsWritable;
         FillInParameterName(out, CFStringCreateWithCString(nullptr, info.name, kCFStringEncodingUTF8), true);
-        HasClump(out, clumpOf(info.identifier));
+        if (info.section >= 0) HasClump(out, clumpOf(info));
         out.unit = unitOf(info);
         out.minValue = info.minValue;
         out.maxValue = info.maxValue;
@@ -141,14 +134,8 @@ public:
 
     OSStatus CopyClumpName(AudioUnitScope, UInt32 clump, UInt32, CFStringRef* outName) override
     {
-        switch (clump)
-        {
-            case kClumpMouth:  *outName = CFSTR("Mouth"); break;
-            case kClumpLips:   *outName = CFSTR("Lips"); break;
-            case kClumpRhythm: *outName = CFSTR("Rhythm"); break;
-            default: return kAudioUnitErr_InvalidPropertyValue;
-        }
-        CFRetain(*outName);
+        if (clump < 1 || clump > static_cast<UInt32>(didge_num_sections())) return kAudioUnitErr_InvalidPropertyValue;
+        *outName = CFStringCreateWithCString(nullptr, didge_section_name(static_cast<int>(clump) - 1), kCFStringEncodingUTF8);
         return noErr;
     }
 
@@ -180,7 +167,8 @@ public:
 
     // ----- MIDI -----------------------------------------------------------------------------
     // Everything goes to the engine as raw MIDI; it knows notes, the mod wheel, the sustain
-    // pedal, pitch bend, aftertouch and all-notes-off.
+    // pedal, pitch bend, aftertouch and all-notes-off. A host may call this on the render thread
+    // or on another one, so the event is posted, which is safe and lock-free on either.
     OSStatus HandleMIDIEvent(UInt8 status, UInt8 channel, UInt8 data1, UInt8 data2, UInt32 offsetFrames) AUSDK_RTSAFE override
     {
         didge_post_midi(engine_, status | channel, data1, data2, static_cast<int>(offsetFrames));

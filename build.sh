@@ -35,6 +35,13 @@ if [[ "$MODE" != "debug" && "$MODE" != "release" && "$MODE" != "dist" ]]; then
     exit 1
 fi
 
+# --- dist: the release notes must exist before the long build starts ---
+# make_appcast.py takes them from the CHANGELOG section of this version.
+if [ "$MODE" == "dist" ]; then
+    python3 scripts/make_appcast.py --check \
+        "$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)"
+fi
+
 # --- SPM Build ---
 if [ "$MODE" == "debug" ]; then
     SPM_CONFIG="debug"
@@ -91,14 +98,25 @@ mkdir -p "$APP_BUNDLE/Contents/Frameworks"
 ditto "$SPARKLE_SRC" "$SPARKLE_FW"
 rm -rf "$SPARKLE_FW/Versions/B/XPCServices" "$SPARKLE_FW/XPCServices"
 
+# codesign --force without its "replacing existing signature" lines. A failed
+# signature stops the build and shows what codesign said.
+sign() {
+    local output
+    if ! output=$(codesign --force "$@" 2>&1); then
+        echo "$output" >&2
+        echo "ERROR: codesign failed (codesign --force $*)" >&2
+        return 1
+    fi
+    printf '%s' "$output" | grep -v "replacing existing signature" || true
+}
+
 # Sign Sparkle's pieces inside-out, then the framework (identity "-" = ad-hoc).
 sign_sparkle() {
     local identity="$1"; shift
     for item in "$SPARKLE_FW/Versions/B/Autoupdate" \
                 "$SPARKLE_FW/Versions/B/Updater.app" \
                 "$SPARKLE_FW"; do
-        codesign --force "$@" --sign "$identity" "$item" 2>&1 \
-            | grep -v "replacing existing signature" || true
+        sign "$@" --sign "$identity" "$item"
     done
 }
 
@@ -132,10 +150,8 @@ xattr -cr "$APP_BUNDLE"
 # Ad-hoc sign with entitlements for debug/release (TCC needs entitlements
 # baked into the binary signature, not just present in the bundle).
 sign_sparkle -
-codesign --force --sign - "$COMPONENT" 2>&1 | grep -v "replacing existing signature" || true
-codesign --force --sign - \
-    --entitlements "Resources/$APP_NAME.entitlements" \
-    "$APP_BUNDLE" 2>&1 | grep -v "replacing existing signature" || true
+sign --sign - "$COMPONENT"
+sign --sign - --entitlements "Resources/$APP_NAME.entitlements" "$APP_BUNDLE"
 
 echo "Build complete: $APP_BUNDLE"
 

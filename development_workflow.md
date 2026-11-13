@@ -39,13 +39,15 @@ didgeridoo/
 Executable → `Contents/MacOS`, `Resources/Info.plist` → `Contents/`,
 `Resources/AppIcon.png` → `AppIcon.icns` (sips + iconutil), Sparkle.framework →
 `Contents/Frameworks` (XPC services removed; the app is unsandboxed), PkgInfo,
-then an ad-hoc signature with the entitlements. New resource files must be
-copied in `build.sh` explicitly. `Resources/Art/` (background, knob cap, logo)
+then an ad-hoc signature with the entitlements; a signature that fails stops
+the build. New resource files must be copied in `build.sh` explicitly. `Resources/Art/` (background, knob cap, logo)
 goes to `Contents/Resources/Art`.
 
 **The Audio Unit** is assembled in the same step: `libDidgeridooAU.dylib` →
 `Contents/PlugIns/Didgeridoo.component/Contents/MacOS/Didgeridoo`, with
-`Resources/AudioUnit-Info.plist` as its `Info.plist`. `build.sh` writes the
+`Resources/AudioUnit-Info.plist` as its `Info.plist`. The dylib exports only
+the factory function `DidgeridooAUFactory` (`Package.swift`), because a
+plug-in shares the host's process with other plug-ins. `build.sh` writes the
 app's version into that plist (both strings and the numeric
 `AudioComponents` version), so the version is bumped in one place. The
 component is signed before the app (ad-hoc, or Developer ID + hardened runtime
@@ -60,6 +62,10 @@ auval -v aumu Didg JPis        # must end with AU VALIDATION SUCCEEDED
 ```
 
 ### 2.2 Distribution (`dist`)
+
+`dist` first asks `scripts/make_appcast.py --check` whether `CHANGELOG.md`
+has release notes under `## <version>` for the version in `Info.plist`, and
+stops at once if not: the appcast takes its release notes from that section.
 
 1. Sign Sparkle's parts inside-out, then the app with the first "Developer ID
    Application" identity in the Keychain, hardened runtime, timestamp.
@@ -99,16 +105,23 @@ hardened runtime and notarization. Add entitlements to
 
 ## 3. Run (`run.sh`)
 
-- `./run.sh debug` *(default)* — rebuilds when anything under `Sources/` or
-  `Resources/` is newer than the binary, registers the bundle with Launch
+- `./run.sh debug` *(default)* — rebuilds when a source, a resource or
+  `Package.swift` is newer than the binary, registers the bundle with Launch
   Services, then runs the binary in the terminal: logs stream live, Ctrl+C quits.
-- `./run.sh release` — rebuilds if stale, then `open`s the app.
+- `./run.sh release` — rebuilds on the same condition, then `open`s the app.
 
 ## 4. Development Methodology
 
 - Sound goes into `DidgeridooDSP` (C++), everything else without UI into
   `DidgeridooCore`, test first (`swift test`); the UI is checked by running
   the app, the plug-in with `auval` and in a host.
+- The sound is guarded: `SoundRegressionTests` holds a fingerprint and the
+  levels of every program at 44.1 and 48 kHz, so a change in `DidgeridooDSP`
+  that alters one sample fails `swift test`. When the change is deliberate,
+  say so in the CHANGELOG and copy the lines the suite prints over its
+  references.
+- After a change in what threads share in the engine, also run
+  `swift test --sanitize=thread`; it must report nothing.
 - Conventional Commits with a scope: `feat(core): …`, `fix(ui): …`,
   `docs(manual): …`, `chore(release): v1.2.0 — …`.
 - `main` is always green: builds, tests pass, the app launches.

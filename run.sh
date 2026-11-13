@@ -13,21 +13,18 @@ cd "$SCRIPT_DIR"
 APP_NAME="Didgeridoo"
 MODE="${1:-debug}"
 
+# True when a source, a resource or the package manifest is newer than $1.
+stale() {
+    [ -n "$(find Sources ThirdParty \( -name '*.swift' -o -name '*.cpp' -o -name '*.h' \) -newer "$1" 2>/dev/null)" ] \
+        || [ -n "$(find Resources Package.swift -newer "$1" 2>/dev/null)" ]
+}
+
 if [ "$MODE" == "debug" ]; then
     APP_BUNDLE="$SCRIPT_DIR/build/debug/$APP_NAME.app"
     EXECUTABLE="$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 
     # Auto-build if needed
-    NEEDS_BUILD=false
-    if [ ! -f "$EXECUTABLE" ]; then
-        NEEDS_BUILD=true
-    elif [ -n "$(find Sources ThirdParty \( -name '*.swift' -o -name '*.cpp' -o -name '*.h' \) -newer "$EXECUTABLE" 2>/dev/null)" ]; then
-        NEEDS_BUILD=true
-    elif [ -n "$(find Resources -newer "$EXECUTABLE" 2>/dev/null)" ]; then
-        NEEDS_BUILD=true
-    fi
-
-    if [ "$NEEDS_BUILD" = true ]; then
+    if [ ! -f "$EXECUTABLE" ] || stale "$EXECUTABLE"; then
         ./build.sh debug
     fi
 
@@ -47,9 +44,8 @@ elif [ "$MODE" == "release" ]; then
     APP_BUNDLE="$SCRIPT_DIR/build/release/$APP_NAME.app"
 
     # Auto-build if needed
-    if [ ! -d "$APP_BUNDLE" ]; then
-        ./build.sh release
-    elif [ -n "$(find Sources ThirdParty \( -name '*.swift' -o -name '*.cpp' -o -name '*.h' \) -newer "$APP_BUNDLE" 2>/dev/null)" ]; then
+    EXECUTABLE="$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+    if [ ! -f "$EXECUTABLE" ] || stale "$EXECUTABLE"; then
         ./build.sh release
     fi
 

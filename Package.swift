@@ -44,7 +44,12 @@ let package = Package(
         .target(
             name: "DidgeridooAU",
             dependencies: ["DidgeridooDSP", "AudioUnitSDK"],
-            path: "Sources/DidgeridooAU"
+            path: "Sources/DidgeridooAU",
+            linkerSettings: [
+                // A plug-in shares the host's process with other plug-ins: export only the
+                // factory function the host looks up (AudioUnit-Info.plist, factoryFunction).
+                .unsafeFlags(["-Xlinker", "-exported_symbol", "-Xlinker", "_DidgeridooAUFactory"]),
+            ]
         ),
         .target(
             name: "DidgeridooCore",
@@ -65,7 +70,8 @@ let package = Package(
         ),
         .testTarget(
             name: "DidgeridooCoreTests",
-            dependencies: ["DidgeridooCore"],
+            // The engine too: some of its promises are tested through its C interface.
+            dependencies: ["DidgeridooCore", "DidgeridooDSP"],
             path: "Tests/DidgeridooCoreTests"
         ),
     ],

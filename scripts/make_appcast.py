@@ -2,10 +2,12 @@
 """Write the Sparkle appcast (auto-update feed) for one release.
 
     scripts/make_appcast.py <dmg> <version> <download-url> <out.xml>
+    scripts/make_appcast.py --check <version>
 
 The DMG is signed with Sparkle's sign_update (EdDSA key from the login
 Keychain); the release notes are the version's CHANGELOG.md section,
-rendered as simple HTML. Called by `build.sh dist`.
+rendered as simple HTML. Called by `build.sh dist`, which first asks with
+--check whether the version has release notes at all.
 """
 import html
 import re
@@ -20,7 +22,7 @@ MIN_SYSTEM = "14.0"
 
 def changelog_section(version: str) -> str:
     text = Path("CHANGELOG.md").read_text()
-    match = re.search(rf"^## {re.escape(version)}\b.*?$(.*?)(?=^## |\Z)", text, re.S | re.M)
+    match = re.search(rf"^## {re.escape(version)}(?=\s|$).*?$(.*?)(?=^## |\Z)", text, re.S | re.M)
     return match.group(1).strip() if match else ""
 
 
@@ -51,14 +53,26 @@ def notes_html(md: str) -> str:
     return "<ul>" + "".join(parts) + "</ul>" if parts else ""
 
 
+def release_notes(version: str) -> str:
+    """The version's CHANGELOG section as HTML; exits when there is none."""
+    notes = notes_html(changelog_section(version))
+    if not notes:
+        sys.exit(f"ERROR: CHANGELOG.md has no notes under '## {version}'; the update dialog would be "
+                 "empty. Rename '## Unreleased' first (release skill, step 1).")
+    return notes
+
+
 def main() -> None:
+    if sys.argv[1:2] == ["--check"]:
+        release_notes(sys.argv[2])
+        return
     dmg, version, url, out = sys.argv[1:5]
+    notes = release_notes(version)
     signature = subprocess.run([SIGN_UPDATE, dmg], check=True,
                                capture_output=True, text=True).stdout.strip()
     if "sparkle:edSignature" not in signature:
         sys.exit(f"sign_update gave no signature: {signature!r}")
     date = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")
-    notes = notes_html(changelog_section(version))
     Path(out).write_text(f"""<?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>

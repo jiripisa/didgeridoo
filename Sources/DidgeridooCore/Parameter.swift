@@ -82,21 +82,19 @@ public enum Parameters {
     }
 }
 
-/// The three groups of controls, as on the MPC plugin's pages.
+/// A group of controls, as on the MPC plugin's pages: Mouth, Lips, Rhythm.
+/// The groups and the order of their parameters come from the sound engine,
+/// which also gives them to the Audio Unit.
 public struct ParameterSection: Identifiable, Sendable {
     public let title: String
     public let parameters: [Parameter]
     public var id: String { title }
 
-    public static let all: [ParameterSection] = [
-        section("Mouth", ["vowel", "formant", "reso", "tone", "wobblerate", "wobbledepth", "wheelvowel", "volume"]),
-        section("Lips", ["buzz", "body", "drive", "breath", "growl", "growlpitch", "drift", "glide",
-                         "attack", "release", "tootvel", "tootpitch"]),
-        section("Rhythm", ["rhythmdiv", "rhydepth", "rhyvowel", "rhydecay", "bendrange"]),
-    ]
-
-    private static func section(_ title: String, _ identifiers: [String]) -> ParameterSection {
-        ParameterSection(title: title, parameters: identifiers.compactMap(Parameters.named))
+    public static let all: [ParameterSection] = (0..<didge_num_sections()).map { section in
+        ParameterSection(title: String(cString: didge_section_name(section)),
+                         parameters: (0..<didge_section_size(section)).map { position in
+                             Parameters.all[Int(didge_section_param(section, position))]
+                         })
     }
 }
 

@@ -8,7 +8,9 @@ Pro and other hosts; the app installs the plug-in from its Settings window.
 Both share one sound engine with 25 parameters and six built-in programs.
 
 Native macOS (SwiftUI, macOS 14 or later), built with Swift Package Manager
-and shell scripts; no Xcode project. The sound engine is C++.
+and shell scripts; no Xcode project. The sound engine is C++. The download is
+built for Macs with Apple silicon; a build from source runs on the kind of Mac
+that built it.
 
 Website and manual: https://jiripisa.github.io/didgeridoo/
 
