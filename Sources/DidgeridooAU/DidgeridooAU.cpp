@@ -94,6 +94,38 @@ public:
         return Base::Reset(scope, element);
     }
 
+    // ----- the window -----------------------------------------------------------------------
+    // A host asks for the plug-in's own window through the CocoaUI property: the bundle and the
+    // name of a class in it that makes the view (DidgeridooAUViewFactory, Sources/DidgeridooAUView).
+    // Without the component bundle (the unit registered in a process by hand) there is none, and
+    // the host shows its generic parameter view.
+    OSStatus GetPropertyInfo(AudioUnitPropertyID id, AudioUnitScope scope, AudioUnitElement element,
+                             UInt32& outDataSize, bool& outWritable) override
+    {
+        if (id == kAudioUnitProperty_CocoaUI && scope == kAudioUnitScope_Global)
+        {
+            if (!CFBundleGetBundleWithIdentifier(CFSTR(DIDGERIDOO_AU_BUNDLE_ID))) return kAudioUnitErr_InvalidProperty;
+            outDataSize = sizeof(AudioUnitCocoaViewInfo);
+            outWritable = false;
+            return noErr;
+        }
+        return Base::GetPropertyInfo(id, scope, element, outDataSize, outWritable);
+    }
+
+    OSStatus GetProperty(AudioUnitPropertyID id, AudioUnitScope scope, AudioUnitElement element, void* outData) override
+    {
+        if (id == kAudioUnitProperty_CocoaUI && scope == kAudioUnitScope_Global)
+        {
+            CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR(DIDGERIDOO_AU_BUNDLE_ID));
+            if (!bundle) return kAudioUnitErr_InvalidProperty;
+            auto* info = static_cast<AudioUnitCocoaViewInfo*>(outData);
+            info->mCocoaAUViewBundleLocation = CFBundleCopyBundleURL(bundle);       // the host releases both
+            info->mCocoaAUViewClass[0] = CFStringCreateWithCString(nullptr, DIDGERIDOO_AU_VIEW_CLASS, kCFStringEncodingUTF8);
+            return noErr;
+        }
+        return Base::GetProperty(id, scope, element, outData);
+    }
+
     // ----- parameters -----------------------------------------------------------------------
     OSStatus GetParameterInfo(AudioUnitScope scope, AudioUnitParameterID id, AudioUnitParameterInfo& out) override
     {
@@ -157,7 +189,8 @@ public:
         didge_set_program(engine_, number);                  // also silences the voice
         for (int i = 0; i < didge_num_params(); ++i)
         {
-            const float value = didge_get_plain(engine_, i);  // what the engine has now: a program leaves Octave alone
+            if (!didge_program_sets(i)) continue;            // Octave stays where the player put it
+            const float value = didge_program_value(number, i);
             Globals()->SetParameter(static_cast<AudioUnitParameterID>(i), value);
             applied_[static_cast<size_t>(i)] = value;
         }

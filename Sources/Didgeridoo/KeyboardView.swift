@@ -1,4 +1,5 @@
 import SwiftUI
+import DidgeridooUI
 
 /// A strip of piano keys for trying the sound with the mouse. Where a key is
 /// pressed sets the velocity: near the top it is soft, at the bottom it is the

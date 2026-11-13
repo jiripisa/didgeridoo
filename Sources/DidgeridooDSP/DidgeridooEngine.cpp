@@ -232,6 +232,9 @@ const std::vector<Program>& programs()
     return table;
 }
 
+// Octave belongs to the player's keyboard, not to a sound: a program leaves it alone.
+bool programSets(int param) { return param != kOctave; }
+
 struct MidiEvent
 {
     int sampleOffset;
@@ -275,7 +278,7 @@ struct DidgeEngine
         program_.store(index, std::memory_order_relaxed);
         const Program& p = programs()[(size_t)index];
         for (int i = 0; i < kNumParams; ++i)
-            if (i != kOctave) set(i, p.values[i]);                 // Octave is the player's, not the program's
+            if (programSets(i)) set(i, p.values[i]);
         resetPending_.store(true, std::memory_order_release);     // silence the voice on the audio thread
     }
     int program() const { return program_.load(std::memory_order_relaxed); }
@@ -741,6 +744,7 @@ int didge_section_param(int section, int position)
 
 int didge_num_programs(void) { return (int)programs().size(); }
 const char* didge_program_name(int program) { return program >= 0 && program < didge_num_programs() ? programs()[(size_t)program].name : ""; }
+int didge_program_sets(int param) { return validParam(param) && programSets(param) ? 1 : 0; }
 float didge_program_value(int program, int param)
 {
     return program >= 0 && program < didge_num_programs() && validParam(param) ? programs()[(size_t)program].values[param] : 0.0f;

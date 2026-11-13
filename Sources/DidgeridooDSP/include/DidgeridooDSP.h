@@ -57,6 +57,7 @@ int         didge_section_param(int section, int position);   // a parameter ind
 int         didge_num_programs(void);
 const char* didge_program_name(int program);
 float       didge_program_value(int program, int param);   // plain
+int         didge_program_sets(int param);                 // 0 for "octave", which programs leave alone
 
 // ----- one engine ---------------------------------------------------------------------------
 DidgeEngine* didge_create(void);

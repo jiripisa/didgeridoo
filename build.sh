@@ -90,6 +90,12 @@ AU_VERSION=$(( (${V_MAJOR:-0} << 16) | (${V_MINOR:-0} << 8) | ${V_PATCH:-0} ))
     -c "Set :AudioComponents:0:version $AU_VERSION" \
     "$COMPONENT/Contents/Info.plist"
 
+# The plug-in's own window shows the same artwork as the app's.
+if [ -d "Resources/Art" ]; then
+    mkdir -p "$COMPONENT/Contents/Resources"
+    cp -R "Resources/Art" "$COMPONENT/Contents/Resources/Art"
+fi
+
 # Embed Sparkle (auto-update). The app is unsandboxed, so the XPC services
 # (only needed by sandboxed apps) are left out.
 SPARKLE_SRC=".build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework"
