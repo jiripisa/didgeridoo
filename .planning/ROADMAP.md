@@ -5,6 +5,7 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 | Phase | Goal | Status |
 |---|---|---|
+| 08-v0.6.0-release | Version 0.6.0: the plug-in's window, Octave, the icon, the website's look — 2026-11-14 | ✅ |
 | 07-audiounit-window | The Audio Unit's own window in a host: the app's panel on the unit's parameters — 2026-11-14 | ✅ |
 | 06-icon-website | The icon covers its whole tile; the website wears the app's colours, with a dotted graphic behind it — 2026-11-14 | ✅ |
 | 05-octave | The instrument plays two octaves lower; a new knob, Octave (−2 to +2), moves it — 2026-11-13 | ✅ |

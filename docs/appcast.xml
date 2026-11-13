@@ -5,13 +5,13 @@
     <link>https://jiripisa.github.io/didgeridoo/</link>
     <description>Didgeridoo updates</description>
     <item>
-      <title>Didgeridoo 0.5.0</title>
-      <sparkle:version>0.5.0</sparkle:version>
-      <sparkle:shortVersionString>0.5.0</sparkle:shortVersionString>
+      <title>Didgeridoo 0.6.0</title>
+      <sparkle:version>0.6.0</sparkle:version>
+      <sparkle:shortVersionString>0.6.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <pubDate>Fri, 13 Nov 2026 22:22:19 +0000</pubDate>
-      <description><![CDATA[<ul><li>First version: a synthesized didgeridoo with 25 parameters in three groups (Mouth, Lips, Rhythm) and six built-in programs.</li><li>Standalone app with a keyboard strip, a choice of MIDI input device and channel, a choice of audio output device and channel pair, and its own MIDI port &quot;Didgeridoo&quot; for other applications.</li><li>Audio Unit instrument for Ableton Live, Logic Pro and other hosts, installed from the app&#x27;s Settings window. It uses the host&#x27;s standard parameter view; it has no window of its own yet.</li><li>The app follows the audio hardware: it moves with the system default output, and when a chosen device is unplugged it plays on the default until the device is back.</li><li>Pitch drift wanders equally fast at every sample rate. This is the one deliberate difference from the MPC plugin &quot;Didgeridoo&quot;, whose drift speeds up with the rate; at 44.1 kHz the two sound identical.</li><li>For Macs with Apple silicon, macOS 14 or later.</li></ul>]]></description>
-      <enclosure url="https://github.com/jiripisa/didgeridoo/releases/download/v0.5.0/Didgeridoo-0.5.0.dmg" type="application/octet-stream" sparkle:edSignature="YlGiX5b16fE54Cr4sYFynIe8NsxSFfbBglSjgObsHuYrnrqWkTeoD7PIGsyA5/1sZvypqNnVItuYKBpTW/IIAg==" length="6931929"/>
+      <pubDate>Fri, 13 Nov 2026 23:23:34 +0000</pubDate>
+      <description><![CDATA[<ul><li>The Audio Unit has a window of its own in the host: the app&#x27;s panel, with the Program menu and the knobs of Mouth, Lips and Rhythm. The knobs follow the host&#x27;s automation, and turning one can be recorded as automation.</li><li>New knob Octave (−2 to +2) in the Rhythm panel. At 0, where it rests, the instrument plays two octaves lower than version 0.5.0 did, so that a didgeridoo&#x27;s range sits around middle C; +2 is the old pitch. Projects saved with 0.5.0 sound two octaves lower until Octave is set to +2. This is a deliberate difference from the MPC plugin &quot;Didgeridoo&quot;.</li><li>The keyboard strip in the app&#x27;s window now shows C2–C6.</li><li>The app&#x27;s icon covers its whole tile; macOS 26 and later no longer put it on a light plate.</li></ul>]]></description>
+      <enclosure url="https://github.com/jiripisa/didgeridoo/releases/download/v0.6.0/Didgeridoo-0.6.0.dmg" type="application/octet-stream" sparkle:edSignature="2dNglx/lnSt3ig9kE+ufl8rc7Ky8Ts7E1mYMa9PxMVmB8c8wW9I6tHQEt7i6u7jPtr2VZ3GruCNiAW0bLqsNBw==" length="10157363"/>
     </item>
   </channel>
 </rss>
