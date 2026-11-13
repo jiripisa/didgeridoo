@@ -1,75 +1,80 @@
-/* Shared by index.html and manual.html. Colours are tokens; adjust --accent
-   to the app's icon. Light and dark follow the system. */
+/* Shared by index.html and manual.html. The site wears the instrument's colours: dark
+   wood for the ground and the pigments of its painting for everything else, with a
+   sound drawn in dots spreading behind the page (ripples.svg). One look, whatever
+   the system's appearance: it is the app's own. */
 :root {
-  --bg: #f7f7f8;
-  --panel: #ffffff;
-  --line: #e2e3e7;
-  --ink: #16171a;
-  --ink2: #4a4d55;
-  --ink3: #767a83;
-  --accent: #d9622b;
-  --accent-ink: #ffffff;
+  --bg: #1e1410;          /* bark: the ground */
+  --panel: #2a1c16;       /* heartwood: code, keys, the contents box */
+  --line: rgba(240, 227, 196, .16);
+  --ink: #f0e3c4;         /* white clay: headings, names */
+  --ink2: #cdbb9d;        /* text */
+  --ink3: #a08e77;        /* notes */
+  --accent: #db993d;      /* yellow ochre: what you can press, what is marked */
+  --accent-ink: #1e1410;
+  --display: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --text: "Avenir Next", Avenir, system-ui, -apple-system, "Segoe UI", sans-serif;
   --measure: 44rem;
   --gutter: clamp(1rem, 4vw, 3rem);
-  color-scheme: light dark;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #131418;
-    --panel: #1a1c21;
-    --line: #2a2d34;
-    --ink: #e7ecf2;
-    --ink2: #aab2bd;
-    --ink3: #7d848e;
-    --accent: #ff9e4a;
-    --accent-ink: #1a1209;
-  }
+  --ripple: clamp(34rem, 78vw, 66rem);
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: 1.5rem; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 1.5rem; background: var(--bg); }
 body {
   margin: 0;
-  background: var(--bg);
   color: var(--ink2);
-  font: 1.0625rem/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 1.0625rem/1.65 var(--text);
+  /* The sound: one ripple from the top right corner, a quieter one from the foot of the page. */
+  background:
+    url(ripples.svg) no-repeat right calc(var(--ripple) * -.41) top calc(var(--ripple) * -.44) / var(--ripple),
+    url(ripples.svg) no-repeat left calc(var(--ripple) * -.36) bottom calc(var(--ripple) * -.42) / calc(var(--ripple) * .78),
+    var(--bg);
 }
 a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { color: var(--ink); }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 code, kbd, pre { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .9em; }
 code { color: var(--ink); }
 b, strong { color: var(--ink); font-weight: 600; }
 img { max-width: 100%; height: auto; }
+h1, h2, h3 { font-family: var(--display); }
 .wrap { max-width: 72rem; margin: 0 auto; padding: 0 var(--gutter); }
 
 .masthead { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1.5rem; }
-.brand { display: flex; align-items: center; gap: .6rem; color: var(--ink); text-decoration: none; font-weight: 650; }
-.brand img { width: 2rem; height: 2rem; }
+.brand { display: flex; align-items: center; gap: .55rem; color: var(--ink); text-decoration: none; font: 700 1.1rem var(--display); }
+.brand img { width: 2.25rem; height: 2.25rem; }
 .masthead nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .4rem 1.4rem; }
 .masthead nav a { color: var(--ink2); text-decoration: none; font-size: .95rem; }
 .masthead nav a:hover, .masthead nav a[aria-current] { color: var(--ink); }
-.masthead nav a.lang { padding: 0 .55rem; border: 1px solid var(--line); border-radius: 999px; font-size: .85rem; }
+.masthead nav a.lang { padding: 0 .6rem; border: 1px solid var(--line); border-radius: 999px; font-size: .85rem; }
 
 .hero { padding-block: clamp(2rem, 7vw, 5rem) 3rem; }
-.hero h1 { margin: 0; color: var(--ink); font-size: clamp(2.6rem, 8vw, 5rem); line-height: 1; letter-spacing: -.02em; }
-.lede { max-width: var(--measure); margin: 1.25rem 0 0; font-size: 1.25rem; }
+.hero h1 { margin: 0; color: var(--ink); font-size: clamp(2.6rem, 8vw, 5rem); font-weight: 800; line-height: 1; letter-spacing: -.01em; }
+.hero h1 img { display: block; width: min(34rem, 100%); }
+.lede { max-width: var(--measure); margin: 1.5rem 0 0; color: var(--ink); font-size: 1.3rem; line-height: 1.5; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; margin-top: 2rem; }
 .button {
-  display: inline-flex; align-items: center; gap: .5rem; padding: .75rem 1.25rem; border-radius: 10px;
-  background: var(--accent); color: var(--accent-ink); font-weight: 650; text-decoration: none;
+  display: inline-flex; align-items: center; gap: .5rem; padding: .8rem 1.5rem; border-radius: 999px;
+  background: var(--accent); color: var(--accent-ink); font: 700 1.05rem var(--display); text-decoration: none;
 }
+.button:hover { background: var(--ink); color: var(--accent-ink); }
 .button svg { width: 1.1rem; height: 1.1rem; }
 .meta { color: var(--ink3); font-size: .95rem; }
 .shot { margin: 3rem 0 0; }
-.shot img { display: block; border-radius: 12px; box-shadow: 0 18px 50px rgba(0,0,0,.25), 0 0 0 1px var(--line); }
+.shot img { display: block; border-radius: 12px; box-shadow: 0 24px 70px rgba(0, 0, 0, .55), 0 0 0 1px var(--line); }
 
-section { padding-block: 3rem; border-top: 1px solid var(--line); }
-section h2 { margin: 0 0 1rem; color: var(--ink); font-size: clamp(1.6rem, 3.5vw, 2.2rem); line-height: 1.15; }
+/* Sections are parted by a row of dots, like the rings behind the page. */
+section, footer {
+  background: radial-gradient(circle, var(--line) 0 1.5px, transparent 2px) repeat-x left top / 14px 4px;
+}
+section { padding-block: 3rem; }
+section h2 { margin: 0 0 1rem; color: var(--ink); font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 700; line-height: 1.15; }
 section p, section li { max-width: var(--measure); }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 2rem; }
-.grid h3 { margin: 0 0 .4rem; color: var(--ink); font-size: 1.1rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 2rem 2.5rem; }
+.grid h3 { margin: 0 0 .4rem; color: var(--accent); font-size: 1.15rem; font-weight: 700; }
 pre { overflow-x: auto; padding: 1rem; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); }
 
-footer { padding-block: 2.5rem 3rem; color: var(--ink3); font-size: .9rem; border-top: 1px solid var(--line); }
+footer { padding-block: 2.5rem 3rem; color: var(--ink3); font-size: .9rem; }
 footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
 footer a { color: var(--ink2); }
 

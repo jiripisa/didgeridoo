@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" width="1200" height="1200">
+  <!-- The page's background: a sound spreading from a point, drawn in dots of ochre, red ochre and
+       white clay. Each ring is a circle whose dashes have no length and round caps, so every dash
+       is a dot; pathLength is the number of dots. -->
+  <g fill="none" stroke-linecap="round" stroke-dasharray="0.001 1" transform="translate(600 600)" opacity=".8">
+    <circle r="9" fill="#DB993D" stroke="none" opacity=".5"/>
+    <circle r="26"  pathLength="8"   stroke="#F0E3C4" stroke-width="9"  opacity=".34"/>
+    <circle r="52"  pathLength="18"  stroke="#DB993D" stroke-width="7"  opacity=".42"/>
+    <circle r="82"  pathLength="22"  stroke="#B5532A" stroke-width="10" opacity=".5"/>
+    <circle r="116" pathLength="48"  stroke="#DB993D" stroke-width="6"  opacity=".38"/>
+    <circle r="152" pathLength="44"  stroke="#F0E3C4" stroke-width="9"  opacity=".24"/>
+    <circle r="192" pathLength="68"  stroke="#DB993D" stroke-width="7"  opacity=".34"/>
+    <circle r="236" pathLength="58"  stroke="#DB993D" stroke-width="11" opacity=".26"/>
+    <circle r="284" pathLength="118" stroke="#B5532A" stroke-width="6"  opacity=".4"/>
+    <circle r="334" pathLength="104" stroke="#F0E3C4" stroke-width="8"  opacity=".16"/>
+    <circle r="388" pathLength="138" stroke="#DB993D" stroke-width="7"  opacity=".24"/>
+    <circle r="446" pathLength="118" stroke="#DB993D" stroke-width="10" opacity=".17"/>
+    <circle r="508" pathLength="210" stroke="#F0E3C4" stroke-width="6"  opacity=".12"/>
+    <circle r="572" pathLength="178" stroke="#B5532A" stroke-width="8"  opacity=".2"/>
+  </g>
+</svg>
