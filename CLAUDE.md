@@ -6,7 +6,7 @@ A playable synthesized didgeridoo: drone, vowels, overblown toots and breath, as
 
 - Native macOS app, SwiftUI, macOS 14+. Swift Package Manager plus shell
   scripts; there is no Xcode project, so never add one.
-- Four targets, from the sound outwards:
+- Six targets, from the sound outwards:
   - `Sources/DidgeridooDSP`: the sound engine in C++ (`DidgeridooEngine.cpp`)
     behind a C interface (`include/DidgeridooDSP.h`). Synthesis, the
     parameter table and the built-in programs live here and nowhere else.
@@ -16,8 +16,19 @@ A playable synthesized didgeridoo: drone, vowels, overblown toots and breath, as
   - `Sources/DidgeridooCore`: the Swift layer over the engine (`Synth`,
     `Parameter`, `Programs`, `SynthState`), no SwiftUI/AppKit, covered by
     `swift test` (Swift Testing).
+  - `Sources/DidgeridooUI`: the instrument's panel in SwiftUI
+    (`InstrumentPanel`, `KnobView`), drawn on a model (`InstrumentModel`).
+    The app's window and the plug-in's both show it, so the panel changes
+    here and nowhere else.
+  - `Sources/DidgeridooAUView`: the plug-in's window in a host: the panel on
+    the Audio Unit's parameters (`AudioUnitModel`). The unit names its class
+    `DidgeridooAUViewFactory` in its CocoaUI property; the code is linked
+    into the component next to `DidgeridooAU`.
   - `Sources/Didgeridoo`: the SwiftUI app (window, audio output, MIDI input,
     settings). It stays a thin layer; new logic goes into the core, test first.
+
+  `Sources/DidgeridooAUExports` holds no code, only the linker setting that
+  limits what the component exports.
 - **The app and the plug-in must sound the same**: change the sound only in
   `DidgeridooDSP`, never in one front end.
 - **Identity is permanent.** Parameter identifiers (`"vowel"`, `"rhydepth"`…),

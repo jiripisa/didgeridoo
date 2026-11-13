@@ -18,10 +18,10 @@ the user has already said yes to exactly that in the conversation.
 
 1. `git status` clean, on `main`, up to date. Create the branch `feature/NN-vX.Y.Z-release`
    (NN = next phase number from `.planning/ROADMAP.md`).
-2. Pick the version. The **first release is 0.1.0** (the version the skeleton
-   already carries and the website links point at). After that: patch for
-   fixes and small additions, minor for new features or removed UI, major only
-   when the user says so. Say which and why.
+2. Pick the version, counting from the last release (`git tag -l`; the first
+   one was 0.5.0): patch for fixes and small additions, minor for new features
+   or removed UI, major only when the user says so. A version the user names
+   wins. Say which and why.
 3. `CHANGELOG.md`: rename `## Unreleased` to `## X.Y.Z — YYYY-MM-DD`. If there
    is no Unreleased section, write the entries from `git log` since the last tag
    first. These lines become the GitHub Release notes and the text of the update
