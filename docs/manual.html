@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Didgeridoo Manual</title>
+<meta name="description" content="The Didgeridoo manual: every control, with marked screenshots.">
+<link rel="alternate" hreflang="en" href="https://jiripisa.github.io/didgeridoo/manual.html">
+<link rel="alternate" hreflang="cs" href="https://jiripisa.github.io/didgeridoo/cs/manual.html">
+<link rel="alternate" hreflang="x-default" href="https://jiripisa.github.io/didgeridoo/manual.html">
+<link rel="icon" href="assets/icon.png">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/manual.css">
+</head>
+<body>
+
+<header class="wrap masthead">
+  <a class="brand" href="index.html"><img src="assets/icon.png" alt="" width="32" height="32">Didgeridoo</a>
+  <nav aria-label="Site">
+    <a href="index.html">Overview</a>
+    <a href="manual.html" aria-current="page">Manual</a>
+    <a href="index.html#get">Download</a>
+    <a class="lang" href="cs/manual.html" hreflang="cs" lang="cs">Česky</a>
+  </nav>
+</header>
+
+<main>
+  <div class="wrap title">
+    <h1>Manual</h1>
+    <p>Every control of Didgeridoo 0.1.0, where to find it and what it does.
+    The frames in the screenshots mark the control the text talks about.</p>
+  </div>
+
+  <div class="wrap layout">
+    <nav class="toc" aria-label="Contents">
+      <p>Contents</p>
+      <ol>
+        <li><a href="#start">Getting started</a></li>
+        <li><a href="#window">The main window</a></li>
+        <li><a href="#playing">Playing</a></li>
+        <li><a href="#mouth">Mouth</a></li>
+        <li><a href="#lips">Lips</a></li>
+        <li><a href="#rhythm">Rhythm</a></li>
+        <li><a href="#settings">Settings</a></li>
+        <li><a href="#plugin">The Audio Unit plug-in</a></li>
+        <li><a href="#updates">Updates</a></li>
+      </ol>
+    </nav>
+
+    <article>
+      <section id="start">
+        <h2>Getting started</h2>
+        <ol>
+          <li>Download the disk image from the <a href="index.html#get">download page</a>
+          and open it.</li>
+          <li>Drag <b>Didgeridoo</b> to <b>Applications</b> and start it from there.</li>
+          <li>Play a low note on a MIDI keyboard, or click the keyboard at the bottom of the window. The app listens to every connected MIDI device until you choose one in <span class="ui">Settings</span>.</li>
+          <li>To use the instrument in a host such as Ableton Live or Logic Pro, open <span class="ui">Settings</span> and click <span class="ui">Install Audio Unit</span> (see <a href="#plugin">The Audio Unit plug-in</a>).</li>
+        </ol>
+      </section>
+
+      <section id="window">
+        <h2>The main window</h2>
+        <figure class="fig">
+          <div class="view" style="--iw:2200;--ih:1496">
+            <img src="assets/didgeridoo-window.png" alt="The Didgeridoo window with its areas marked">
+            <div class="mark" style="--x:1.6;--y:3.9;--w:19;--h:5.6"><b>1</b></div>
+            <div class="mark" style="--x:56;--y:4.6;--w:42.8;--h:4.2"><b>2</b></div>
+            <div class="mark" style="--x:1.5;--y:11.5;--w:48;--h:38.4"><b>3</b></div>
+            <div class="mark" style="--x:50.5;--y:11.5;--w:48;--h:54.8"><b>4</b></div>
+            <div class="mark" style="--x:1.5;--y:51.4;--w:48;--h:38.4"><b>5</b></div>
+            <div class="mark" style="--x:1.5;--y:91.3;--w:97;--h:8.5"><b>6</b></div>
+          </div>
+        </figure>
+        <dl class="controls">
+          <dt><span class="n">1</span>Name</dt>
+          <dd>The instrument's name.</dd>
+          <dt><span class="n">2</span>Program, Tempo, Settings</dt>
+          <dd><b>Program</b> loads one of the six built-in sounds. It overwrites every knob and cuts off a sounding note; your own changes are not kept in the program. <b>Tempo</b> (20–300 BPM) sets the speed of the rhythm pulse. <b>Settings</b> opens MIDI input, audio output and the Audio Unit installer.</dd>
+          <dt><span class="n">3</span>Mouth</dt>
+          <dd>The shape of the mouth: which vowel the drone speaks and how it moves. See <a href="#mouth">Mouth</a>.</dd>
+          <dt><span class="n">4</span>Lips</dt>
+          <dd>The source of the sound: lips, breath, voice, pitch and how notes begin and end. See <a href="#lips">Lips</a>.</dd>
+          <dt><span class="n">5</span>Rhythm</dt>
+          <dd>The tempo-synced pulse and the pitch bend range. See <a href="#rhythm">Rhythm</a>.</dd>
+          <dt><span class="n">6</span>Keyboard</dt>
+          <dd>Click a key to play it. Clicking near the top of a key plays softly; clicking near its bottom edge is the hardest hit and overblows the note.</dd>
+        </dl>
+        <h3>Turning a knob</h3>
+        <p>Drag a knob up or down. Hold <kbd>Shift</kbd> while dragging for fine steps. Double-click a knob to return it to the value of the current program. The app remembers the knobs, the program and the tempo between launches.</p>
+      </section>
+
+      <section id="playing">
+        <h2>Playing</h2>
+        <p>Didgeridoo plays one note at a time. Hold a key for the drone; a second key slides the pitch there (<span class="ui">Glide</span>), and releasing it falls back to the key still held. Low notes sound most natural: real instruments sit around C1–G1 (MIDI notes 36–43).</p>
+        <dl class="controls">
+          <dt>Hard hit</dt>
+          <dd>A velocity at or above <span class="ui">Toot Vel</span> overblows: the note jumps up by <span class="ui">Toot Pitch</span> semitones with a bright, trumpet-like tone.</dd>
+          <dt>Mod wheel</dt>
+          <dd>Opens the mouth: moves the vowel towards “i” by up to <span class="ui">Wheel Vowel</span>.</dd>
+          <dt>Aftertouch</dt>
+          <dd>Adds growl on top of the <span class="ui">Growl</span> knob.</dd>
+          <dt>Pitch bend</dt>
+          <dd>Bends the pitch by up to <span class="ui">Bend Range</span> semitones.</dd>
+          <dt>Sustain pedal</dt>
+          <dd>Holds the drone after you release the keys.</dd>
+        </dl>
+      </section>
+
+      <section id="mouth">
+        <h2>Mouth</h2>
+        <dl class="controls">
+          <dt>Vowel (0–100 %)</dt>
+          <dd>The mouth shape, from “u” at 0 through “o”, “a” and “e” to “i” at 100.</dd>
+          <dt>Formant (0–100 %)</dt>
+          <dd>How much of the vowel resonances is mixed into the sound. At 0 the drone is plain.</dd>
+          <dt>Reso (0–100 %)</dt>
+          <dd>How sharp the vowel resonances are: higher values sound more vocal and nasal.</dd>
+          <dt>Tone (200–8000 Hz)</dt>
+          <dd>A low-pass filter on the direct sound. Lower is darker.</dd>
+          <dt>Wobble Rate (0.05–10 Hz)</dt>
+          <dd>Speed of a slow, steady movement of the vowel.</dd>
+          <dt>Wobble Depth (0–100 %)</dt>
+          <dd>Amount of that movement. 0 switches it off.</dd>
+          <dt>Wheel Vowel (0–100 %)</dt>
+          <dd>How far the mod wheel moves the vowel.</dd>
+          <dt>Volume (−40 to +6 dB)</dt>
+          <dd>Output level.</dd>
+        </dl>
+      </section>
+
+      <section id="lips">
+        <h2>Lips</h2>
+        <dl class="controls">
+          <dt>Buzz (0–100 %)</dt>
+          <dd>The lip sound, from a round saw wave at 0 to a thin, nasal pulse at 100.</dd>
+          <dt>Body (0–100 %)</dt>
+          <dd>A resonance at the played pitch that gives the drone weight.</dd>
+          <dt>Drive (0–100 %)</dt>
+          <dd>Saturation at the output: adds grit and compresses the level.</dd>
+          <dt>Breath (0–100 %)</dt>
+          <dd>Breath noise passing through the tube and the mouth.</dd>
+          <dt>Growl (0–100 %)</dt>
+          <dd>A voice sung into the tube, which makes the drone rough and beating.</dd>
+          <dt>Growl Pitch (0–24 st)</dt>
+          <dd>The interval of that voice above the drone, in semitones.</dd>
+          <dt>Drift (0–100 %)</dt>
+          <dd>Slow, random wandering of the pitch, up to about a third of a semitone.</dd>
+          <dt>Glide (0–1000 ms)</dt>
+          <dd>How long the pitch takes to slide from one note to the next.</dd>
+          <dt>Attack (5–2000 ms)</dt>
+          <dd>How quickly a note fades in.</dd>
+          <dt>Release (10–3000 ms)</dt>
+          <dd>How quickly it fades out after the key is released.</dd>
+          <dt>Toot Vel (64–127, Off)</dt>
+          <dd>The velocity from which a note overblows. Turn it fully up (“Off”) to disable overblowing.</dd>
+          <dt>Toot Pitch (7–24 st)</dt>
+          <dd>How far an overblown note jumps above the played key.</dd>
+        </dl>
+      </section>
+
+      <section id="rhythm">
+        <h2>Rhythm</h2>
+        <p>The pulse starts at full strength on every step and fades until the next one. With <span class="ui">Rhy Depth</span> and <span class="ui">Rhy&gt;Vowel</span> at zero it does nothing. In the app it runs at the <span class="ui">Tempo</span> in the header; in a host it follows the song.</p>
+        <dl class="controls">
+          <dt>Rhythm Div (1/64 to 2/1)</dt>
+          <dd>The length of one step, including triplet (T) and dotted (D) values.</dd>
+          <dt>Rhy Depth (0–100 %)</dt>
+          <dd>How far the volume drops between pulses.</dd>
+          <dt>Rhy&gt;Vowel (−100 to +100 %)</dt>
+          <dd>How far each pulse pushes the vowel: positive towards “i”, negative towards “u”.</dd>
+          <dt>Rhy Decay (0–100 %)</dt>
+          <dd>The shape of the pulse, from a long swell at 0 to a short stab at 100.</dd>
+          <dt>Bend Range (0–12 st)</dt>
+          <dd>The pitch bend range in semitones.</dd>
+        </dl>
+      </section>
+
+      <section id="settings">
+        <h2>Settings</h2>
+        <dl class="controls">
+          <dt>MIDI input › Device</dt>
+          <dd><b>All devices</b> (the default), <b>None</b>, or one connected keyboard or controller.</dd>
+          <dt>MIDI input › Channel</dt>
+          <dd><b>All channels</b> or one of 1–16; messages on other channels are ignored.</dd>
+          <dt>The “Didgeridoo” MIDI port</dt>
+          <dd>While the app runs, other applications can send MIDI to a port called <b>Didgeridoo</b>. It is always on and obeys the channel setting.</dd>
+          <dt>Audio output › Device</dt>
+          <dd><b>System default</b> or a specific audio device.</dd>
+          <dt>Audio output › Channels</dt>
+          <dd>Shown for devices with more than two outputs: the pair of channels the sound goes to. The instrument is mono; both channels carry the same signal.</dd>
+          <dt>Audio Unit plug-in</dt>
+          <dd>Shows whether the plug-in is installed and in which version; <span class="ui">Install Audio Unit</span> installs or updates it.</dd>
+        </dl>
+      </section>
+
+      <section id="plugin">
+        <h2>The Audio Unit plug-in</h2>
+        <ol>
+          <li>In the app, open <span class="ui">Settings</span> and click <span class="ui">Install Audio Unit</span>. This copies <span class="ui">Didgeridoo.component</span> into <span class="ui">~/Library/Audio/Plug-Ins/Components</span>.</li>
+          <li>Restart your host or let it rescan its plug-ins. In Ableton Live, Audio Units must be switched on in <span class="ui">Settings › Plug-Ins</span>.</li>
+          <li>The instrument appears as <b>Didgeridoo</b> by <b>Jiri Pisa</b> among the Audio Unit instruments.</li>
+        </ol>
+        <p>The plug-in has the same sound, the same 25 parameters and the same six programs (as factory presets) as the app. It has no window of its own yet: the host shows its standard parameter view, grouped into Mouth, Lips and Rhythm. Every parameter can be automated, and the host saves the sound with the project. The rhythm pulse follows the host's tempo and song position.</p>
+        <p>After updating the app, click <span class="ui">Install Audio Unit</span> again to update the plug-in.</p>
+      </section>
+
+      <section id="updates">
+        <h2>Updates</h2>
+        <p>At every launch Didgeridoo asks whether a newer version exists and, if
+        so, offers it; nothing is installed without your OK. <span class="ui">Didgeridoo
+        › Check for Updates…</span> asks right away.</p>
+      </section>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Didgeridoo by Jiří Píša. MIT License. Manual for version 0.1.0.</span>
+    <span><a href="index.html">Overview</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

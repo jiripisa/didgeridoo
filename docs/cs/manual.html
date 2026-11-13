@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Didgeridoo – manuál</title>
+<meta name="description" content="Manuál aplikace Didgeridoo: všechny ovládací prvky s označenými snímky obrazovky.">
+<link rel="alternate" hreflang="en" href="https://jiripisa.github.io/didgeridoo/manual.html">
+<link rel="alternate" hreflang="cs" href="https://jiripisa.github.io/didgeridoo/cs/manual.html">
+<link rel="alternate" hreflang="x-default" href="https://jiripisa.github.io/didgeridoo/manual.html">
+<link rel="icon" href="../assets/icon.png">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/manual.css">
+</head>
+<body>
+
+<header class="wrap masthead">
+  <a class="brand" href="index.html"><img src="../assets/icon.png" alt="" width="32" height="32">Didgeridoo</a>
+  <nav aria-label="Web">
+    <a href="index.html">Přehled</a>
+    <a href="manual.html" aria-current="page">Manuál</a>
+    <a href="index.html#get">Stáhnout</a>
+    <a class="lang" href="../manual.html" hreflang="en" lang="en">English</a>
+  </nav>
+</header>
+
+<main>
+  <div class="wrap title">
+    <h1>Manuál</h1>
+    <p>Každý ovládací prvek aplikace Didgeridoo 0.1.0: kde ho najdete a co dělá.
+    Rámečky ve snímcích označují prvek, o kterém text mluví.</p>
+  </div>
+
+  <div class="wrap layout">
+    <nav class="toc" aria-label="Obsah">
+      <p>Obsah</p>
+      <ol>
+        <li><a href="#start">Začínáme</a></li>
+        <li><a href="#window">Hlavní okno</a></li>
+        <li><a href="#playing">Hraní</a></li>
+        <li><a href="#mouth">Mouth (ústa)</a></li>
+        <li><a href="#lips">Lips (rty)</a></li>
+        <li><a href="#rhythm">Rhythm (rytmus)</a></li>
+        <li><a href="#settings">Nastavení</a></li>
+        <li><a href="#plugin">Plugin Audio Unit</a></li>
+        <li><a href="#updates">Aktualizace</a></li>
+      </ol>
+    </nav>
+
+    <article>
+      <section id="start">
+        <h2>Začínáme</h2>
+        <ol>
+          <li>Stáhněte obraz disku ze <a href="index.html#get">stránky ke stažení</a>
+          a otevřete ho.</li>
+          <li>Přetáhněte <b>Didgeridoo</b> do složky <b>Aplikace</b> a spusťte ji odtamtud.</li>
+          <li>Zahrajte nízkou notu na MIDI klaviatuře, nebo klikněte na klaviaturu ve spodní části okna. Aplikace poslouchá všechna připojená MIDI zařízení, dokud si v <span class="ui">Settings</span> nevyberete jedno.</li>
+          <li>Chcete-li nástroj používat v programu jako Ableton Live nebo Logic Pro, otevřete <span class="ui">Settings</span> a klikněte na <span class="ui">Install Audio Unit</span> (viz <a href="#plugin">Plugin Audio Unit</a>).</li>
+        </ol>
+      </section>
+
+      <section id="window">
+        <h2>Hlavní okno</h2>
+        <figure class="fig">
+          <div class="view" style="--iw:2200;--ih:1496">
+            <img src="../assets/didgeridoo-window.png" alt="Okno aplikace Didgeridoo s vyznačenými oblastmi">
+            <div class="mark" style="--x:1.6;--y:3.9;--w:19;--h:5.6"><b>1</b></div>
+            <div class="mark" style="--x:56;--y:4.6;--w:42.8;--h:4.2"><b>2</b></div>
+            <div class="mark" style="--x:1.5;--y:11.5;--w:48;--h:38.4"><b>3</b></div>
+            <div class="mark" style="--x:50.5;--y:11.5;--w:48;--h:54.8"><b>4</b></div>
+            <div class="mark" style="--x:1.5;--y:51.4;--w:48;--h:38.4"><b>5</b></div>
+            <div class="mark" style="--x:1.5;--y:91.3;--w:97;--h:8.5"><b>6</b></div>
+          </div>
+        </figure>
+        <dl class="controls">
+          <dt><span class="n">1</span>Název</dt>
+          <dd>Název nástroje.</dd>
+          <dt><span class="n">2</span>Program, Tempo, Settings</dt>
+          <dd><b>Program</b> načte jeden ze šesti vestavěných zvuků. Přepíše všechny knoby a utne znějící notu; vlastní úpravy se do programu neukládají. <b>Tempo</b> (20–300 BPM) určuje rychlost rytmického pulzu. <b>Settings</b> otevře nastavení MIDI vstupu, zvukového výstupu a instalaci pluginu Audio Unit.</dd>
+          <dt><span class="n">3</span>Mouth</dt>
+          <dd>Tvar úst: jakou samohlásku dron vyslovuje a jak se pohybuje. Viz <a href="#mouth">Mouth</a>.</dd>
+          <dt><span class="n">4</span>Lips</dt>
+          <dd>Zdroj zvuku: rty, dech, hlas, ladění a to, jak noty začínají a končí. Viz <a href="#lips">Lips</a>.</dd>
+          <dt><span class="n">5</span>Rhythm</dt>
+          <dd>Pulz synchronizovaný s tempem a rozsah pitch bendu. Viz <a href="#rhythm">Rhythm</a>.</dd>
+          <dt><span class="n">6</span>Klaviatura</dt>
+          <dd>Kliknutím na klávesu ji zahrajete. Kliknutí u horního okraje klávesy hraje tiše; kliknutí u spodního okraje je nejsilnější úhoz a notu přefoukne.</dd>
+        </dl>
+        <h3>Otáčení knobem</h3>
+        <p>Táhněte knob nahoru nebo dolů. S klávesou <kbd>Shift</kbd> se hodnota mění jemně. Dvojklik vrátí knob na hodnotu aktuálního programu. Aplikace si knoby, program i tempo pamatuje mezi spuštěními.</p>
+      </section>
+
+      <section id="playing">
+        <h2>Hraní</h2>
+        <p>Didgeridoo hraje vždy jen jednu notu. Držená klávesa hraje dron; druhá klávesa na něj plynule přeladí (<span class="ui">Glide</span>) a po jejím puštění se ladění vrátí na klávesu, kterou stále držíte. Nejpřirozeněji znějí nízké noty: skutečné nástroje se pohybují kolem C1–G1 (MIDI noty 36–43).</p>
+        <dl class="controls">
+          <dt>Silný úhoz</dt>
+          <dd>Velocity rovná hodnotě <span class="ui">Toot Vel</span> nebo vyšší notu přefoukne: skočí o <span class="ui">Toot Pitch</span> půltónů výš a zní jasně, trubkově.</dd>
+          <dt>Mod wheel</dt>
+          <dd>Otevírá ústa: posouvá samohlásku směrem k „i“ až o hodnotu <span class="ui">Wheel Vowel</span>.</dd>
+          <dt>Aftertouch</dt>
+          <dd>Přidává chrapot nad hodnotu knobu <span class="ui">Growl</span>.</dd>
+          <dt>Pitch bend</dt>
+          <dd>Ohýbá ladění až o <span class="ui">Bend Range</span> půltónů.</dd>
+          <dt>Sustain pedál</dt>
+          <dd>Podrží dron i po puštění kláves.</dd>
+        </dl>
+      </section>
+
+      <section id="mouth">
+        <h2>Mouth (ústa)</h2>
+        <dl class="controls">
+          <dt>Vowel (0–100 %)</dt>
+          <dd>Tvar úst, od „u“ na nule přes „o“, „a“ a „e“ po „i“ na stovce.</dd>
+          <dt>Formant (0–100 %)</dt>
+          <dd>Kolik rezonancí samohlásky se přimíchá do zvuku. Na nule je dron holý.</dd>
+          <dt>Reso (0–100 %)</dt>
+          <dd>Ostrost rezonancí samohlásky: vyšší hodnoty znějí hlasověji a nosověji.</dd>
+          <dt>Tone (200–8000 Hz)</dt>
+          <dd>Dolní propust na přímém zvuku. Nižší hodnota je temnější.</dd>
+          <dt>Wobble Rate (0,05–10 Hz)</dt>
+          <dd>Rychlost pomalého, pravidelného pohybu samohlásky.</dd>
+          <dt>Wobble Depth (0–100 %)</dt>
+          <dd>Míra tohoto pohybu. Nula ho vypne.</dd>
+          <dt>Wheel Vowel (0–100 %)</dt>
+          <dd>O kolik mod wheel posune samohlásku.</dd>
+          <dt>Volume (−40 až +6 dB)</dt>
+          <dd>Výstupní hlasitost.</dd>
+        </dl>
+      </section>
+
+      <section id="lips">
+        <h2>Lips (rty)</h2>
+        <dl class="controls">
+          <dt>Buzz (0–100 %)</dt>
+          <dd>Zvuk rtů, od kulaté pilové vlny na nule po tenký, nosový pulz na stovce.</dd>
+          <dt>Body (0–100 %)</dt>
+          <dd>Rezonance na hrané výšce, která dává dronu váhu.</dd>
+          <dt>Drive (0–100 %)</dt>
+          <dd>Saturace na výstupu: přidá drsnost a vyrovná hlasitost.</dd>
+          <dt>Breath (0–100 %)</dt>
+          <dd>Šum dechu procházející trubicí a ústy.</dd>
+          <dt>Growl (0–100 %)</dt>
+          <dd>Hlas zpívaný do trubice, který dron zdrsní a rozechvěje.</dd>
+          <dt>Growl Pitch (0–24 st)</dt>
+          <dd>Interval tohoto hlasu nad dronem v půltónech.</dd>
+          <dt>Drift (0–100 %)</dt>
+          <dd>Pomalé náhodné kolísání ladění, nejvýše asi o třetinu půltónu.</dd>
+          <dt>Glide (0–1000 ms)</dt>
+          <dd>Jak dlouho trvá sklouznutí z jedné noty na druhou.</dd>
+          <dt>Attack (5–2000 ms)</dt>
+          <dd>Jak rychle nota nastoupí.</dd>
+          <dt>Release (10–3000 ms)</dt>
+          <dd>Jak rychle po puštění klávesy dozní.</dd>
+          <dt>Toot Vel (64–127, Off)</dt>
+          <dd>Velocity, od které se nota přefoukne. Úplně nahoře („Off“) je přefuk vypnutý.</dd>
+          <dt>Toot Pitch (7–24 st)</dt>
+          <dd>O kolik půltónů přefouknutá nota vyskočí nad hranou klávesu.</dd>
+        </dl>
+      </section>
+
+      <section id="rhythm">
+        <h2>Rhythm (rytmus)</h2>
+        <p>Pulz začíná na každém kroku v plné síle a do dalšího kroku slábne. Když jsou <span class="ui">Rhy Depth</span> i <span class="ui">Rhy&gt;Vowel</span> na nule, nedělá nic. V aplikaci běží v tempu nastaveném v poli <span class="ui">Tempo</span>; v hostitelském programu sleduje skladbu.</p>
+        <dl class="controls">
+          <dt>Rhythm Div (1/64 až 2/1)</dt>
+          <dd>Délka jednoho kroku, včetně triolových (T) a tečkovaných (D) hodnot.</dd>
+          <dt>Rhy Depth (0–100 %)</dt>
+          <dd>O kolik hlasitost mezi pulzy klesne.</dd>
+          <dt>Rhy&gt;Vowel (−100 až +100 %)</dt>
+          <dd>O kolik každý pulz posune samohlásku: kladné hodnoty směrem k „i“, záporné k „u“.</dd>
+          <dt>Rhy Decay (0–100 %)</dt>
+          <dd>Tvar pulzu, od dlouhého náběhu na nule po krátký úder na stovce.</dd>
+          <dt>Bend Range (0–12 st)</dt>
+          <dd>Rozsah pitch bendu v půltónech.</dd>
+        </dl>
+      </section>
+
+      <section id="settings">
+        <h2>Nastavení</h2>
+        <dl class="controls">
+          <dt>MIDI input › Device</dt>
+          <dd><b>All devices</b> (výchozí, všechna zařízení), <b>None</b> (žádné), nebo jedna připojená klaviatura či kontrolér.</dd>
+          <dt>MIDI input › Channel</dt>
+          <dd><b>All channels</b> (všechny kanály) nebo jeden z kanálů 1–16; zprávy na ostatních kanálech se ignorují.</dd>
+          <dt>MIDI port „Didgeridoo“</dt>
+          <dd>Dokud aplikace běží, mohou jiné aplikace posílat MIDI do portu <b>Didgeridoo</b>. Je vždy zapnutý a řídí se nastavením kanálu.</dd>
+          <dt>Audio output › Device</dt>
+          <dd><b>System default</b> (výchozí výstup systému) nebo konkrétní zvukové zařízení.</dd>
+          <dt>Audio output › Channels</dt>
+          <dd>Zobrazí se u zařízení s více než dvěma výstupy: dvojice kanálů, do které zvuk půjde. Nástroj je mono; oba kanály nesou stejný signál.</dd>
+          <dt>Audio Unit plug-in</dt>
+          <dd>Ukazuje, jestli je plugin nainstalovaný a v jaké verzi; <span class="ui">Install Audio Unit</span> ho nainstaluje nebo aktualizuje.</dd>
+        </dl>
+      </section>
+
+      <section id="plugin">
+        <h2>Plugin Audio Unit</h2>
+        <ol>
+          <li>V aplikaci otevřete <span class="ui">Settings</span> a klikněte na <span class="ui">Install Audio Unit</span>. Soubor <span class="ui">Didgeridoo.component</span> se zkopíruje do <span class="ui">~/Library/Audio/Plug-Ins/Components</span>.</li>
+          <li>Restartujte hostitelský program nebo ho nechte znovu prohledat pluginy. V Abletonu Live musí být Audio Units zapnuté v <span class="ui">Settings › Plug-Ins</span>.</li>
+          <li>Nástroj se objeví jako <b>Didgeridoo</b> od výrobce <b>Jiri Pisa</b> mezi nástroji Audio Unit.</li>
+        </ol>
+        <p>Plugin má stejný zvuk, stejných 25 parametrů a stejných šest programů (jako tovární presety) jako aplikace. Vlastní okno zatím nemá: hostitelský program zobrazí své standardní zobrazení parametrů, rozdělené do skupin Mouth, Lips a Rhythm. Každý parametr lze automatizovat a zvuk se ukládá s projektem. Rytmický pulz sleduje tempo a pozici ve skladbě.</p>
+        <p>Po aktualizaci aplikace klikněte na <span class="ui">Install Audio Unit</span> znovu, aby se aktualizoval i plugin.</p>
+      </section>
+
+      <section id="updates">
+        <h2>Aktualizace</h2>
+        <p>Při každém spuštění se Didgeridoo podívá, jestli existuje novější verze,
+        a pokud ano, nabídne ji; bez vašeho souhlasu se nic nenainstaluje.
+        <span class="ui">Didgeridoo › Check for Updates…</span> se zeptá hned.</p>
+      </section>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Didgeridoo, autor Jiří Píša. MIT License. Manuál pro verzi 0.1.0.</span>
+    <span><a href="index.html">Přehled</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

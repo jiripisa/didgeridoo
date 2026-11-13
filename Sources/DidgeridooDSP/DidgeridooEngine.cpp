@@ -1,0 +1,699 @@
+// DidgeridooEngine.cpp - the Didgeridoo sound engine and its C interface.
+//
+// SPDX-License-Identifier: MIT
+//
+// The synthesis is the same code as the MPC plugin "Didgeridoo" (Jiri Pisa), lifted out of the
+// MPC plugin framework so that an Audio Unit and a standalone app can share it. Parameter
+// ranges, mappings, display texts and programs are identical to the plugin's.
+//
+// Signal path:
+//
+//   lips:   saw + narrow pulse (PolyBLEP, "Buzz" morphs between them)
+//             * voice growl (a sine sung into the tube, ring-modulates the buzz)
+//             + breath noise (pink)
+//                |
+//                +--> tone lowpass ("Tone": the tube swallows the highs) ------+
+//                +--> formant 1 + formant 2 (band-pass pair = mouth shape,     +--> sum
+//                |    "Vowel" morphs u - o - a - e - i)                        |
+//   buzz only ---+--> body band-pass at the fundamental ("Body": drone weight) +
+//                                                                              |
+//   -> amp envelope * velocity * rhythm pulse -> drive (tanh) -> DC blocker -> volume -> L = R
+//
+// Pitch: last-note priority with glide, pitch bend, slow random drift. A hard hit
+// (velocity >= "Toot Vel") overblows: the pitch jumps up by "Toot Pitch" semitones and the
+// tone turns bright and trumpet-like.
+//
+// Vowel movement adds up from the Vowel knob, the mod wheel, a slow "Wobble" LFO and the
+// tempo-synced rhythm pulse. Channel aftertouch adds growl.
+//
+// Expensive maths (pow, tan, exp) runs every 16 samples ("control rate"); oscillators,
+// filters and envelopes run every sample. Nothing allocates in process().
+
+#include "DidgeridooDSP.h"
+
+#include <atomic>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <os/lock.h>
+#include <string>
+#include <vector>
+
+#include "dsp/math.h"
+#include "dsp/oscillator.h"
+#include "dsp/svf.h"
+#include "dsp/adsr.h"
+#include "dsp/smoother.h"
+#include "dsp/noise.h"
+#include "dsp/onepole.h"
+#include "dsp/tempo.h"
+
+using namespace mpc::dsp;
+
+namespace {
+
+// ---------------------------------------------------------------------------------------------
+// Parameters. The order and the identifiers are permanent: only ever append.
+// ---------------------------------------------------------------------------------------------
+enum Params
+{
+    kVolume,        // dB    master volume
+    kVowel,         // %     mouth shape, u (0) - o - a - e - i (100)
+    kFormant,       // %     how much of the formant pair is mixed in
+    kReso,          // %     sharpness of the formants
+    kBuzz,          // %     lip source: 0 = round saw, 100 = thin nasal pulse
+    kTone,          // Hz    lowpass on the direct sound
+    kBody,          // %     resonance at the fundamental (drone weight)
+    kDrive,         // %     saturation at the output
+    kBreath,        // %     breath noise through the tube
+    kGrowl,         // %     voice sung into the tube (rough beating)
+    kGrowlPitch,    // st    interval of the sung voice above the drone
+    kGlide,         // ms    slide time between notes
+    kAttack,        // ms    amp envelope attack
+    kRelease,       // ms    amp envelope release
+    kTootVel,       // -     velocity at which a note overblows (128 = Off)
+    kTootPitch,     // st    how far the overblown note jumps up
+    kRhythmDiv,     // -     note division of the rhythm pulse
+    kRhyDepth,      // %     how deep the pulse ducks the volume
+    kRhyVowel,      // %     how far the pulse pushes the vowel (signed)
+    kRhyDecay,      // %     pulse shape: 0 = long swell, 100 = short stab
+    kWobbleRate,    // Hz    slow vowel LFO rate
+    kWobbleDepth,   // %     slow vowel LFO depth
+    kWheelVowel,    // %     how far the mod wheel moves the vowel
+    kBendRange,     // st    pitch bend range
+    kDrift,         // %     slow random pitch instability
+    kNumParams
+};
+
+struct Param
+{
+    const char* id;
+    const char* name;
+    const char* unit;
+    int   kind;                 // DIDGE_KIND_*
+    float min, max, def;
+    float skew;                 // 1 = linear, < 1 gives more resolution at the low end
+    bool  logarithmic;
+    int   decimals;
+
+    float toPlain(float norm) const
+    {
+        norm = clamp(norm, 0.0f, 1.0f);
+        if (kind == DIDGE_KIND_CHOICE)
+        {
+            const int n = (int)max + 1;
+            return n < 2 ? 0.0f : (float)clamp((int)std::lround(norm * (float)(n - 1)), 0, n - 1);
+        }
+        if (kind == DIDGE_KIND_INT) return std::round(min + norm * (max - min));
+        if (logarithmic && min > 0.0f && max > 0.0f) return min * std::pow(max / min, norm);
+        if (skew != 1.0f) return min + (max - min) * std::pow(norm, 1.0f / skew);
+        return min + (max - min) * norm;
+    }
+
+    float toNormalised(float plain) const
+    {
+        if (kind == DIDGE_KIND_CHOICE)
+        {
+            const int n = (int)max + 1;
+            return n < 2 ? 0.0f : clamp(plain / (float)(n - 1), 0.0f, 1.0f);
+        }
+        if (max == min) return 0.0f;
+        plain = clamp(plain, std::fmin(min, max), std::fmax(min, max));
+        if (kind == DIDGE_KIND_FLOAT && logarithmic && min > 0.0f && max > 0.0f)
+            return clamp(std::log(plain / min) / std::log(max / min), 0.0f, 1.0f);
+        const float lin = (plain - min) / (max - min);
+        if (kind == DIDGE_KIND_FLOAT && skew != 1.0f) return clamp(std::pow(lin, skew), 0.0f, 1.0f);
+        return clamp(lin, 0.0f, 1.0f);
+    }
+};
+
+Param floatParam(const char* id, const char* name, float min, float max, float def, const char* unit, int decimals, float skew = 1.0f)
+{
+    return Param{ id, name, unit, DIDGE_KIND_FLOAT, min, max, def, skew, false, decimals };
+}
+Param logParam(const char* id, const char* name, float min, float max, float def, const char* unit, int decimals)
+{
+    return Param{ id, name, unit, DIDGE_KIND_FLOAT, min, max, def, 1.0f, true, decimals };
+}
+Param intParam(const char* id, const char* name, int min, int max, int def, const char* unit = "")
+{
+    return Param{ id, name, unit, DIDGE_KIND_INT, (float)min, (float)max, (float)def, 1.0f, false, 0 };
+}
+Param choiceParam(const char* id, const char* name, int numChoices, int def)
+{
+    return Param{ id, name, "", DIDGE_KIND_CHOICE, 0.0f, (float)(numChoices - 1), (float)def, 1.0f, false, 0 };
+}
+
+const Param kParams[kNumParams] = {
+    floatParam ("volume",      "Volume",       -40.0f, 6.0f, -6.0f, "dB", 1),
+    floatParam ("vowel",       "Vowel",        0.0f, 100.0f, 30.0f, "%", 0),
+    floatParam ("formant",     "Formant",      0.0f, 100.0f, 70.0f, "%", 0),
+    floatParam ("reso",        "Reso",         0.0f, 100.0f, 60.0f, "%", 0),
+    floatParam ("buzz",        "Buzz",         0.0f, 100.0f, 50.0f, "%", 0),
+    logParam   ("tone",        "Tone",         200.0f, 8000.0f, 1400.0f, "Hz", 0),
+    floatParam ("body",        "Body",         0.0f, 100.0f, 50.0f, "%", 0),
+    floatParam ("drive",       "Drive",        0.0f, 100.0f, 20.0f, "%", 0),
+    floatParam ("breath",      "Breath",       0.0f, 100.0f, 15.0f, "%", 0),
+    floatParam ("growl",       "Growl",        0.0f, 100.0f, 0.0f, "%", 0),
+    intParam   ("growlpitch",  "Growl Pitch",  0, 24, 7, "st"),
+    floatParam ("glide",       "Glide",        0.0f, 1000.0f, 60.0f, "ms", 0, 0.4f),
+    logParam   ("attack",      "Attack",       5.0f, 2000.0f, 60.0f, "ms", 0),
+    logParam   ("release",     "Release",      10.0f, 3000.0f, 180.0f, "ms", 0),
+    intParam   ("tootvel",     "Toot Vel",     64, 128, 115),
+    intParam   ("tootpitch",   "Toot Pitch",   7, 24, 16, "st"),
+    choiceParam("rhythmdiv",   "Rhythm Div",   kNumDivisions, kDivisionEighth),
+    floatParam ("rhydepth",    "Rhy Depth",    0.0f, 100.0f, 0.0f, "%", 0),
+    floatParam ("rhyvowel",    "Rhy>Vowel",    -100.0f, 100.0f, 0.0f, "%", 0),
+    floatParam ("rhydecay",    "Rhy Decay",    0.0f, 100.0f, 40.0f, "%", 0),
+    logParam   ("wobblerate",  "Wobble Rate",  0.05f, 10.0f, 0.4f, "Hz", 2),
+    floatParam ("wobbledepth", "Wobble Depth", 0.0f, 100.0f, 20.0f, "%", 0),
+    floatParam ("wheelvowel",  "Wheel Vowel",  0.0f, 100.0f, 100.0f, "%", 0),
+    intParam   ("bendrange",   "Bend Range",   0, 12, 2, "st"),
+    floatParam ("drift",       "Drift",        0.0f, 100.0f, 30.0f, "%", 0),
+};
+
+// ---------------------------------------------------------------------------------------------
+// Built-in programs: the defaults with a few values overridden.
+// ---------------------------------------------------------------------------------------------
+struct Program { const char* name; float values[kNumParams]; };
+
+struct Override { int param; float value; };
+
+Program makeProgram(const char* name, std::initializer_list<Override> overrides)
+{
+    Program p; p.name = name;
+    for (int i = 0; i < kNumParams; ++i) p.values[i] = kParams[i].def;
+    for (const Override& o : overrides) p.values[o.param] = o.value;
+    return p;
+}
+
+const std::vector<Program>& programs()
+{
+    static const std::vector<Program> table = {
+        makeProgram("Classic Drone", {}),
+        makeProgram("Deep Earth",    {{kVowel, 10}, {kFormant, 45}, {kBuzz, 25}, {kTone, 700}, {kBody, 85},
+                                      {kBreath, 8}, {kWobbleRate, 0.15f}, {kWobbleDepth, 12}, {kAttack, 150}}),
+        makeProgram("Vocal Wah",     {{kVowel, 45}, {kFormant, 95}, {kReso, 80}, {kBuzz, 65}, {kTone, 1100},
+                                      {kWobbleRate, 1.6f}, {kWobbleDepth, 70}}),
+        makeProgram("Growler",       {{kGrowl, 70}, {kGrowlPitch, 7}, {kDrive, 55}, {kBuzz, 70}, {kVowel, 40},
+                                      {kBreath, 25}, {kDrift, 50}}),
+        makeProgram("Rhythm Breath", {{kRhyDepth, 70}, {kRhyVowel, 80}, {kRhyDecay, 55}, {kRhythmDiv, (float)kDivisionEighth},
+                                      {kVowel, 15}, {kFormant, 90}, {kReso, 70}, {kWobbleDepth, 0}, {kBreath, 30}}),
+        makeProgram("Gallop",        {{kRhyDepth, 85}, {kRhyVowel, -60}, {kRhyDecay, 75}, {kRhythmDiv, (float)kDivisionSixteenth},
+                                      {kVowel, 70}, {kFormant, 85}, {kBuzz, 60}, {kDrive, 35}, {kWobbleDepth, 10}}),
+    };
+    return table;
+}
+
+struct MidiEvent
+{
+    int sampleOffset;
+    uint8_t status, data1, data2;
+
+    uint8_t kind() const { return status & 0xF0; }
+    bool isNoteOn() const { return kind() == 0x90 && data2 != 0; }
+    bool isNoteOff() const { return kind() == 0x80 || (kind() == 0x90 && data2 == 0); }
+    bool isController() const { return kind() == 0xB0; }
+    bool isPitchBend() const { return kind() == 0xE0; }
+    bool isAftertouch() const { return kind() == 0xD0; }
+    bool isAllNotesOff() const { return isController() && (data1 == 123 || data1 == 120); }
+    int  pitchBend() const { return (data1 | (data2 << 7)) - 8192; }
+};
+
+} // namespace
+
+// ---------------------------------------------------------------------------------------------
+// The engine
+// ---------------------------------------------------------------------------------------------
+struct DidgeEngine
+{
+    DidgeEngine()
+    {
+        for (int i = 0; i < kNumParams; ++i) values_[i].store(kParams[i].toNormalised(kParams[i].def));
+        prepare(44100.0);
+        reset();
+    }
+
+    // ----- parameters (any thread) --------------------------------------------------------
+    float getNormalised(int i) const { return values_[i].load(std::memory_order_relaxed); }
+    float get(int i) const { return kParams[i].toPlain(getNormalised(i)); }
+    int   getInt(int i) const { return (int)std::lround(get(i)); }
+    void  setNormalised(int i, float v) { values_[i].store(clamp(v, 0.0f, 1.0f), std::memory_order_relaxed); }
+    void  set(int i, float plain) { setNormalised(i, kParams[i].toNormalised(plain)); }
+
+    void setProgram(int index)
+    {
+        if (index < 0 || index >= (int)programs().size()) return;
+        program_.store(index, std::memory_order_relaxed);
+        const Program& p = programs()[(size_t)index];
+        for (int i = 0; i < kNumParams; ++i) set(i, p.values[i]);
+        resetPending_.store(true, std::memory_order_release);     // silence the voice on the audio thread
+    }
+    int program() const { return program_.load(std::memory_order_relaxed); }
+
+    void setTransport(bool playing, double bpm, double ppq, bool ppqValid)
+    {
+        bpm_.store(bpm, std::memory_order_relaxed);
+        transportPpq_.store(ppq, std::memory_order_relaxed);
+        transportLocked_.store(playing && ppqValid, std::memory_order_relaxed);
+    }
+
+    // ----- MIDI ---------------------------------------------------------------------------
+    void postMidi(uint8_t status, uint8_t d1, uint8_t d2, int offset)   // any thread
+    {
+        os_unfair_lock_lock(&postLock_);
+        const uint32_t h = postHead_.load(std::memory_order_relaxed);
+        const uint32_t next = (h + 1) % kPostSize;
+        if (next != postTail_.load(std::memory_order_acquire))
+        {
+            posted_[h] = MidiEvent{ offset < 0 ? 0 : offset, status, d1, d2 };
+            postHead_.store(next, std::memory_order_release);
+        }
+        os_unfair_lock_unlock(&postLock_);
+    }
+
+    void midi(uint8_t status, uint8_t d1, uint8_t d2, int offset)   // audio thread
+    {
+        if (numEvents_ >= kMaxEvents) return;
+        int i = numEvents_++;                                       // keep the list sorted by offset
+        while (i > 0 && events_[i - 1].sampleOffset > offset) { events_[i] = events_[i - 1]; --i; }
+        events_[i] = MidiEvent{ offset < 0 ? 0 : offset, status, d1, d2 };
+    }
+
+    // ----- lifecycle ----------------------------------------------------------------------
+    void prepare(double sampleRate)
+    {
+        sr_ = (float)sampleRate;
+        saw_.setSampleRate(sampleRate);   saw_.setWave(Wave::Saw);
+        pulse_.setSampleRate(sampleRate); pulse_.setWave(Wave::Square);
+        voice_.setSampleRate(sampleRate);
+        formant1_.setSampleRate(sampleRate);
+        formant2_.setSampleRate(sampleRate);
+        body_.setSampleRate(sampleRate);
+        env_.setSampleRate(sampleRate);
+        dc_.prepare(sampleRate, 20.0f);
+        volume_.setTime(20.0f, sampleRate);
+        velocity_.setTime(15.0f, sampleRate);
+        wheel_.setTime(25.0f, sampleRate);
+        bend_.setTime(10.0f, sampleRate);
+        pressure_.setTime(40.0f, sampleRate);
+        toot_.setTime(12.0f, sampleRate);
+        rhythmGain_.setTime(4.0f, sampleRate);
+        note_.setTime(60.0f, sampleRate);
+        glideMs_ = -1.0f;
+    }
+
+    void reset()
+    {
+        saw_.resetPhase(); pulse_.resetPhase(); voice_.resetPhase();
+        formant1_.reset(); formant2_.reset(); body_.reset();
+        toneLp_.reset(); env_.reset(); dc_.reset(); breathNoise_.reset();
+        numHeld_ = 0; sustain_ = false; sustained_ = false;
+        volume_.snap(dbToGain(get(kVolume)));
+        velocity_.snap(0.7f);
+        wheel_.snap(0.0f); bend_.snap(0.0f); pressure_.snap(0.0f); toot_.snap(0.0f);
+        rhythmGain_.snap(1.0f);
+        note_.snap(38.0f);
+        drift_ = driftTarget_ = 0.0f; driftCountdown_ = 0;
+        wobblePhase_ = 0.0f; rhythmPulse_ = 1.0f;
+        ppq_ = 0.0;
+        controlCountdown_ = 0;
+    }
+
+    void process(float* left, float* right, int frames)
+    {
+        if (resetPending_.exchange(false, std::memory_order_acq_rel)) reset();
+
+        // MIDI posted from other threads joins this block at its sample offset.
+        uint32_t t = postTail_.load(std::memory_order_relaxed);
+        const uint32_t h = postHead_.load(std::memory_order_acquire);
+        while (t != h) { midi(posted_[t].status, posted_[t].data1, posted_[t].data2, posted_[t].sampleOffset); t = (t + 1) % kPostSize; }
+        postTail_.store(t, std::memory_order_release);
+
+        readBlockSettings();
+
+        // Sample-accurate MIDI: render up to each event, then apply it.
+        int pos = 0;
+        for (int e = 0; e < numEvents_; ++e)
+        {
+            const int offset = clamp(events_[e].sampleOffset, 0, frames);
+            if (offset > pos) { render(left, right, pos, offset); pos = offset; }
+            handleMidi(events_[e]);
+        }
+        render(left, right, pos, frames);
+        numEvents_ = 0;
+    }
+
+private:
+    static constexpr int kControlInterval = 16;   // samples between control-rate updates
+    static constexpr int kMaxHeld = 8;            // notes remembered for last-note priority
+    static constexpr int kMaxEvents = 256;
+    static constexpr uint32_t kPostSize = 512;
+
+    // Parameters read once per block.
+    struct Settings
+    {
+        float vowel, formant, formantK, formantGain, buzz, tone, body, breath, growl, growlRatio;
+        float drivePre, drivePost, tootPitch, rhyBeats, rhyDepth, rhyVowel, rhyRate;
+        float wobbleInc, wobbleDepth, wheelVowel, bendRange, drift;
+        int   tootVel;
+        double ppqPerSample;
+    };
+
+    void readBlockSettings()
+    {
+        Settings& s = s_;
+        s.vowel   = get(kVowel) * 0.01f;
+        s.formant = get(kFormant) * 0.01f;
+        const float reso = 0.55f + 0.4f * get(kReso) * 0.01f;        // 0.55..0.95 into the SVF
+        formantReso_ = reso;
+        s.formantK = 2.0f - 1.98f * reso;                            // the SVF's 1/Q: makes the peak gain 1
+        s.formantGain = s.formant * 3.0f;
+        s.buzz    = get(kBuzz) * 0.01f;
+        s.tone    = get(kTone);
+        s.body    = get(kBody) * 0.01f * 0.9f;
+        s.breath  = get(kBreath) * 0.01f * 1.6f;
+        s.growl   = get(kGrowl) * 0.01f;
+        s.growlRatio = semitonesToRatio(get(kGrowlPitch) + 0.08f);   // slightly sharp, so it beats
+        const float drive = get(kDrive) * 0.01f;
+        s.drivePre  = 1.0f + 5.0f * drive;
+        s.drivePost = 1.0f / std::pow(s.drivePre, 0.6f);             // keep the loudness roughly level
+        s.tootVel   = getInt(kTootVel);
+        s.tootPitch = get(kTootPitch);
+        s.rhyBeats  = divisionBeats(getInt(kRhythmDiv));
+        s.rhyDepth  = get(kRhyDepth) * 0.01f;
+        s.rhyVowel  = get(kRhyVowel) * 0.01f * 0.6f;
+        s.rhyRate   = 1.5f + 9.0f * get(kRhyDecay) * 0.01f;
+        s.wobbleInc = get(kWobbleRate) * (float)kControlInterval / sr_;
+        s.wobbleDepth = get(kWobbleDepth) * 0.01f * 0.35f;
+        s.wheelVowel  = get(kWheelVowel) * 0.01f;
+        s.bendRange = get(kBendRange);
+        s.drift     = get(kDrift) * 0.01f * 0.3f;                    // up to +-30 cents
+
+        volume_.setTarget(dbToGain(get(kVolume)));
+        env_.set(get(kAttack), 1.0f, 1.0f, get(kRelease));
+        const float glide = get(kGlide);
+        if (glide != glideMs_) { glideMs_ = glide; if (!tootActive_) note_.setTime(glide, sr_); }
+
+        // Rhythm clock: follow the song while it plays, free-run at the tempo otherwise.
+        s.ppqPerSample = (double)safeBpm(bpm_.load(std::memory_order_relaxed)) / 60.0 / (double)sr_;
+        if (transportLocked_.load(std::memory_order_relaxed)) ppq_ = transportPpq_.load(std::memory_order_relaxed);
+    }
+
+    void handleMidi(const MidiEvent& ev)
+    {
+        if (ev.isNoteOn())
+        {
+            removeHeld(ev.data1);
+            if (numHeld_ == kMaxHeld) { for (int i = 1; i < kMaxHeld; ++i) held_[i - 1] = held_[i]; --numHeld_; }
+            held_[numHeld_++] = ev.data1;
+            startNote(ev.data1, ev.data2, true);
+        }
+        else if (ev.isNoteOff())
+        {
+            const bool wasSounding = numHeld_ > 0 && held_[numHeld_ - 1] == ev.data1;
+            removeHeld(ev.data1);
+            if (numHeld_ == 0)
+            {
+                if (sustain_) sustained_ = true; else env_.noteOff();
+            }
+            else if (wasSounding) startNote(held_[numHeld_ - 1], -1, false);   // fall back to the held note
+        }
+        else if (ev.isAllNotesOff())
+        {
+            numHeld_ = 0; sustained_ = false;
+            env_.noteOff();
+        }
+        else if (ev.isController())
+        {
+            if (ev.data1 == 1) wheel_.setTarget(ev.data2 / 127.0f);
+            else if (ev.data1 == 64)
+            {
+                sustain_ = ev.data2 >= 64;
+                if (!sustain_ && sustained_) { sustained_ = false; if (numHeld_ == 0) env_.noteOff(); }
+            }
+        }
+        else if (ev.isPitchBend())  bend_.setTarget((float)ev.pitchBend() / 8192.0f);
+        else if (ev.isAftertouch()) pressure_.setTarget(ev.data1 / 127.0f);
+    }
+
+    // velocity < 0 means "returning to a note that is still held": keep the level, never toot.
+    void startNote(int note, int velocity, bool fresh)
+    {
+        const bool toot = fresh && s_.tootVel <= 127 && velocity >= s_.tootVel;
+        const float target = (float)note + (toot ? s_.tootPitch : 0.0f);
+        const bool silent = !env_.isActive();
+
+        tootActive_ = toot;
+        toot_.setTarget(toot ? 1.0f : 0.0f);
+        note_.setTime(toot ? 12.0f : glideMs_, sr_);   // an overblown note snaps up fast
+        if (silent)
+        {
+            note_.snap(target);                         // no slide into the first note
+            toot_.snap(toot ? 1.0f : 0.0f);
+            saw_.resetPhase(); pulse_.resetPhase(); voice_.resetPhase();
+        }
+        else note_.setTarget(target);
+
+        if (velocity >= 0) velocity_.setTarget(0.35f + 0.65f * (float)velocity / 127.0f);
+        if (silent) velocity_.snap(velocity_.target());
+        sustained_ = false;
+        env_.noteOn();
+        controlCountdown_ = 0;                          // pick up the new pitch immediately
+    }
+
+    void removeHeld(int note)
+    {
+        int w = 0;
+        for (int i = 0; i < numHeld_; ++i) if (held_[i] != note) held_[w++] = held_[i];
+        numHeld_ = w;
+    }
+
+    // Vowel table: first and second formant in Hz for u, o, a, e, i.
+    static void vowelFormants(float position, float& f1, float& f2)
+    {
+        static const float kF1[5] = { 300.0f, 450.0f, 700.0f, 500.0f, 300.0f };
+        static const float kF2[5] = { 650.0f, 850.0f, 1150.0f, 1750.0f, 2250.0f };
+        const float p = clamp(position, 0.0f, 1.0f) * 4.0f;
+        int i = (int)p; if (i > 3) i = 3;
+        const float f = p - (float)i;
+        f1 = kF1[i] + (kF1[i + 1] - kF1[i]) * f;
+        f2 = kF2[i] + (kF2[i + 1] - kF2[i]) * f;
+    }
+
+    // Everything that needs pow / tan / exp, every kControlInterval samples.
+    void updateControl()
+    {
+        const Settings& s = s_;
+        const float toot = toot_.value();
+
+        // Slow random pitch drift: a new random target a few times a second, eased in.
+        if (--driftCountdown_ <= 0)
+        {
+            driftCountdown_ = 600 + (int)(rng_.nextFloat() * 900.0f);    // control ticks: ~0.2-0.55 s
+            driftTarget_ = rng_.nextBipolar();
+        }
+        drift_ += 0.004f * (driftTarget_ - drift_);
+
+        const float pitch = note_.value() + bend_.value() * s.bendRange + drift_ * s.drift;
+        const float hz = clamp(midiToHz(pitch), 16.0f, 4000.0f);
+        saw_.setFrequency(hz);
+        pulse_.setFrequency(hz);
+        voice_.setFrequency(clamp(hz * s.growlRatio, 16.0f, 8000.0f));
+
+        // Lip shape: more buzz (and an overblown note) means a narrower pulse.
+        buzzNow_ = clamp(s.buzz + 0.3f * toot, 0.0f, 1.0f);
+        const float pw = 0.5f - 0.38f * buzzNow_;
+        pulse_.setPulseWidth(pw);
+        pulseDc_ = 2.0f * pw - 1.0f;
+
+        // Rhythm pulse: 1 at the start of each division, decaying towards 0.
+        const float phase = ppqPhase(ppq_, s.rhyBeats);
+        rhythmPulse_ = std::exp(-phase * s.rhyRate);
+        rhythmGain_.setTarget(1.0f - s.rhyDepth * (1.0f - rhythmPulse_));
+
+        // Vowel position from the knob, the wheel, the wobble LFO, the rhythm and the toot.
+        wobblePhase_ = wrapPhase(wobblePhase_ + s.wobbleInc);
+        const float vowel = s.vowel + wheel_.value() * s.wheelVowel + fastSin01(wobblePhase_) * s.wobbleDepth
+                          + rhythmPulse_ * s.rhyVowel + toot * 0.35f;
+        float f1, f2;
+        vowelFormants(vowel, f1, f2);
+        formant1_.set(f1, formantReso_);
+        formant2_.set(f2, formantReso_);
+        body_.set(hz, 0.8f);
+        toneLp_.setCutoff(clamp(s.tone * (1.0f + 2.0f * toot), 100.0f, 0.45f * sr_), sr_);
+
+        growlNow_ = clamp(s.growl + pressure_.value() * 0.6f, 0.0f, 1.0f);
+    }
+
+    void render(float* outL, float* outR, int from, int to)
+    {
+        const Settings& s = s_;
+        const float bodyK = 2.0f - 1.98f * 0.8f;
+
+        for (int i = from; i < to; ++i)
+        {
+            // Smoothers and clocks run even while silent so nothing jumps on the next note.
+            note_.process(); bend_.process(); wheel_.process(); pressure_.process(); toot_.process();
+            const float volume = volume_.process();
+            const float velocity = velocity_.process();
+            const float rhythm = rhythmGain_.process();
+            ppq_ += s.ppqPerSample;
+            if (--controlCountdown_ <= 0) { controlCountdown_ = kControlInterval; updateControl(); }
+
+            float y = 0.0f;
+            if (env_.isActive())
+            {
+                const float env = env_.process();
+
+                // Lips: saw <-> narrow pulse, roughened by the sung voice.
+                const float saw = saw_.process();
+                const float pulse = pulse_.process() - pulseDc_;
+                float buzz = saw + (pulse - saw) * buzzNow_;
+                const float sung = voice_.process();
+                buzz *= 1.0f - 0.5f * growlNow_ + 1.3f * growlNow_ * sung;
+
+                // Breath joins the buzz on its way through the mouth.
+                const float excite = buzz + breathNoise_.process() * s.breath;
+
+                const float direct = toneLp_.process(excite);
+                const float mouth = (formant1_.process(excite, SVF::Mode::Bandpass)
+                                   + 0.7f * formant2_.process(excite, SVF::Mode::Bandpass)) * s.formantK;
+                const float body = body_.process(buzz, SVF::Mode::Bandpass) * bodyK;
+
+                y = direct * (1.0f - 0.5f * s.formant) + mouth * s.formantGain + body * s.body;
+                y *= env * velocity * rhythm * 0.75f;
+                y = fastTanh(y * s.drivePre) * s.drivePost;
+                y = dc_.process(y) * volume;
+            }
+            outL[i] = y;
+            if (outR) outR[i] = y;
+        }
+    }
+
+    // --- parameters and cross-thread state -------------------------------------------------
+    std::atomic<float>  values_[kNumParams];
+    std::atomic<int>    program_{0};
+    std::atomic<bool>   resetPending_{false};
+    std::atomic<double> bpm_{120.0}, transportPpq_{0.0};
+    std::atomic<bool>   transportLocked_{false};
+
+    MidiEvent events_[kMaxEvents];
+    int       numEvents_ = 0;
+    MidiEvent posted_[kPostSize];
+    std::atomic<uint32_t> postHead_{0}, postTail_{0};
+    os_unfair_lock postLock_ = OS_UNFAIR_LOCK_INIT;
+
+    // --- DSP -------------------------------------------------------------------------------
+    PolyBlepOsc   saw_, pulse_;
+    WavetableSine voice_;
+    PinkNoise     breathNoise_;
+    Xorshift32    rng_{0x51D6E21Du};
+    OnePoleLP     toneLp_;
+    SVF           formant1_, formant2_, body_;
+    ADSR          env_;
+    DCBlocker     dc_;
+    Smoother      volume_, velocity_, wheel_, bend_, pressure_, toot_, rhythmGain_, note_;
+
+    // --- state -----------------------------------------------------------------------------
+    Settings s_{};
+    float  sr_ = 44100.0f;
+    float  glideMs_ = -1.0f;
+    float  formantReso_ = 0.8f;
+    float  buzzNow_ = 0.5f, pulseDc_ = 0.0f, growlNow_ = 0.0f;
+    float  drift_ = 0.0f, driftTarget_ = 0.0f;
+    float  wobblePhase_ = 0.0f, rhythmPulse_ = 1.0f;
+    double ppq_ = 0.0;
+    int    driftCountdown_ = 0, controlCountdown_ = 0;
+    int    held_[kMaxHeld] = {};
+    int    numHeld_ = 0;
+    bool   sustain_ = false, sustained_ = false, tootActive_ = false;
+};
+
+// ---------------------------------------------------------------------------------------------
+// C interface
+// ---------------------------------------------------------------------------------------------
+static bool validParam(int i) { return i >= 0 && i < kNumParams; }
+
+int didge_num_params(void) { return kNumParams; }
+
+void didge_param_info(int index, DidgeParamInfo* out)
+{
+    if (!out || !validParam(index)) return;
+    const Param& p = kParams[index];
+    out->identifier = p.id; out->name = p.name; out->unit = p.unit; out->kind = p.kind;
+    out->minValue = p.min; out->maxValue = p.max; out->defaultValue = p.def;
+    out->logarithmic = p.logarithmic ? 1 : 0;
+    out->numChoices = p.kind == DIDGE_KIND_CHOICE ? (int)p.max + 1 : 0;
+}
+
+const char* didge_param_choice(int index, int choice)
+{
+    if (index != kRhythmDiv) return "";
+    return divisionName(choice);
+}
+
+float didge_param_to_plain(int index, float normalised) { return validParam(index) ? kParams[index].toPlain(normalised) : 0.0f; }
+float didge_param_to_normalised(int index, float plain) { return validParam(index) ? kParams[index].toNormalised(plain) : 0.0f; }
+
+const char* didge_param_display(int index, float plain, char* buffer, int bufferSize)
+{
+    if (!buffer || bufferSize <= 0) return "";
+    buffer[0] = 0;
+    if (!validParam(index)) return buffer;
+    const Param& p = kParams[index];
+    if (index == kTootVel && plain >= 127.5f) std::snprintf(buffer, (size_t)bufferSize, "Off");   // top of the range = no overblowing
+    else if (p.kind == DIDGE_KIND_CHOICE) std::snprintf(buffer, (size_t)bufferSize, "%s", didge_param_choice(index, (int)std::lround(plain)));
+    else if (p.kind == DIDGE_KIND_INT) std::snprintf(buffer, (size_t)bufferSize, "%d", (int)std::lround(plain));
+    else
+    {
+        std::snprintf(buffer, (size_t)bufferSize, "%.*f", p.decimals, (double)plain);
+        if (buffer[0] == '-')     // turn "-0.0" into "0.0"
+        {
+            bool allZero = true;
+            for (const char* q = buffer + 1; *q; ++q) if (*q != '0' && *q != '.') { allZero = false; break; }
+            if (allZero) std::memmove(buffer, buffer + 1, std::strlen(buffer));
+        }
+    }
+    return buffer;
+}
+
+int didge_num_programs(void) { return (int)programs().size(); }
+const char* didge_program_name(int program) { return program >= 0 && program < didge_num_programs() ? programs()[(size_t)program].name : ""; }
+float didge_program_value(int program, int param)
+{
+    return program >= 0 && program < didge_num_programs() && validParam(param) ? programs()[(size_t)program].values[param] : 0.0f;
+}
+
+DidgeEngine* didge_create(void) { return new DidgeEngine(); }
+void didge_destroy(DidgeEngine* engine) { delete engine; }
+void didge_prepare(DidgeEngine* engine, double sampleRate) { engine->prepare(sampleRate); }
+void didge_reset(DidgeEngine* engine) { engine->reset(); }
+
+float didge_get_plain(const DidgeEngine* engine, int index) { return validParam(index) ? engine->get(index) : 0.0f; }
+float didge_get_normalised(const DidgeEngine* engine, int index) { return validParam(index) ? engine->getNormalised(index) : 0.0f; }
+void didge_set_plain(DidgeEngine* engine, int index, float plain) { if (validParam(index)) engine->set(index, plain); }
+void didge_set_normalised(DidgeEngine* engine, int index, float normalised) { if (validParam(index)) engine->setNormalised(index, normalised); }
+
+void didge_set_program(DidgeEngine* engine, int program) { engine->setProgram(program); }
+int didge_get_program(const DidgeEngine* engine) { return engine->program(); }
+
+void didge_set_transport(DidgeEngine* engine, int playing, double bpm, double ppqPosition, int ppqValid)
+{
+    engine->setTransport(playing != 0, bpm, ppqPosition, ppqValid != 0);
+}
+
+void didge_post_midi(DidgeEngine* engine, int status, int data1, int data2, int sampleOffset)
+{
+    engine->postMidi((uint8_t)status, (uint8_t)(data1 & 0x7F), (uint8_t)(data2 & 0x7F), sampleOffset);
+}
+
+void didge_midi(DidgeEngine* engine, int status, int data1, int data2, int sampleOffset)
+{
+    engine->midi((uint8_t)status, (uint8_t)(data1 & 0x7F), (uint8_t)(data2 & 0x7F), sampleOffset);
+}
+
+void didge_process(DidgeEngine* engine, float* left, float* right, int frames)
+{
+    if (left && frames > 0) engine->process(left, right, frames);
+}
