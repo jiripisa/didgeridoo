@@ -8,6 +8,8 @@
   saved with 0.5.0 sound two octaves lower until Octave is set to +2. This is
   a deliberate difference from the MPC plugin "Didgeridoo".
 - The keyboard strip in the app's window now shows C2–C6.
+- The app's icon covers its whole tile; macOS 26 and later no longer put it
+  on a light plate.
 
 ## 0.5.0 — 2026-11-13
 
