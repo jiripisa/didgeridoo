@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 — 2026-11-14
 
 - The Audio Unit has a window of its own in the host: the app's panel, with
   the Program menu and the knobs of Mouth, Lips and Rhythm. The knobs follow
