@@ -73,8 +73,10 @@ struct SoundRegressionTests {
         }
     }
 
-    /// Taken on 2026-11-13 from the engine of phase 02. At 44.1 kHz that engine
-    /// was verified identical to the MPC plugin; 48 kHz was not compared with it.
+    /// The 44.1 kHz lines were taken on 2026-11-13 from the engine of phase 02,
+    /// which was verified identical to the MPC plugin at that rate. The 48 kHz
+    /// lines are from phase 03, which gave the pitch drift the same speed at
+    /// every sample rate; 48 kHz was never compared with the plugin.
     private static let references: [Reference] = [
         Reference(program: 0, sampleRate: 44100, fingerprint: 0x8B745F4646867801, levels: [0.120198, 0.124292, 0.116127, 0.211169, 0.138925, 0.0]),
         Reference(program: 1, sampleRate: 44100, fingerprint: 0xFEDDD1BB3179D75B, levels: [0.116259, 0.119507, 0.102175, 0.184046, 0.125087, 0.0]),
@@ -82,12 +84,12 @@ struct SoundRegressionTests {
         Reference(program: 3, sampleRate: 44100, fingerprint: 0xA700D3DE067B8EC9, levels: [0.126883, 0.133553, 0.102627, 0.166546, 0.105774, 0.0]),
         Reference(program: 4, sampleRate: 44100, fingerprint: 0xBC2ADEF803228146, levels: [0.058466, 0.061773, 0.058769, 0.13848, 0.100131, 0.0]),
         Reference(program: 5, sampleRate: 44100, fingerprint: 0x8E767AACC78225AA, levels: [0.054149, 0.056498, 0.057981, 0.113571, 0.077528, 0.0]),
-        Reference(program: 0, sampleRate: 48000, fingerprint: 0xAB626D91E645480A, levels: [0.120385, 0.124623, 0.115781, 0.211224, 0.138874, 0.0]),
-        Reference(program: 1, sampleRate: 48000, fingerprint: 0x99DAD2F3021697A7, levels: [0.115916, 0.119405, 0.101995, 0.184, 0.124977, 0.0]),
-        Reference(program: 2, sampleRate: 48000, fingerprint: 0xEE476DF94C8719F, levels: [0.14855, 0.151523, 0.132448, 0.230282, 0.154117, 0.0]),
-        Reference(program: 3, sampleRate: 48000, fingerprint: 0x3C6256FE5A8B5926, levels: [0.127308, 0.134773, 0.102733, 0.166254, 0.106253, 0.0]),
-        Reference(program: 4, sampleRate: 48000, fingerprint: 0x9EE6207C64458CB6, levels: [0.058811, 0.062935, 0.058706, 0.138498, 0.100312, 0.0]),
-        Reference(program: 5, sampleRate: 48000, fingerprint: 0xD864D6E0241E8A77, levels: [0.05437, 0.057163, 0.057954, 0.113934, 0.077589, 0.0]),
+        Reference(program: 0, sampleRate: 48000, fingerprint: 0x6F16A93F8755FF2, levels: [0.120468, 0.124535, 0.11583, 0.211722, 0.138523, 0.0]),
+        Reference(program: 1, sampleRate: 48000, fingerprint: 0x1E7413AE9E3F93C9, levels: [0.115905, 0.11943, 0.101988, 0.184145, 0.125073, 0.0]),
+        Reference(program: 2, sampleRate: 48000, fingerprint: 0x9736BF000CD1E029, levels: [0.148625, 0.151501, 0.132646, 0.230297, 0.154133, 0.0]),
+        Reference(program: 3, sampleRate: 48000, fingerprint: 0xE8ADB3E6B6071E83, levels: [0.127398, 0.1348, 0.102905, 0.165961, 0.106753, 0.0]),
+        Reference(program: 4, sampleRate: 48000, fingerprint: 0x50A0B0765E4BFBB8, levels: [0.058908, 0.062696, 0.05883, 0.139418, 0.099974, 0.0]),
+        Reference(program: 5, sampleRate: 48000, fingerprint: 0xDA8181386EB95D68, levels: [0.054461, 0.057059, 0.058069, 0.113547, 0.077785, 0.0]),
     ]
 
     private static func render(program: Int, sampleRate: Double) -> [Float] {

@@ -35,7 +35,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <os/lock.h>
 #include <string>
 #include <vector>
 
@@ -173,6 +172,30 @@ const Param kParams[kNumParams] = {
 };
 
 // ---------------------------------------------------------------------------------------------
+// Sections: the groups the parameters are shown in (the app's panels, the Audio Unit's parameter
+// groups) and the order inside each. Every parameter belongs to exactly one section.
+// ---------------------------------------------------------------------------------------------
+struct Section { const char* name; std::vector<int> params; };
+
+const std::vector<Section>& sections()
+{
+    static const std::vector<Section> table = {
+        { "Mouth",  { kVowel, kFormant, kReso, kTone, kWobbleRate, kWobbleDepth, kWheelVowel, kVolume } },
+        { "Lips",   { kBuzz, kBody, kDrive, kBreath, kGrowl, kGrowlPitch, kDrift, kGlide,
+                      kAttack, kRelease, kTootVel, kTootPitch } },
+        { "Rhythm", { kRhythmDiv, kRhyDepth, kRhyVowel, kRhyDecay, kBendRange } },
+    };
+    return table;
+}
+
+int sectionOf(int param)
+{
+    for (size_t s = 0; s < sections().size(); ++s)
+        for (int p : sections()[s].params) if (p == param) return (int)s;
+    return -1;
+}
+
+// ---------------------------------------------------------------------------------------------
 // Built-in programs: the defaults with a few values overridden.
 // ---------------------------------------------------------------------------------------------
 struct Program { const char* name; float values[kNumParams]; };
@@ -230,6 +253,7 @@ struct DidgeEngine
     DidgeEngine()
     {
         for (int i = 0; i < kNumParams; ++i) values_[i].store(kParams[i].toNormalised(kParams[i].def));
+        for (uint32_t i = 0; i < kPostSize; ++i) posted_[i].turn.store(i, std::memory_order_relaxed);
         prepare(44100.0);
         reset();
     }
@@ -251,6 +275,8 @@ struct DidgeEngine
     }
     int program() const { return program_.load(std::memory_order_relaxed); }
 
+    void requestReset() { resetPending_.store(true, std::memory_order_release); }   // any thread
+
     void setTransport(bool playing, double bpm, double ppq, bool ppqValid)
     {
         bpm_.store(bpm, std::memory_order_relaxed);
@@ -259,17 +285,29 @@ struct DidgeEngine
     }
 
     // ----- MIDI ---------------------------------------------------------------------------
+    // Posted MIDI waits in a bounded queue that any number of threads fill and the audio thread
+    // empties, without a lock (Dmitry Vyukov's bounded queue). Queue positions count up for
+    // ever; a slot's `turn` says which position may use it next: equal to a writer's position
+    // when the slot is free for it, one more once the event is in.
     void postMidi(uint8_t status, uint8_t d1, uint8_t d2, int offset)   // any thread
     {
-        os_unfair_lock_lock(&postLock_);
-        const uint32_t h = postHead_.load(std::memory_order_relaxed);
-        const uint32_t next = (h + 1) % kPostSize;
-        if (next != postTail_.load(std::memory_order_acquire))
+        uint32_t position = postWrite_.load(std::memory_order_relaxed);
+        for (;;)
         {
-            posted_[h] = MidiEvent{ offset < 0 ? 0 : offset, status, d1, d2 };
-            postHead_.store(next, std::memory_order_release);
+            PostSlot& slot = posted_[position % kPostSize];
+            const int32_t ahead = (int32_t)(slot.turn.load(std::memory_order_acquire) - position);
+            if (ahead == 0)                 // free for this position: claim it, then fill it
+            {
+                if (postWrite_.compare_exchange_weak(position, position + 1, std::memory_order_relaxed))
+                {
+                    slot.event = MidiEvent{ offset < 0 ? 0 : offset, status, d1, d2 };
+                    slot.turn.store(position + 1, std::memory_order_release);
+                    return;
+                }
+            }
+            else if (ahead < 0) return;     // still unread from a lap ago: the queue is full, the event is dropped
+            else position = postWrite_.load(std::memory_order_relaxed);   // another thread took this position
         }
-        os_unfair_lock_unlock(&postLock_);
     }
 
     void midi(uint8_t status, uint8_t d1, uint8_t d2, int offset)   // audio thread
@@ -301,6 +339,12 @@ struct DidgeEngine
         rhythmGain_.setTime(4.0f, sampleRate);
         note_.setTime(60.0f, sampleRate);
         glideMs_ = -1.0f;
+
+        // Drift is timed in control ticks. The numbers are the MPC plugin's at 44.1 kHz, where
+        // they stay exactly as they were; at other rates they are scaled so that the drift
+        // wanders equally fast everywhere.
+        driftTickScale_ = sr_ / 44100.0f;
+        driftEase_ = sr_ == 44100.0f ? 0.004f : 1.0f - std::pow(1.0f - 0.004f, 44100.0f / sr_);
     }
 
     void reset()
@@ -324,11 +368,16 @@ struct DidgeEngine
     {
         if (resetPending_.exchange(false, std::memory_order_acq_rel)) reset();
 
-        // MIDI posted from other threads joins this block at its sample offset.
-        uint32_t t = postTail_.load(std::memory_order_relaxed);
-        const uint32_t h = postHead_.load(std::memory_order_acquire);
-        while (t != h) { midi(posted_[t].status, posted_[t].data1, posted_[t].data2, posted_[t].sampleOffset); t = (t + 1) % kPostSize; }
-        postTail_.store(t, std::memory_order_release);
+        // MIDI posted from other threads joins this block at its sample offset. Reading stops
+        // at the first slot whose event is not in yet, so the order is kept.
+        for (;;)
+        {
+            PostSlot& slot = posted_[postRead_ % kPostSize];
+            if (slot.turn.load(std::memory_order_acquire) != postRead_ + 1) break;
+            midi(slot.event.status, slot.event.data1, slot.event.data2, slot.event.sampleOffset);
+            slot.turn.store(postRead_ + kPostSize, std::memory_order_release);     // free for the next lap
+            ++postRead_;
+        }
 
         readBlockSettings();
 
@@ -348,7 +397,7 @@ private:
     static constexpr int kControlInterval = 16;   // samples between control-rate updates
     static constexpr int kMaxHeld = 8;            // notes remembered for last-note priority
     static constexpr int kMaxEvents = 256;
-    static constexpr uint32_t kPostSize = 512;
+    static constexpr uint32_t kPostSize = 512;    // a power of two: positions wrap around cleanly
 
     // Parameters read once per block.
     struct Settings
@@ -490,10 +539,11 @@ private:
         // Slow random pitch drift: a new random target a few times a second, eased in.
         if (--driftCountdown_ <= 0)
         {
-            driftCountdown_ = 600 + (int)(rng_.nextFloat() * 900.0f);    // control ticks: ~0.2-0.55 s
+            const int ticks = 600 + (int)(rng_.nextFloat() * 900.0f);    // control ticks at 44.1 kHz: ~0.2-0.55 s
+            driftCountdown_ = (int)((float)ticks * driftTickScale_);
             driftTarget_ = rng_.nextBipolar();
         }
-        drift_ += 0.004f * (driftTarget_ - drift_);
+        drift_ += driftEase_ * (driftTarget_ - drift_);
 
         const float pitch = note_.value() + bend_.value() * s.bendRange + drift_ * s.drift;
         const float hz = clamp(midiToHz(pitch), 16.0f, 4000.0f);
@@ -580,9 +630,10 @@ private:
 
     MidiEvent events_[kMaxEvents];
     int       numEvents_ = 0;
-    MidiEvent posted_[kPostSize];
-    std::atomic<uint32_t> postHead_{0}, postTail_{0};
-    os_unfair_lock postLock_ = OS_UNFAIR_LOCK_INIT;
+    struct PostSlot { std::atomic<uint32_t> turn; MidiEvent event; };
+    PostSlot  posted_[kPostSize];
+    std::atomic<uint32_t> postWrite_{0};    // next position to write: shared by the posting threads
+    uint32_t  postRead_ = 0;                // next position to read: the audio thread's own
 
     // --- DSP -------------------------------------------------------------------------------
     PolyBlepOsc   saw_, pulse_;
@@ -602,6 +653,7 @@ private:
     float  formantReso_ = 0.8f;
     float  buzzNow_ = 0.5f, pulseDc_ = 0.0f, growlNow_ = 0.0f;
     float  drift_ = 0.0f, driftTarget_ = 0.0f;
+    float  driftTickScale_ = 1.0f, driftEase_ = 0.004f;
     float  wobblePhase_ = 0.0f, rhythmPulse_ = 1.0f;
     double ppq_ = 0.0;
     int    driftCountdown_ = 0, controlCountdown_ = 0;
@@ -625,6 +677,7 @@ void didge_param_info(int index, DidgeParamInfo* out)
     out->minValue = p.min; out->maxValue = p.max; out->defaultValue = p.def;
     out->logarithmic = p.logarithmic ? 1 : 0;
     out->numChoices = p.kind == DIDGE_KIND_CHOICE ? (int)p.max + 1 : 0;
+    out->section = sectionOf(index);
 }
 
 const char* didge_param_choice(int index, int choice)
@@ -658,6 +711,16 @@ const char* didge_param_display(int index, float plain, char* buffer, int buffer
     return buffer;
 }
 
+static bool validSection(int s) { return s >= 0 && s < (int)sections().size(); }
+
+int didge_num_sections(void) { return (int)sections().size(); }
+const char* didge_section_name(int section) { return validSection(section) ? sections()[(size_t)section].name : ""; }
+int didge_section_size(int section) { return validSection(section) ? (int)sections()[(size_t)section].params.size() : 0; }
+int didge_section_param(int section, int position)
+{
+    return position >= 0 && position < didge_section_size(section) ? sections()[(size_t)section].params[(size_t)position] : -1;
+}
+
 int didge_num_programs(void) { return (int)programs().size(); }
 const char* didge_program_name(int program) { return program >= 0 && program < didge_num_programs() ? programs()[(size_t)program].name : ""; }
 float didge_program_value(int program, int param)
@@ -665,10 +728,19 @@ float didge_program_value(int program, int param)
     return program >= 0 && program < didge_num_programs() && validParam(param) ? programs()[(size_t)program].values[param] : 0.0f;
 }
 
-DidgeEngine* didge_create(void) { return new DidgeEngine(); }
+DidgeEngine* didge_create(void)
+{
+    // The sine table in dsp/oscillator.h is shared by all engines and built on first use with
+    // no guard. Build it here once, under the guard C++ gives the initialiser of a static, so
+    // that engines created on different threads at the same moment cannot build it twice.
+    static const bool sineTableBuilt = (WavetableSine(), true);
+    (void)sineTableBuilt;
+    return new DidgeEngine();
+}
 void didge_destroy(DidgeEngine* engine) { delete engine; }
 void didge_prepare(DidgeEngine* engine, double sampleRate) { engine->prepare(sampleRate); }
 void didge_reset(DidgeEngine* engine) { engine->reset(); }
+void didge_request_reset(DidgeEngine* engine) { engine->requestReset(); }
 
 float didge_get_plain(const DidgeEngine* engine, int index) { return validParam(index) ? engine->get(index) : 0.0f; }
 float didge_get_normalised(const DidgeEngine* engine, int index) { return validParam(index) ? engine->getNormalised(index) : 0.0f; }
