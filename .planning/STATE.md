@@ -1,5 +1,7 @@
 # Didgeridoo — State
 
+- 2026-11-13 — phase 04: version 0.5.0, the first release. See
+  `phases/04-v0.5.0-release/VERIFICATION.md`.
 - 2026-11-13 — phase 03 done: fixes from a review of phase 02 and a test
   that guards the sound (`SoundRegressionTests`). See
   `phases/03-review-fixes/VERIFICATION.md`; its "Not verified" list adds a few
@@ -12,7 +14,5 @@
 - 2026-11-13 — skeleton created (phase 01): `build.sh` / `run.sh`,
   Developer ID + notarization pipeline, Sparkle auto-update, website on
   GitHub Pages.
-- Nothing has been released yet. The first release is 0.1.0 (project skill
-  `release`); the download links on the website return 404 until then.
 - No phase open. Next: try the app and the plug-in by hand, then pick the
   next phase from the ideas in `ROADMAP.md`.
