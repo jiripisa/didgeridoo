@@ -26,10 +26,14 @@ A playable synthesized didgeridoo: drone, vowels, overblown toots and breath, as
   parameters are appended at the end of the table.
 - **The audio thread** (`didge_process`, the engine's `render`) must not
   allocate, lock, log or do I/O. Expensive maths runs at control rate (every
-  16 samples), as the existing code shows.
+  16 samples), as the existing code shows. After changing what threads share
+  in the engine, run `swift test --sanitize=thread`; it must report nothing.
 - The engine started as the MPC plugin "Didgeridoo" and was verified
   bit-identical to it for all six programs. Changes from here on are
-  deliberate departures; say so in the CHANGELOG.
+  deliberate departures; say so in the CHANGELOG. `SoundRegressionTests`
+  holds the sound as references, so a change that alters it fails
+  `swift test`: when it is deliberate, copy the lines the suite prints over
+  the references and add the CHANGELOG line.
 - Build and run: `./run.sh` (debug, logs in the terminal), `./run.sh release`,
   `./build.sh [debug|release|dist|clean]`. Details in `development_workflow.md`.
 - Every user-visible change gets a line under `## Unreleased` in
