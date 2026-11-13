@@ -4,18 +4,18 @@ import Testing
 @Suite("Parameters")
 struct ParameterTests {
 
-    @Test("The table has the MPC plugin's 25 parameters in its order")
+    @Test("The table starts with the MPC plugin's 25 parameters in its order; newer ones follow")
     func tableMatchesThePlugin() {
-        #expect(Parameters.all.count == 25)
+        #expect(Parameters.all.count == 26)
         #expect(Parameters.all.first?.identifier == "volume")
-        #expect(Parameters.all.last?.identifier == "drift")
-        #expect(Parameters.all.map(\.index) == Array(0..<25))
+        #expect(Parameters.all.map(\.identifier).dropFirst(24) == ["drift", "octave"])
+        #expect(Parameters.all.map(\.index) == Array(0..<26))
     }
 
     @Test("Every parameter sits in exactly one section")
     func sectionsCoverEverything() {
         let placed = ParameterSection.all.flatMap(\.parameters).map(\.identifier)
-        #expect(placed.count == 25)
+        #expect(placed.count == 26)
         #expect(Set(placed) == Set(Parameters.all.map(\.identifier)))
     }
 
@@ -43,9 +43,17 @@ struct ParameterTests {
         #expect(names.count == 17)
     }
 
+    @Test("Octaves above the resting one carry a plus sign")
+    func octaveText() throws {
+        let octave = try #require(Parameters.named("octave"))
+        #expect(octave.label(1) == "+1")
+        #expect(octave.label(0) == "0")
+        #expect(octave.label(-2) == "-2")
+    }
+
     @Test("Only signed amounts are bipolar")
     func bipolar() {
-        #expect(Parameters.all.filter(\.isBipolar).map(\.identifier) == ["rhyvowel"])
+        #expect(Parameters.all.filter(\.isBipolar).map(\.identifier) == ["rhyvowel", "octave"])
     }
 
     @Test("The sections and the order of their knobs are the window's")
@@ -57,7 +65,7 @@ struct ParameterTests {
                 == ["buzz", "body", "drive", "breath", "growl", "growlpitch", "drift", "glide",
                     "attack", "release", "tootvel", "tootpitch"])
         #expect(ParameterSection.all[2].parameters.map(\.identifier)
-                == ["rhythmdiv", "rhydepth", "rhyvowel", "rhydecay", "bendrange"])
+                == ["rhythmdiv", "rhydepth", "rhyvowel", "rhydecay", "bendrange", "octave"])
     }
 }
 
@@ -78,6 +86,17 @@ struct ProgramTests {
         #expect(synth.program == 3)
         #expect(synth.value(of: growl) == 70)
         #expect(Programs.value(program: 3, parameter: growl) == 70)
+    }
+
+    @Test("Loading a program leaves the octave where the player put it")
+    func programKeepsTheOctave() throws {
+        let synth = Synth()
+        let octave = try #require(Parameters.named("octave"))
+        let growl = try #require(Parameters.named("growl"))
+        synth.setValue(2, of: octave)
+        synth.loadProgram(3)
+        #expect(synth.value(of: growl) == 70)
+        #expect(synth.value(of: octave) == 2)
     }
 }
 
@@ -108,11 +127,11 @@ struct SynthTests {
     func noteLifecycle() {
         let synth = Synth()
         #expect(peak(of: synth, seconds: 0.2) == 0)
-        synth.noteOn(38)
+        synth.noteOn(62)
         let sounding = peak(of: synth, seconds: 1)
         #expect(sounding > 0.05)
         #expect(sounding < 1)
-        synth.noteOff(38)
+        synth.noteOff(62)
         _ = peak(of: synth, seconds: 2)         // let the release finish
         #expect(peak(of: synth, seconds: 0.2) == 0)
     }
@@ -122,7 +141,7 @@ struct SynthTests {
         for program in Programs.names.indices {
             let synth = Synth()
             synth.loadProgram(program)
-            synth.noteOn(38, velocity: 127)
+            synth.noteOn(62, velocity: 127)
             let level = peak(of: synth, seconds: 1)
             #expect(level > 0.02, "program \(program) is silent")
             #expect(level <= 1, "program \(program) clips")
@@ -145,13 +164,13 @@ struct SynthTests {
     @Test("A velocity beyond 127 is the hardest hit, not a note-off")
     func velocityBeyondTheRange() {
         let synth = Synth()
-        synth.noteOn(38, velocity: 128)
+        synth.noteOn(62, velocity: 128)
         #expect(peak(of: synth, seconds: 0.5) > 0.05)
 
         let hardest = Synth()
-        hardest.noteOn(38, velocity: 127)
+        hardest.noteOn(62, velocity: 127)
         let beyond = Synth()
-        beyond.noteOn(38, velocity: 1000)
+        beyond.noteOn(62, velocity: 1000)
         #expect(samples(of: beyond, seconds: 0.5) == samples(of: hardest, seconds: 0.5))
     }
 
@@ -172,15 +191,15 @@ struct SynthTests {
     func releaseAll() {
         let synth = Synth()
         synth.postMIDI(status: 0xB0, data1: 64, data2: 127)     // the pedal goes down…
-        synth.noteOn(38)
+        synth.noteOn(62)
         #expect(peak(of: synth, seconds: 0.5) > 0.05)
         synth.releaseAll()                                      // …and its keyboard is unplugged
         _ = peak(of: synth, seconds: 2)
         #expect(peak(of: synth, seconds: 0.2) == 0)
 
-        synth.noteOn(40)                                        // a note from somewhere else
+        synth.noteOn(64)                                        // a note from somewhere else
         #expect(peak(of: synth, seconds: 0.5) > 0.05)
-        synth.noteOff(40)
+        synth.noteOff(64)
         _ = peak(of: synth, seconds: 2)
         #expect(peak(of: synth, seconds: 0.2) == 0)             // it ends: the pedal is up
     }

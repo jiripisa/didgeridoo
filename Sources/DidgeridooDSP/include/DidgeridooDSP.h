@@ -71,7 +71,8 @@ float didge_get_normalised(const DidgeEngine* engine, int index);
 void  didge_set_plain(DidgeEngine* engine, int index, float plain);
 void  didge_set_normalised(DidgeEngine* engine, int index, float normalised);
 
-// Loads a built-in program: every parameter is overwritten and the voice is silenced.
+// Loads a built-in program: every parameter but "octave" is overwritten and the voice is
+// silenced. The octave belongs to the player's keyboard, not to the sound.
 void didge_set_program(DidgeEngine* engine, int program);
 int  didge_get_program(const DidgeEngine* engine);
 

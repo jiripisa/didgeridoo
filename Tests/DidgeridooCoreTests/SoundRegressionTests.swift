@@ -35,23 +35,23 @@ struct SoundRegressionTests {
     /// the fall back to the held one, pitch bend, a release, an overblown note
     /// from silence and one played legato, aftertouch and the sustain pedal.
     private static let phrase: [Event] = [
-        Event(0.00, 0x90, 38, 100),     // the drone
+        Event(0.00, 0x90, 62, 100),     // the drone
         Event(0.60, 0xB0, 1, 40),       // mod wheel up…
         Event(0.80, 0xB0, 1, 90),
         Event(1.00, 0xB0, 1, 127),
-        Event(1.20, 0x90, 43, 90),      // legato: the pitch slides up
+        Event(1.20, 0x90, 67, 90),      // legato: the pitch slides up
         Event(1.40, 0xB0, 1, 0),        // …and back down
-        Event(1.60, 0x80, 43, 0),       // falls back to the held note
+        Event(1.60, 0x80, 67, 0),       // falls back to the held note
         Event(1.90, 0xE0, 0, 0x60),     // pitch bend half way up
         Event(2.30, 0xE0, 0, 0x40),     // and centred
-        Event(2.40, 0x80, 38, 0),       // release
-        Event(2.80, 0x90, 36, 127),     // hard hit from silence: overblown
+        Event(2.40, 0x80, 62, 0),       // release
+        Event(2.80, 0x90, 60, 127),     // hard hit from silence: overblown
         Event(3.20, 0xD0, 100, 0),      // aftertouch adds growl
-        Event(3.40, 0x90, 41, 127),     // hard hit while a note sounds
+        Event(3.40, 0x90, 65, 127),     // hard hit while a note sounds
         Event(3.50, 0xD0, 0, 0),
         Event(3.70, 0xB0, 64, 127),     // sustain pedal down
-        Event(3.80, 0x80, 36, 0),
-        Event(3.80, 0x80, 41, 0),       // both keys up: the pedal holds the note
+        Event(3.80, 0x80, 60, 0),
+        Event(3.80, 0x80, 65, 0),       // both keys up: the pedal holds the note
         Event(4.40, 0xB0, 64, 0),       // pedal up: release
     ]
     private static let duration = 5.2
@@ -77,6 +77,10 @@ struct SoundRegressionTests {
     /// which was verified identical to the MPC plugin at that rate. The 48 kHz
     /// lines are from phase 03, which gave the pitch drift the same speed at
     /// every sample rate; 48 kHz was never compared with the plugin.
+    ///
+    /// Phase 05 lowered the instrument by two octaves (the Octave knob, at 0)
+    /// and moved the phrase up by two: the samples, and so these lines, stayed
+    /// the same.
     private static let references: [Reference] = [
         Reference(program: 0, sampleRate: 44100, fingerprint: 0x8B745F4646867801, levels: [0.120198, 0.124292, 0.116127, 0.211169, 0.138925, 0.0]),
         Reference(program: 1, sampleRate: 44100, fingerprint: 0xFEDDD1BB3179D75B, levels: [0.116259, 0.119507, 0.102175, 0.184046, 0.125087, 0.0]),
