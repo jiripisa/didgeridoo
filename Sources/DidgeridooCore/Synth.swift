@@ -50,8 +50,8 @@ public final class Synth: @unchecked Sendable {
 
     public var program: Int { Int(didge_get_program(engine)) }
 
-    /// Loads a built-in program: every parameter is overwritten and a sounding
-    /// note is cut off.
+    /// Loads a built-in program: every parameter but the octave is overwritten
+    /// and a sounding note is cut off.
     public func loadProgram(_ index: Int) {
         didge_set_program(engine, Int32(index))
     }

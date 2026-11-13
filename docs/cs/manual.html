@@ -76,13 +76,13 @@
           <dt><span class="n">1</span>Název</dt>
           <dd>Název nástroje.</dd>
           <dt><span class="n">2</span>Program, Tempo, Settings</dt>
-          <dd><b>Program</b> načte jeden ze šesti vestavěných zvuků. Přepíše všechny knoby a utne znějící notu; vlastní úpravy se do programu neukládají. <b>Tempo</b> (20–300 BPM) určuje rychlost rytmického pulzu. <b>Settings</b> otevře nastavení MIDI vstupu, zvukového výstupu a instalaci pluginu Audio Unit.</dd>
+          <dd><b>Program</b> načte jeden ze šesti vestavěných zvuků. Přepíše všechny knoby kromě <span class="ui">Octave</span> a utne znějící notu; vlastní úpravy se do programu neukládají. <b>Tempo</b> (20–300 BPM) určuje rychlost rytmického pulzu. <b>Settings</b> otevře nastavení MIDI vstupu, zvukového výstupu a instalaci pluginu Audio Unit.</dd>
           <dt><span class="n">3</span>Mouth</dt>
           <dd>Tvar úst: jakou samohlásku dron vyslovuje a jak se pohybuje. Viz <a href="#mouth">Mouth</a>.</dd>
           <dt><span class="n">4</span>Lips</dt>
           <dd>Zdroj zvuku: rty, dech, hlas, ladění a to, jak noty začínají a končí. Viz <a href="#lips">Lips</a>.</dd>
           <dt><span class="n">5</span>Rhythm</dt>
-          <dd>Pulz synchronizovaný s tempem a rozsah pitch bendu. Viz <a href="#rhythm">Rhythm</a>.</dd>
+          <dd>Pulz synchronizovaný s tempem, rozsah pitch bendu a oktáva. Viz <a href="#rhythm">Rhythm</a>.</dd>
           <dt><span class="n">6</span>Klaviatura</dt>
           <dd>Kliknutím na klávesu ji zahrajete. Kliknutí u horního okraje klávesy hraje tiše; kliknutí u spodního okraje je nejsilnější úhoz a notu přefoukne.</dd>
         </dl>
@@ -92,7 +92,7 @@
 
       <section id="playing">
         <h2>Hraní</h2>
-        <p>Didgeridoo hraje vždy jen jednu notu. Držená klávesa hraje dron; druhá klávesa na něj plynule přeladí (<span class="ui">Glide</span>) a po jejím puštění se ladění vrátí na klávesu, kterou stále držíte. Nejpřirozeněji znějí nízké noty: skutečné nástroje se pohybují kolem C1–G1 (MIDI noty 36–43).</p>
+        <p>Didgeridoo hraje vždy jen jednu notu. Držená klávesa hraje dron; druhá klávesa na něj plynule přeladí (<span class="ui">Glide</span>) a po jejím puštění se ladění vrátí na klávesu, kterou stále držíte. S knobem <span class="ui">Octave</span> na nule leží rozsah skutečného nástroje kolem středu klaviatury: C3–G3 (MIDI noty 60–67).</p>
         <dl class="controls">
           <dt>Silný úhoz</dt>
           <dd>Velocity rovná hodnotě <span class="ui">Toot Vel</span> nebo vyšší notu přefoukne: skočí o <span class="ui">Toot Pitch</span> půltónů výš a zní jasně, trubkově.</dd>
@@ -173,6 +173,8 @@
           <dd>Tvar pulzu, od dlouhého náběhu na nule po krátký úder na stovce.</dd>
           <dt>Bend Range (0–12 st)</dt>
           <dd>Rozsah pitch bendu v půltónech.</dd>
+          <dt>Octave (−2 až +2)</dt>
+          <dd>Posouvá celý nástroj po oktávách. Na nule zní klávesa o dvě oktávy níž než její MIDI nota, takže rozsah didgeridoo leží kolem středu klaviatury. +2 hraje přímo MIDI notu, pro pady a klaviatury, které začínají nízko. Znějící nota na novou oktávu plynule přeladí. Programy tento knob nechávají tam, kam jste ho dali.</dd>
         </dl>
       </section>
 
@@ -201,7 +203,7 @@
           <li>Restartujte hostitelský program nebo ho nechte znovu prohledat pluginy. V Abletonu Live musí být Audio Units zapnuté v <span class="ui">Settings › Plug-Ins</span>.</li>
           <li>Nástroj se objeví jako <b>Didgeridoo</b> od výrobce <b>Jiri Pisa</b> mezi nástroji Audio Unit.</li>
         </ol>
-        <p>Plugin má stejný zvuk, stejných 25 parametrů a stejných šest programů (jako tovární presety) jako aplikace. Vlastní okno zatím nemá: hostitelský program zobrazí své standardní zobrazení parametrů, rozdělené do skupin Mouth, Lips a Rhythm. Každý parametr lze automatizovat a zvuk se ukládá s projektem. Rytmický pulz sleduje tempo a pozici ve skladbě.</p>
+        <p>Plugin má stejný zvuk, stejných 26 parametrů a stejných šest programů (jako tovární presety) jako aplikace. Vlastní okno zatím nemá: hostitelský program zobrazí své standardní zobrazení parametrů, rozdělené do skupin Mouth, Lips a Rhythm. Každý parametr lze automatizovat a zvuk se ukládá s projektem. Rytmický pulz sleduje tempo a pozici ve skladbě.</p>
         <p>Po aktualizaci aplikace klikněte na <span class="ui">Install Audio Unit</span> znovu, aby se aktualizoval i plugin.</p>
       </section>
 

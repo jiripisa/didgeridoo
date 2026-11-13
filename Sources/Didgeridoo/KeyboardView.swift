@@ -6,8 +6,9 @@ import SwiftUI
 struct KeyboardView: View {
 
     let model: AppModel
-    /// MIDI note of the leftmost key (a C).
-    let firstNote = 24
+    /// MIDI note of the leftmost key (a C): C2. With Octave at 0 the strip
+    /// covers the instrument's useful range, a didgeridoo's own in its second octave.
+    let firstNote = 48
     let octaves = 4
 
     @State private var sounding: Int?

@@ -157,7 +157,7 @@ public:
         didge_set_program(engine_, number);                  // also silences the voice
         for (int i = 0; i < didge_num_params(); ++i)
         {
-            const float value = didge_program_value(number, i);
+            const float value = didge_get_plain(engine_, i);  // what the engine has now: a program leaves Octave alone
             Globals()->SetParameter(static_cast<AudioUnitParameterID>(i), value);
             applied_[static_cast<size_t>(i)] = value;
         }

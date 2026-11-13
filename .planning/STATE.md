@@ -1,5 +1,8 @@
 # Didgeridoo — State
 
+- 2026-11-13 — phase 05 done: the Octave knob; at 0 the instrument plays two
+  octaves lower than in 0.5.0. Not released yet. See
+  `phases/05-octave/VERIFICATION.md`.
 - 2026-11-13 — phase 04: version 0.5.0, the first release. See
   `phases/04-v0.5.0-release/VERIFICATION.md`.
 - 2026-11-13 — phase 03 done: fixes from a review of phase 02 and a test

@@ -19,7 +19,9 @@
 //                                                                              |
 //   -> amp envelope * velocity * rhythm pulse -> drive (tanh) -> DC blocker -> volume -> L = R
 //
-// Pitch: last-note priority with glide, pitch bend, slow random drift. A hard hit
+// Pitch: last-note priority with glide, pitch bend, slow random drift. "Octave" moves the whole
+// instrument: at 0 a key sounds two octaves below its MIDI note, which puts a didgeridoo's range
+// around middle C. A hard hit
 // (velocity >= "Toot Vel") overblows: the pitch jumps up by "Toot Pitch" semitones and the
 // tone turns bright and trumpet-like.
 //
@@ -81,6 +83,7 @@ enum Params
     kWheelVowel,    // %     how far the mod wheel moves the vowel
     kBendRange,     // st    pitch bend range
     kDrift,         // %     slow random pitch instability
+    kOctave,        // -     octave of the whole instrument; 0 = two octaves below the MIDI note
     kNumParams
 };
 
@@ -169,6 +172,7 @@ const Param kParams[kNumParams] = {
     floatParam ("wheelvowel",  "Wheel Vowel",  0.0f, 100.0f, 100.0f, "%", 0),
     intParam   ("bendrange",   "Bend Range",   0, 12, 2, "st"),
     floatParam ("drift",       "Drift",        0.0f, 100.0f, 30.0f, "%", 0),
+    intParam   ("octave",      "Octave",       -2, 2, 0),
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -183,7 +187,7 @@ const std::vector<Section>& sections()
         { "Mouth",  { kVowel, kFormant, kReso, kTone, kWobbleRate, kWobbleDepth, kWheelVowel, kVolume } },
         { "Lips",   { kBuzz, kBody, kDrive, kBreath, kGrowl, kGrowlPitch, kDrift, kGlide,
                       kAttack, kRelease, kTootVel, kTootPitch } },
-        { "Rhythm", { kRhythmDiv, kRhyDepth, kRhyVowel, kRhyDecay, kBendRange } },
+        { "Rhythm", { kRhythmDiv, kRhyDepth, kRhyVowel, kRhyDecay, kBendRange, kOctave } },
     };
     return table;
 }
@@ -270,7 +274,8 @@ struct DidgeEngine
         if (index < 0 || index >= (int)programs().size()) return;
         program_.store(index, std::memory_order_relaxed);
         const Program& p = programs()[(size_t)index];
-        for (int i = 0; i < kNumParams; ++i) set(i, p.values[i]);
+        for (int i = 0; i < kNumParams; ++i)
+            if (i != kOctave) set(i, p.values[i]);                 // Octave is the player's, not the program's
         resetPending_.store(true, std::memory_order_release);     // silence the voice on the audio thread
     }
     int program() const { return program_.load(std::memory_order_relaxed); }
@@ -397,6 +402,7 @@ private:
     static constexpr int kControlInterval = 16;   // samples between control-rate updates
     static constexpr int kMaxHeld = 8;            // notes remembered for last-note priority
     static constexpr int kMaxEvents = 256;
+    static constexpr int kOctaveAtRest = -2;      // octaves between a MIDI note and its pitch at Octave 0
     static constexpr uint32_t kPostSize = 512;    // a power of two: positions wrap around cleanly
 
     // Parameters read once per block.
@@ -444,6 +450,16 @@ private:
         const float glide = get(kGlide);
         if (glide != glideMs_) { glideMs_ = glide; if (!tootActive_) note_.setTime(glide, sr_); }
 
+        // Octave. The shift is part of the note number, not added to the pitch afterwards, so a
+        // phrase played two octaves higher gives the very samples the engine gave before it had
+        // an octave. A sounding note slides to a new octave.
+        const int shift = 12 * (getInt(kOctave) + kOctaveAtRest);
+        if (shift != noteShift_)
+        {
+            if (env_.isActive()) note_.setTarget(note_.target() + (float)(shift - noteShift_));
+            noteShift_ = shift;
+        }
+
         // Rhythm clock: follow the song while it plays, free-run at the tempo otherwise.
         s.ppqPerSample = (double)safeBpm(bpm_.load(std::memory_order_relaxed)) / 60.0 / (double)sr_;
         if (transportLocked_.load(std::memory_order_relaxed)) ppq_ = transportPpq_.load(std::memory_order_relaxed);
@@ -490,7 +506,7 @@ private:
     void startNote(int note, int velocity, bool fresh)
     {
         const bool toot = fresh && s_.tootVel <= 127 && velocity >= s_.tootVel;
-        const float target = (float)note + (toot ? s_.tootPitch : 0.0f);
+        const float target = (float)(note + noteShift_) + (toot ? s_.tootPitch : 0.0f);
         const bool silent = !env_.isActive();
 
         tootActive_ = toot;
@@ -659,6 +675,7 @@ private:
     int    driftCountdown_ = 0, controlCountdown_ = 0;
     int    held_[kMaxHeld] = {};
     int    numHeld_ = 0;
+    int    noteShift_ = 12 * kOctaveAtRest;      // semitones from a MIDI note to the note that sounds
     bool   sustain_ = false, sustained_ = false, tootActive_ = false;
 };
 
@@ -696,6 +713,7 @@ const char* didge_param_display(int index, float plain, char* buffer, int buffer
     if (!validParam(index)) return buffer;
     const Param& p = kParams[index];
     if (index == kTootVel && plain >= 127.5f) std::snprintf(buffer, (size_t)bufferSize, "Off");   // top of the range = no overblowing
+    else if (index == kOctave && plain >= 0.5f) std::snprintf(buffer, (size_t)bufferSize, "+%d", (int)std::lround(plain));
     else if (p.kind == DIDGE_KIND_CHOICE) std::snprintf(buffer, (size_t)bufferSize, "%s", didge_param_choice(index, (int)std::lround(plain)));
     else if (p.kind == DIDGE_KIND_INT) std::snprintf(buffer, (size_t)bufferSize, "%d", (int)std::lround(plain));
     else
