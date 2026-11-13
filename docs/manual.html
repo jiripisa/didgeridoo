@@ -76,13 +76,13 @@
           <dt><span class="n">1</span>Name</dt>
           <dd>The instrument's name.</dd>
           <dt><span class="n">2</span>Program, Tempo, Settings</dt>
-          <dd><b>Program</b> loads one of the six built-in sounds. It overwrites every knob and cuts off a sounding note; your own changes are not kept in the program. <b>Tempo</b> (20–300 BPM) sets the speed of the rhythm pulse. <b>Settings</b> opens MIDI input, audio output and the Audio Unit installer.</dd>
+          <dd><b>Program</b> loads one of the six built-in sounds. It overwrites every knob except <span class="ui">Octave</span> and cuts off a sounding note; your own changes are not kept in the program. <b>Tempo</b> (20–300 BPM) sets the speed of the rhythm pulse. <b>Settings</b> opens MIDI input, audio output and the Audio Unit installer.</dd>
           <dt><span class="n">3</span>Mouth</dt>
           <dd>The shape of the mouth: which vowel the drone speaks and how it moves. See <a href="#mouth">Mouth</a>.</dd>
           <dt><span class="n">4</span>Lips</dt>
           <dd>The source of the sound: lips, breath, voice, pitch and how notes begin and end. See <a href="#lips">Lips</a>.</dd>
           <dt><span class="n">5</span>Rhythm</dt>
-          <dd>The tempo-synced pulse and the pitch bend range. See <a href="#rhythm">Rhythm</a>.</dd>
+          <dd>The tempo-synced pulse, the pitch bend range and the octave. See <a href="#rhythm">Rhythm</a>.</dd>
           <dt><span class="n">6</span>Keyboard</dt>
           <dd>Click a key to play it. Clicking near the top of a key plays softly; clicking near its bottom edge is the hardest hit and overblows the note.</dd>
         </dl>
@@ -92,7 +92,7 @@
 
       <section id="playing">
         <h2>Playing</h2>
-        <p>Didgeridoo plays one note at a time. Hold a key for the drone; a second key slides the pitch there (<span class="ui">Glide</span>), and releasing it falls back to the key still held. Low notes sound most natural: real instruments sit around C1–G1 (MIDI notes 36–43).</p>
+        <p>Didgeridoo plays one note at a time. Hold a key for the drone; a second key slides the pitch there (<span class="ui">Glide</span>), and releasing it falls back to the key still held. With <span class="ui">Octave</span> at 0 the range of a real instrument sits around middle C: C3–G3 (MIDI notes 60–67).</p>
         <dl class="controls">
           <dt>Hard hit</dt>
           <dd>A velocity at or above <span class="ui">Toot Vel</span> overblows: the note jumps up by <span class="ui">Toot Pitch</span> semitones with a bright, trumpet-like tone.</dd>
@@ -173,6 +173,8 @@
           <dd>The shape of the pulse, from a long swell at 0 to a short stab at 100.</dd>
           <dt>Bend Range (0–12 st)</dt>
           <dd>The pitch bend range in semitones.</dd>
+          <dt>Octave (−2 to +2)</dt>
+          <dd>Moves the whole instrument by octaves. At 0 a key sounds two octaves below its MIDI note, which puts a didgeridoo's range around middle C. +2 plays the MIDI note itself, for pads and keyboards that start low. A sounding note slides to the new octave. Programs leave this knob where you put it.</dd>
         </dl>
       </section>
 
@@ -201,7 +203,7 @@
           <li>Restart your host or let it rescan its plug-ins. In Ableton Live, Audio Units must be switched on in <span class="ui">Settings › Plug-Ins</span>.</li>
           <li>The instrument appears as <b>Didgeridoo</b> by <b>Jiri Pisa</b> among the Audio Unit instruments.</li>
         </ol>
-        <p>The plug-in has the same sound, the same 25 parameters and the same six programs (as factory presets) as the app. It has no window of its own yet: the host shows its standard parameter view, grouped into Mouth, Lips and Rhythm. Every parameter can be automated, and the host saves the sound with the project. The rhythm pulse follows the host's tempo and song position.</p>
+        <p>The plug-in has the same sound, the same 26 parameters and the same six programs (as factory presets) as the app. It has no window of its own yet: the host shows its standard parameter view, grouped into Mouth, Lips and Rhythm. Every parameter can be automated, and the host saves the sound with the project. The rhythm pulse follows the host's tempo and song position.</p>
         <p>After updating the app, click <span class="ui">Install Audio Unit</span> again to update the plug-in.</p>
       </section>
 

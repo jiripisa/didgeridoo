@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- New knob Octave (−2 to +2) in the Rhythm panel. At 0, where it rests, the
+  instrument plays two octaves lower than version 0.5.0 did, so that a
+  didgeridoo's range sits around middle C; +2 is the old pitch. Projects
+  saved with 0.5.0 sound two octaves lower until Octave is set to +2. This is
+  a deliberate difference from the MPC plugin "Didgeridoo".
+- The keyboard strip in the app's window now shows C2–C6.
+
 ## 0.5.0 — 2026-11-13
 
 - First version: a synthesized didgeridoo with 25 parameters in three groups
