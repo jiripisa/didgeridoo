@@ -9,30 +9,6 @@ struct MIDISource: Identifiable, Hashable {
     let name: String
 }
 
-/// Which sources the app listens to.
-enum MIDISourceChoice: Hashable {
-    case all
-    case none
-    case source(Int32)
-
-    /// Stored form: "all", "none" or the unique ID.
-    init(storedValue: String?) {
-        switch storedValue {
-        case "none": self = .none
-        case let value? where Int32(value) != nil: self = .source(Int32(value)!)
-        default: self = .all
-        }
-    }
-
-    var storedValue: String {
-        switch self {
-        case .all: "all"
-        case .none: "none"
-        case .source(let id): String(id)
-        }
-    }
-}
-
 /// Feeds MIDI to the synth from the chosen sources and from the app's own
 /// virtual port "Didgeridoo", which other applications can send to.
 /// CoreMIDI calls back on its own thread, hence the lock around the filter.
@@ -68,24 +44,19 @@ final class MIDIInput: @unchecked Sendable {
         set { filter.withLock { $0 = newValue } }
     }
 
-    /// Listens to the chosen sources only. Hanging notes are released, because
-    /// their note-offs may never arrive from a source that was just dropped.
+    /// Listens to the chosen sources only. A source that stays chosen stays
+    /// connected, so a sounding note carries on. When a source is dropped,
+    /// its notes, pedal and controllers are released: the messages that would
+    /// end them may never arrive.
     func listen(to choice: MIDISourceChoice) {
-        for endpoint in connected { MIDIPortDisconnectSource(port, endpoint) }
-        connected.removeAll()
-        synth.allNotesOff()
-        for index in 0..<MIDIGetNumberOfSources() {
-            let endpoint = MIDIGetSource(index)
-            let wanted: Bool
-            switch choice {
-            case .all: wanted = true
-            case .none: wanted = false
-            case .source(let id): wanted = Self.uniqueID(of: endpoint) == id
-            }
-            if wanted, MIDIPortConnectSource(port, endpoint, nil) == noErr {
-                connected.append(endpoint)
-            }
+        let wanted = (0..<MIDIGetNumberOfSources()).map(MIDIGetSource).filter { choice.includes(Self.uniqueID(of: $0)) }
+        let dropped = connected.filter { !wanted.contains($0) }
+        for endpoint in dropped { MIDIPortDisconnectSource(port, endpoint) }
+        connected.removeAll(where: dropped.contains)
+        for endpoint in wanted where !connected.contains(endpoint) && MIDIPortConnectSource(port, endpoint, nil) == noErr {
+            connected.append(endpoint)
         }
+        if !dropped.isEmpty { synth.releaseAll() }
     }
 
     static func sources() -> [MIDISource] {

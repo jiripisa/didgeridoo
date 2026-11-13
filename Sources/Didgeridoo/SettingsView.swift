@@ -18,6 +18,9 @@ struct SettingsView: View {
                         ForEach(model.midiSources) { source in
                             Text(source.name).tag(MIDISourceChoice.source(source.id))
                         }
+                        if let missing = model.missingMIDISourceName {
+                            Text("\(missing) (not connected)").tag(model.midiSource)
+                        }
                     }
                     Picker("Channel", selection: $model.midiChannel) {
                         Text("All channels").tag(MIDIChannelFilter.omni)
@@ -36,10 +39,14 @@ struct SettingsView: View {
                         ForEach(model.audioDevices) { device in
                             Text(device.name).tag(String?.some(device.uid))
                         }
+                        if let missing = model.missingAudioDeviceName {
+                            Text("\(missing) (not connected)").tag(model.audioDeviceUID)
+                        }
                     }
-                    if model.audioChannelCount > 2 {
-                        Picker("Channels", selection: $model.audioFirstChannel) {
-                            ForEach(Array(stride(from: 0, to: model.audioChannelCount - 1, by: 2)), id: \.self) { first in
+                    if model.audioChannelPairs.count > 1 {
+                        Picker("Channels", selection: Binding(get: { model.audioChannelPairInUse },
+                                                              set: { model.audioFirstChannel = $0 })) {
+                            ForEach(model.audioChannelPairs, id: \.self) { first in
                                 Text("\(first + 1) – \(first + 2)").tag(first)
                             }
                         }

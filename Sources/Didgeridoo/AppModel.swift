@@ -23,27 +23,39 @@ final class AppModel {
     private(set) var audioUnitStatus = ""
 
     var midiSource: MIDISourceChoice {
-        didSet { defaults.set(midiSource.storedValue, forKey: Keys.midiSource); midi.listen(to: midiSource) }
+        didSet {
+            guard midiSource != oldValue else { return }
+            defaults.set(midiSource.storedValue, forKey: Keys.midiSource)
+            defaults.set(midiSources.first { midiSource == .source($0.id) }?.name, forKey: Keys.midiSourceName)
+            midi.listen(to: midiSource)
+        }
     }
     var midiChannel: MIDIChannelFilter {
         didSet { defaults.set(midiChannel.storedValue, forKey: Keys.midiChannel); midi.channelFilter = midiChannel }
     }
     /// nil = the system default output.
     var audioDeviceUID: String? {
-        didSet { defaults.set(audioDeviceUID, forKey: Keys.audioDevice); restartAudio() }
+        didSet {
+            guard audioDeviceUID != oldValue else { return }
+            defaults.set(audioDeviceUID, forKey: Keys.audioDevice)
+            defaults.set(audioDevices.first { $0.uid == audioDeviceUID }?.name, forKey: Keys.audioDeviceName)
+            // Another device has other outputs: begin on its first pair. Changing
+            // the pair restarts audio by itself.
+            if audioFirstChannel == 0 { restartAudio() } else { audioFirstChannel = 0 }
+        }
     }
-    /// 0-based left channel of the output pair.
+    /// 0-based left channel of the output pair on the chosen device.
     var audioFirstChannel: Int {
         didSet { defaults.set(audioFirstChannel, forKey: Keys.audioChannel); restartAudio() }
     }
     /// Tempo of the rhythm pulse (the standalone app has no song to follow).
-    var bpm: Double {
-        didSet { defaults.set(bpm, forKey: Keys.bpm); synth.setTempo(bpm: bpm) }
-    }
+    private(set) var bpm: Double
 
     private enum Keys {
         static let state = "synthState", midiSource = "midiSource", midiChannel = "midiChannel"
         static let audioDevice = "audioDevice", audioChannel = "audioFirstChannel", bpm = "bpm"
+        /// Names of the chosen devices, to show them while they are not connected.
+        static let midiSourceName = "midiSourceName", audioDeviceName = "audioDeviceName"
     }
 
     init() {
@@ -57,16 +69,23 @@ final class AppModel {
         positions = Parameters.all.map(synth.normalisedValue(of:))
         program = synth.program
 
+        // These first assignments initialise the properties: their observers do
+        // not run, so nothing is saved or restarted yet.
         midiSource = MIDISourceChoice(storedValue: defaults.string(forKey: Keys.midiSource))
         midiChannel = MIDIChannelFilter(storedValue: defaults.integer(forKey: Keys.midiChannel))
         audioDeviceUID = defaults.string(forKey: Keys.audioDevice)
         audioFirstChannel = defaults.integer(forKey: Keys.audioChannel)
         let storedBPM = defaults.double(forKey: Keys.bpm)
-        bpm = (20...300).contains(storedBPM) ? storedBPM : 120
+        bpm = Tempo.range.contains(storedBPM) ? storedBPM : Tempo.standard
 
         synth.setTempo(bpm: bpm)
         midi.channelFilter = midiChannel
         midi.onSourcesChanged = { [weak self] in self?.refreshDevices() }
+        audio.onHardwareChange = { [weak self] devices in
+            guard let self else { return }
+            audioDevices = devices
+            audioProblem = audio.problem
+        }
         refreshDevices()
         restartAudio()
         refreshAudioUnitStatus()
@@ -95,6 +114,13 @@ final class AppModel {
         saveState()
     }
 
+    /// Sets the tempo of the rhythm pulse, kept within what the app accepts.
+    func setTempo(_ value: Double) {
+        bpm = Tempo.clamped(value)
+        defaults.set(bpm, forKey: Keys.bpm)
+        synth.setTempo(bpm: bpm)
+    }
+
     /// Remembers the sound for the next launch.
     func saveState() {
         if let data = try? JSONEncoder().encode(SynthState(capturing: synth)) {
@@ -110,9 +136,33 @@ final class AppModel {
         midi.listen(to: midiSource)
     }
 
-    /// Output channels of the chosen device (2 when the default device is used).
-    var audioChannelCount: Int {
-        audioDevices.first { $0.uid == audioDeviceUID }?.outputChannels ?? 2
+    /// Output channels of the chosen device; 0 for the system default output
+    /// and for a device that is not connected, which play on their first two.
+    private var chosenDeviceChannels: Int {
+        audioDevices.first { $0.uid == audioDeviceUID }?.outputChannels ?? 0
+    }
+
+    /// The channel pairs the chosen device offers, by their 0-based left channel.
+    var audioChannelPairs: [Int] {
+        OutputChannels.pairs(deviceChannels: chosenDeviceChannels)
+    }
+
+    /// The pair the sound goes to: the stored one, or the first when the
+    /// device does not offer it.
+    var audioChannelPairInUse: Int {
+        OutputChannels.pair(audioFirstChannel, deviceChannels: chosenDeviceChannels)
+    }
+
+    /// The name of the chosen MIDI source while it is not connected.
+    var missingMIDISourceName: String? {
+        guard case .source(let id) = midiSource, !midiSources.contains(where: { $0.id == id }) else { return nil }
+        return defaults.string(forKey: Keys.midiSourceName) ?? "MIDI device"
+    }
+
+    /// The name of the chosen audio device while it is not connected.
+    var missingAudioDeviceName: String? {
+        guard let audioDeviceUID, !audioDevices.contains(where: { $0.uid == audioDeviceUID }) else { return nil }
+        return defaults.string(forKey: Keys.audioDeviceName) ?? "Audio device"
     }
 
     private func restartAudio() {

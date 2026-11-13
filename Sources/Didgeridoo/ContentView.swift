@@ -6,7 +6,7 @@ import DidgeridooCore
 /// of knobs (Mouth, Lips, Rhythm) and a keyboard strip.
 struct ContentView: View {
 
-    @Bindable var model: AppModel
+    let model: AppModel
     @State private var showingSettings = false
 
     var body: some View {
@@ -51,10 +51,10 @@ struct ContentView: View {
             .frame(width: 230)
             HStack(spacing: 6) {
                 Text("Tempo").foregroundStyle(.secondary)
-                TextField("BPM", value: $model.bpm, format: .number.precision(.fractionLength(0...1)))
+                TextField("BPM", value: Binding(get: { model.bpm }, set: { model.setTempo($0) }),
+                          format: .number.precision(.fractionLength(0...1)))
                     .frame(width: 58)
                     .multilineTextAlignment(.trailing)
-                    .onSubmit { model.bpm = min(max(model.bpm, 20), 300) }
             }
             Button {
                 showingSettings = true
