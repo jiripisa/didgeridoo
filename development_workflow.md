@@ -13,7 +13,10 @@ didgeridoo/
 │   ├── DidgeridooEngine.cpp     #   synthesis, parameters, programs
 │   └── dsp/                     #   oscillators, filters… (MIT, from the MPC Plugin SDK)
 ├── Sources/DidgeridooAU/        # the Audio Unit (AUv2 instrument), C++
+├── Sources/DidgeridooAUView/    # the Audio Unit's window in a host: the panel on its parameters
+├── Sources/DidgeridooAUExports/ # no code: what the Audio Unit's library exports (Package.swift)
 ├── Sources/DidgeridooCore/      # Swift layer over the engine, no UI, tested
+├── Sources/DidgeridooUI/        # the instrument's panel (SwiftUI), shared by the app and the plug-in
 ├── Sources/Didgeridoo/          # SwiftUI app: window, audio out, MIDI in, settings
 ├── Tests/DidgeridooCoreTests/   # Swift Testing
 ├── ThirdParty/AudioUnitSDK/     # Apple's AudioUnitSDK (Apache-2.0), vendored
@@ -47,7 +50,10 @@ goes to `Contents/Resources/Art`.
 `Contents/PlugIns/Didgeridoo.component/Contents/MacOS/Didgeridoo`, with
 `Resources/AudioUnit-Info.plist` as its `Info.plist`. The dylib exports only
 the factory function `DidgeridooAUFactory` (`Package.swift`), because a
-plug-in shares the host's process with other plug-ins. `build.sh` writes the
+plug-in shares the host's process with other plug-ins. `Resources/Art/` is
+copied into the component too: its own window (the class
+`DidgeridooAUViewFactory`, which the host finds through the unit's CocoaUI
+property) shows the app's panel. `build.sh` writes the
 app's version into that plist (both strings and the numeric
 `AudioComponents` version), so the version is bumped in one place. The
 component is signed before the app (ad-hoc, or Developer ID + hardened runtime
@@ -122,6 +128,9 @@ hardened runtime and notarization. Add entitlements to
   references.
 - After a change in what threads share in the engine, also run
   `swift test --sanitize=thread`; it must report nothing.
+- The tests run the Audio Unit inside their own process (registered without
+  a component bundle) and drive it through the model of its window, as its
+  knobs and a host do: `AudioUnitWindowTests`.
 - Conventional Commits with a scope: `feat(core): …`, `fix(ui): …`,
   `docs(manual): …`, `chore(release): v1.2.0 — …`.
 - `main` is always green: builds, tests pass, the app launches.

@@ -1,20 +1,26 @@
+import AppKit
 import SwiftUI
 import DidgeridooCore
 
 /// One parameter as a knob: its name, a value arc around the cap, the value
 /// below. Drag up and down to turn it (Shift for fine steps), double-click to
 /// go back to the program's value.
-struct KnobView: View {
+public struct KnobView: View {
 
-    let parameter: Parameter
-    let model: AppModel
+    private let parameter: Parameter
+    private let model: any InstrumentModel
 
     @State private var dragStart: Float?
 
     private static let sweep = 270.0          // degrees of travel
     private static let size: CGFloat = 62
 
-    var body: some View {
+    public init(parameter: Parameter, model: any InstrumentModel) {
+        self.parameter = parameter
+        self.model = model
+    }
+
+    public var body: some View {
         let position = Double(model.position(of: parameter))
         VStack(spacing: 4) {
             Text(parameter.name)
@@ -70,14 +76,20 @@ struct KnobView: View {
     private var drag: some Gesture {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
-                let start = dragStart ?? model.position(of: parameter)
-                dragStart = start
+                let start: Float
+                if let dragStart {
+                    start = dragStart
+                } else {
+                    start = model.position(of: parameter)
+                    dragStart = start
+                    model.beginEditing(parameter)
+                }
                 let fine = NSEvent.modifierFlags.contains(.shift) ? 0.1 : 1.0
                 model.setPosition(start - Float(value.translation.height / 200 * fine), of: parameter)
             }
             .onEnded { _ in
                 dragStart = nil
-                model.saveState()
+                model.endEditing(parameter)
             }
     }
 }

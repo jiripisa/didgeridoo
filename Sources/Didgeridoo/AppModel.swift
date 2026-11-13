@@ -1,12 +1,13 @@
 import AppKit
 import DidgeridooCore
+import DidgeridooUI
 import Observation
 
 /// The standalone app's state: the synth, its audio and MIDI connections and
 /// the settings the user chose. Views read it and call its methods.
 @MainActor
 @Observable
-final class AppModel {
+final class AppModel: InstrumentModel {
 
     @ObservationIgnored let synth = Synth()
     @ObservationIgnored private let audio: AudioOutput
@@ -106,6 +107,11 @@ final class AppModel {
         setPosition(parameter.normalised(Programs.value(program: program, parameter: parameter)), of: parameter)
         saveState()
     }
+
+    /// A drag on a knob: the app has nobody to tell when it begins, and
+    /// remembers the sound when it ends.
+    func beginEditing(_ parameter: Parameter) {}
+    func endEditing(_ parameter: Parameter) { saveState() }
 
     func loadProgram(_ index: Int) {
         synth.loadProgram(index)

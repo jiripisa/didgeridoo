@@ -11,8 +11,8 @@ let package = Package(
         .executable(name: "Didgeridoo", targets: ["Didgeridoo"]),
         // App logic without UI — what `swift test` covers.
         .library(name: "DidgeridooCore", targets: ["DidgeridooCore"]),
-        // The Audio Unit's code (build.sh turns it into Didgeridoo.component).
-        .library(name: "DidgeridooAU", type: .dynamic, targets: ["DidgeridooAU"]),
+        // The Audio Unit with its window (build.sh turns it into Didgeridoo.component).
+        .library(name: "DidgeridooAU", type: .dynamic, targets: ["DidgeridooAU", "DidgeridooAUView", "DidgeridooAUExports"]),
     ],
     dependencies: [
         // Auto-update: the standard updater for apps outside the App Store;
@@ -44,10 +44,22 @@ let package = Package(
         .target(
             name: "DidgeridooAU",
             dependencies: ["DidgeridooDSP", "AudioUnitSDK"],
-            path: "Sources/DidgeridooAU",
+            path: "Sources/DidgeridooAU"
+        ),
+        // The Audio Unit's window in a host: the panel on top of the unit's parameters.
+        .target(
+            name: "DidgeridooAUView",
+            dependencies: ["DidgeridooCore", "DidgeridooUI"],
+            path: "Sources/DidgeridooAUView"
+        ),
+        // No code, only what the Audio Unit's dynamic library exports.
+        .target(
+            name: "DidgeridooAUExports",
+            path: "Sources/DidgeridooAUExports",
             linkerSettings: [
                 // A plug-in shares the host's process with other plug-ins: export only the
                 // factory function the host looks up (AudioUnit-Info.plist, factoryFunction).
+                // The window's class is found through the Objective-C runtime, not by symbol.
                 .unsafeFlags(["-Xlinker", "-exported_symbol", "-Xlinker", "_DidgeridooAUFactory"]),
             ]
         ),
@@ -56,10 +68,17 @@ let package = Package(
             dependencies: ["DidgeridooDSP"],
             path: "Sources/DidgeridooCore"
         ),
+        // The instrument's panel (SwiftUI), shared by the app's window and the plug-in's.
+        .target(
+            name: "DidgeridooUI",
+            dependencies: ["DidgeridooCore"],
+            path: "Sources/DidgeridooUI"
+        ),
         .executableTarget(
             name: "Didgeridoo",
             dependencies: [
                 "DidgeridooCore",
+                "DidgeridooUI",
                 .product(name: "Sparkle", package: "Sparkle"),
             ],
             path: "Sources/Didgeridoo",
@@ -70,8 +89,9 @@ let package = Package(
         ),
         .testTarget(
             name: "DidgeridooCoreTests",
-            // The engine too: some of its promises are tested through its C interface.
-            dependencies: ["DidgeridooCore", "DidgeridooDSP"],
+            // The engine too: some of its promises are tested through its C interface. And the
+            // Audio Unit with its window's model, which the tests run inside their own process.
+            dependencies: ["DidgeridooCore", "DidgeridooDSP", "DidgeridooAU", "DidgeridooAUView"],
             path: "Tests/DidgeridooCoreTests"
         ),
     ],
