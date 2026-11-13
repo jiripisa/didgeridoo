@@ -5,6 +5,7 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 | Phase | Goal | Status |
 |---|---|---|
+| 04-v0.5.0-release | Version 0.5.0, the first release — 2026-11-13 | ✅ |
 | 03-review-fixes | Fixes from a review of phase 02 (audio output follows the hardware, MIDI input, tempo, the Audio Unit's reset and exports, stricter build scripts), a test that guards the sound, drift independent of the sample rate — 2026-11-13 | ✅ |
 | 02-engine-app-audiounit | Sound engine identical to the MPC plugin, standalone app (MIDI in, audio out, settings), Audio Unit instrument installed from the app — 2026-11-13 | ✅ |
 | 01-skeleton | Empty app skeleton: SwiftPM, build/run scripts, signing + notarization pipeline, website — created 2026-11-13 | ✅ |

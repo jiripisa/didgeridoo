@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — 2026-11-13
 
 - First version: a synthesized didgeridoo with 25 parameters in three groups
   (Mouth, Lips, Rhythm) and six built-in programs.

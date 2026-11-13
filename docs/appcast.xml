@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>Didgeridoo</title>
+    <link>https://jiripisa.github.io/didgeridoo/</link>
+    <description>Didgeridoo updates</description>
+    <item>
+      <title>Didgeridoo 0.5.0</title>
+      <sparkle:version>0.5.0</sparkle:version>
+      <sparkle:shortVersionString>0.5.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Fri, 13 Nov 2026 22:22:19 +0000</pubDate>
+      <description><![CDATA[<ul><li>First version: a synthesized didgeridoo with 25 parameters in three groups (Mouth, Lips, Rhythm) and six built-in programs.</li><li>Standalone app with a keyboard strip, a choice of MIDI input device and channel, a choice of audio output device and channel pair, and its own MIDI port &quot;Didgeridoo&quot; for other applications.</li><li>Audio Unit instrument for Ableton Live, Logic Pro and other hosts, installed from the app&#x27;s Settings window. It uses the host&#x27;s standard parameter view; it has no window of its own yet.</li><li>The app follows the audio hardware: it moves with the system default output, and when a chosen device is unplugged it plays on the default until the device is back.</li><li>Pitch drift wanders equally fast at every sample rate. This is the one deliberate difference from the MPC plugin &quot;Didgeridoo&quot;, whose drift speeds up with the rate; at 44.1 kHz the two sound identical.</li><li>For Macs with Apple silicon, macOS 14 or later.</li></ul>]]></description>
+      <enclosure url="https://github.com/jiripisa/didgeridoo/releases/download/v0.5.0/Didgeridoo-0.5.0.dmg" type="application/octet-stream" sparkle:edSignature="YlGiX5b16fE54Cr4sYFynIe8NsxSFfbBglSjgObsHuYrnrqWkTeoD7PIGsyA5/1sZvypqNnVItuYKBpTW/IIAg==" length="6931929"/>
+    </item>
+  </channel>
+</rss>

@@ -138,6 +138,6 @@ hardened runtime and notarization. Add entitlements to
 ### Versioning & releases
 
 - The version lives in `Resources/Info.plist` (`CFBundleShortVersionString`
-  and `CFBundleVersion`), semantic versioning, starting at 0.1.0.
+  and `CFBundleVersion`), semantic versioning; the first release was 0.5.0.
 - Releases follow the project skill `.claude/skills/release/SKILL.md`.
 - Pushes to GitHub happen only after explicit confirmation.
