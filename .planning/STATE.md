@@ -1,5 +1,8 @@
 # Didgeridoo — State
 
+- 2026-11-14 — phase 07 done: the Audio Unit has its own window. See
+  `phases/07-audiounit-window/VERIFICATION.md`; it has not been tried in a
+  host yet.
 - 2026-11-14 — phase 06 done: the icon without its light border and the
   website's new look. Not released yet.
 - 2026-11-13 — phase 05 done: the Octave knob; at 0 the instrument plays two

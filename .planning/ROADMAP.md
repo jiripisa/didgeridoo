@@ -5,6 +5,7 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 | Phase | Goal | Status |
 |---|---|---|
+| 07-audiounit-window | The Audio Unit's own window in a host: the app's panel on the unit's parameters — 2026-11-14 | ✅ |
 | 06-icon-website | The icon covers its whole tile; the website wears the app's colours, with a dotted graphic behind it — 2026-11-14 | ✅ |
 | 05-octave | The instrument plays two octaves lower; a new knob, Octave (−2 to +2), moves it — 2026-11-13 | ✅ |
 | 04-v0.5.0-release | Version 0.5.0, the first release — 2026-11-13 | ✅ |
@@ -14,8 +15,6 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 ## Ideas for later phases (not planned yet)
 
-- **Own window for the Audio Unit**: the app's knob panel inside the host
-  instead of the host's generic parameter view.
 - **Modulation**: LFOs (and perhaps an envelope) assignable to individual
   parameters.
 - **Stereo**: the instrument is mono; a room, width or a doubled voice.

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The Audio Unit has a window of its own in the host: the app's panel, with
+  the Program menu and the knobs of Mouth, Lips and Rhythm. The knobs follow
+  the host's automation, and turning one can be recorded as automation.
 - New knob Octave (−2 to +2) in the Rhythm panel. At 0, where it rests, the
   instrument plays two octaves lower than version 0.5.0 did, so that a
   didgeridoo's range sits around middle C; +2 is the old pitch. Projects
