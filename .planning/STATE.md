@@ -1,12 +1,14 @@
 # Didgeridoo — State
 
+- 2026-11-14 — phase 10: version 1.0.0 released (phase 09). See
+  `phases/10-v1.0.0-release/VERIFICATION.md`. The author tries it on another
+  Mac from the download; nobody has listened to the new sound yet.
 - 2026-11-14 — phase 09 done: seven new knobs (Tongue, Tube, Toot Len,
   Voice, Pattern, Accent, Breath In), a fourth panel (Tube) and four programs
   built on a study of the real instrument
   (`research/reports/Didgeridoo acoustics and playing.md`). The earlier
   programs are unchanged, sample for sample. Nothing was judged by ear: see
-  "Not verified" in `phases/09-player-and-tube/VERIFICATION.md`. Not released
-  yet.
+  "Not verified" in `phases/09-player-and-tube/VERIFICATION.md`.
 - 2026-11-14 — phase 08: version 0.6.0 released (phases 05 to 07). See
   `phases/08-v0.6.0-release/VERIFICATION.md`. The author tries it on another
   Mac from the download; the plug-in's window has not been in a host yet.
@@ -30,6 +32,6 @@
 - 2026-11-13 — skeleton created (phase 01): `build.sh` / `run.sh`,
   Developer ID + notarization pipeline, Sparkle auto-update, website on
   GitHub Pages.
-- No phase open. Next: release phase 09 so that the author can hear it, tune
-  the four new programs by his ear, then pick the next phase from the ideas
-  in `ROADMAP.md`.
+- No phase open. Next: the author listens to 1.0.0; tune the four new
+  programs and the new knobs by his ear, then pick the next phase from the
+  ideas in `ROADMAP.md`.

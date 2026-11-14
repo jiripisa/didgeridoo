@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.0 — 2026-11-14
 
 - The instrument can now behave like the real ones measured in acoustics
   research. Seven new knobs, all at 0 until you turn them:
