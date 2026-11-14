@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+- The instrument can now behave like the real ones measured in acoustics
+  research. Seven new knobs, all at 0 until you turn them:
+  - Tongue (Mouth): a raised tongue takes sound away at three resonances of
+    the mouth; the band left between them is the moving overtone. It follows
+    Vowel and lifts the drone by up to a third of a semitone.
+  - Tube (new panel Tube): the tube's own resonances make the fundamental
+    stand out above its harmonics. Toot Pitch says what tube it is: 19 st a
+    plain pipe with strong odd harmonics, around 16 st a flared instrument.
+  - Toot Len (Tube): an overblown note can be a short stab after which the
+    drone comes back, instead of lasting as long as the key.
+  - Voice (Lips): a sung voice locked in tune with the drone at the interval
+    of Growl Pitch; a fifth or a tenth adds a tone an octave below.
+  - Pattern, Accent, Breath In (Rhythm): accented and soft steps, and a quick
+    in-breath on the soft ones as in circular breathing.
+- Four new programs use them: Eucalyptus, Hard Tongue, Pipe and Singer.
+- The window has a fourth panel, Tube, which also holds Toot Vel, Toot Pitch,
+  Glide, Bend Range and Octave. The window is a little taller.
+- The six earlier programs and saved sounds are unchanged, sample for sample.
+  The new knobs and programs are a deliberate difference from the MPC plugin
+  "Didgeridoo".
+
 ## 0.6.0 — 2026-11-14
 
 - The Audio Unit has a window of its own in the host: the app's panel, with

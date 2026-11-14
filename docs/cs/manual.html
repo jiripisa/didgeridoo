@@ -40,6 +40,7 @@
         <li><a href="#playing">Hraní</a></li>
         <li><a href="#mouth">Mouth (ústa)</a></li>
         <li><a href="#lips">Lips (rty)</a></li>
+        <li><a href="#tube">Tube (trubice)</a></li>
         <li><a href="#rhythm">Rhythm (rytmus)</a></li>
         <li><a href="#settings">Nastavení</a></li>
         <li><a href="#plugin">Plugin Audio Unit</a></li>
@@ -62,28 +63,31 @@
       <section id="window">
         <h2>Hlavní okno</h2>
         <figure class="fig">
-          <div class="view" style="--iw:2200;--ih:1496">
+          <div class="view" style="--iw:2200;--ih:1580">
             <img src="../assets/didgeridoo-window.png" alt="Okno aplikace Didgeridoo s vyznačenými oblastmi">
-            <div class="mark" style="--x:1.6;--y:3.9;--w:19;--h:5.6"><b>1</b></div>
-            <div class="mark" style="--x:56;--y:4.6;--w:42.8;--h:4.2"><b>2</b></div>
-            <div class="mark" style="--x:1.5;--y:11.5;--w:48;--h:38.4"><b>3</b></div>
-            <div class="mark" style="--x:50.5;--y:11.5;--w:48;--h:54.8"><b>4</b></div>
-            <div class="mark" style="--x:1.5;--y:51.4;--w:48;--h:38.4"><b>5</b></div>
-            <div class="mark" style="--x:1.5;--y:91.3;--w:97;--h:8.5"><b>6</b></div>
+            <div class="mark" style="--x:1.4;--y:5.9;--w:19.1;--h:6.3"><b>1</b></div>
+            <div class="mark" style="--x:56.5;--y:6.8;--w:42.4;--h:4.8"><b>2</b></div>
+            <div class="mark" style="--x:1.4;--y:13.5;--w:48.3;--h:36.7"><b>3</b></div>
+            <div class="mark" style="--x:50.4;--y:13.5;--w:48.3;--h:36.7"><b>4</b></div>
+            <div class="mark" style="--x:1.4;--y:51.4;--w:48.3;--h:36.7"><b>5</b></div>
+            <div class="mark" style="--x:50.4;--y:51.4;--w:48.3;--h:36.7"><b>6</b></div>
+            <div class="mark" style="--x:1.4;--y:89.1;--w:97.3;--h:9.1"><b>7</b></div>
           </div>
         </figure>
         <dl class="controls">
           <dt><span class="n">1</span>Název</dt>
           <dd>Název nástroje.</dd>
           <dt><span class="n">2</span>Program, Tempo, Settings</dt>
-          <dd><b>Program</b> načte jeden ze šesti vestavěných zvuků. Přepíše všechny knoby kromě <span class="ui">Octave</span> a utne znějící notu; vlastní úpravy se do programu neukládají. <b>Tempo</b> (20–300 BPM) určuje rychlost rytmického pulzu. <b>Settings</b> otevře nastavení MIDI vstupu, zvukového výstupu a instalaci pluginu Audio Unit.</dd>
+          <dd><b>Program</b> načte jeden z deseti vestavěných zvuků. Přepíše všechny knoby kromě <span class="ui">Octave</span> a utne znějící notu; vlastní úpravy se do programu neukládají. Prvních šest jsou čistě syntezátorové zvuky; <b>Eucalyptus</b>, <b>Hard Tongue</b>, <b>Pipe</b> a <b>Singer</b> používají <span class="ui">Tongue</span>, <span class="ui">Tube</span> a další knoby, které vycházejí z měření skutečných nástrojů. <b>Tempo</b> (20–300 BPM) určuje rychlost rytmického pulzu. <b>Settings</b> otevře nastavení MIDI vstupu, zvukového výstupu a instalaci pluginu Audio Unit.</dd>
           <dt><span class="n">3</span>Mouth</dt>
-          <dd>Tvar úst: jakou samohlásku dron vyslovuje a jak se pohybuje. Viz <a href="#mouth">Mouth</a>.</dd>
+          <dd>Tvar úst: jakou samohlásku dron vyslovuje, co mu jazyk ubírá a jak se obojí pohybuje. Viz <a href="#mouth">Mouth</a>.</dd>
           <dt><span class="n">4</span>Lips</dt>
-          <dd>Zdroj zvuku: rty, dech, hlas, ladění a to, jak noty začínají a končí. Viz <a href="#lips">Lips</a>.</dd>
-          <dt><span class="n">5</span>Rhythm</dt>
-          <dd>Pulz synchronizovaný s tempem, rozsah pitch bendu a oktáva. Viz <a href="#rhythm">Rhythm</a>.</dd>
-          <dt><span class="n">6</span>Klaviatura</dt>
+          <dd>Zdroj zvuku: rty, dech, hlas a to, jak noty začínají a končí. Viz <a href="#lips">Lips</a>.</dd>
+          <dt><span class="n">5</span>Tube</dt>
+          <dd>Samotný nástroj: jeho rezonance, přefouknutá nota, glide, rozsah pitch bendu a oktáva. Viz <a href="#tube">Tube</a>.</dd>
+          <dt><span class="n">6</span>Rhythm</dt>
+          <dd>Pulz synchronizovaný s tempem, jeho akcenty a nádechy. Viz <a href="#rhythm">Rhythm</a>.</dd>
+          <dt><span class="n">7</span>Klaviatura</dt>
           <dd>Kliknutím na klávesu ji zahrajete. Kliknutí u horního okraje klávesy hraje tiše; kliknutí u spodního okraje je nejsilnější úhoz a notu přefoukne.</dd>
         </dl>
         <h3>Otáčení knobem</h3>
@@ -95,7 +99,7 @@
         <p>Didgeridoo hraje vždy jen jednu notu. Držená klávesa hraje dron; druhá klávesa na něj plynule přeladí (<span class="ui">Glide</span>) a po jejím puštění se ladění vrátí na klávesu, kterou stále držíte. S knobem <span class="ui">Octave</span> na nule leží rozsah skutečného nástroje kolem středu klaviatury: C3–G3 (MIDI noty 60–67).</p>
         <dl class="controls">
           <dt>Silný úhoz</dt>
-          <dd>Velocity rovná hodnotě <span class="ui">Toot Vel</span> nebo vyšší notu přefoukne: skočí o <span class="ui">Toot Pitch</span> půltónů výš a zní jasně, trubkově.</dd>
+          <dd>Velocity rovná hodnotě <span class="ui">Toot Vel</span> nebo vyšší notu přefoukne: skočí o <span class="ui">Toot Pitch</span> půltónů výš a zní jasně, trubkově, a to dokud držíte klávesu, nebo s knobem <span class="ui">Toot Len</span> jen jako krátké štěknutí.</dd>
           <dt>Mod wheel</dt>
           <dd>Otevírá ústa: posouvá samohlásku směrem k „i“ až o hodnotu <span class="ui">Wheel Vowel</span>.</dd>
           <dt>Aftertouch</dt>
@@ -116,6 +120,8 @@
           <dd>Kolik rezonancí samohlásky se přimíchá do zvuku. Na nule je dron holý.</dd>
           <dt>Reso (0–100 %)</dt>
           <dd>Ostrost rezonancí samohlásky: vyšší hodnoty znějí hlasověji a nosověji.</dd>
+          <dt>Tongue (0–100 %)</dt>
+          <dd>Co zvuku ubírá zvednutý jazyk. Ústa hráče nic nepřidávají: na třech vlastních rezonancích zvuk zadržují a pásmo, které mezi nimi zůstane, je ten jasný alikvót, který slyšíte putovat, zhruba mezi 1 a 2,2 kHz. Pásmo sleduje <span class="ui">Vowel</span> a všechno, co jím hýbe. Pod asi 25 % knobu <span class="ui">Vowel</span> leží jazyk nízko a neděje se nic; od 80 % působí naplno. Zvednutý jazyk také zvýší dron až o třetinu půltónu. Pro zvuk blízký skutečnému nástroji přidejte <span class="ui">Tongue</span> a uberte <span class="ui">Formant</span>.</dd>
           <dt>Tone (200–8000 Hz)</dt>
           <dd>Dolní propust na přímém zvuku. Nižší hodnota je temnější.</dd>
           <dt>Wobble Rate (0,05–10 Hz)</dt>
@@ -140,41 +146,59 @@
           <dd>Saturace na výstupu: přidá drsnost a vyrovná hlasitost.</dd>
           <dt>Breath (0–100 %)</dt>
           <dd>Šum dechu procházející trubicí a ústy.</dd>
-          <dt>Growl (0–100 %)</dt>
-          <dd>Hlas zpívaný do trubice, který dron zdrsní a rozechvěje.</dd>
-          <dt>Growl Pitch (0–24 st)</dt>
-          <dd>Interval tohoto hlasu nad dronem v půltónech.</dd>
           <dt>Drift (0–100 %)</dt>
-          <dd>Pomalé náhodné kolísání ladění, nejvýše asi o třetinu půltónu.</dd>
-          <dt>Glide (0–1000 ms)</dt>
-          <dd>Jak dlouho trvá sklouznutí z jedné noty na druhou.</dd>
+          <dd>Pomalé náhodné kolísání ladění, nejvýše asi o třetinu půltónu. Skutečný dron drží ladění pevně: pro věrný zvuk ho nechte nízko.</dd>
+          <dt>Growl (0–100 %)</dt>
+          <dd>Hlas zpívaný do trubice, lehce rozladěný proti dronu, který ho zdrsní a rozechvěje.</dd>
+          <dt>Growl Pitch (0–24 st)</dt>
+          <dd>Interval zpívaného hlasu nad dronem v půltónech, pro <span class="ui">Growl</span> i pro <span class="ui">Voice</span>.</dd>
+          <dt>Voice (0–100 %)</dt>
+          <dd>Zpěv do trubice tak, jak ho dělají hráči: hlas otevírá a zavírá stejný proud vzduchu jako rty, přesně naladěný k dronu v intervalu <span class="ui">Growl Pitch</span>. Kvinta (7 st) nebo decima (16 st) přidá tón o oktávu pod dronem. Na rozdíl od knobu <span class="ui">Growl</span> se nechvěje.</dd>
           <dt>Attack (5–2000 ms)</dt>
           <dd>Jak rychle nota nastoupí.</dd>
           <dt>Release (10–3000 ms)</dt>
           <dd>Jak rychle po puštění klávesy dozní.</dd>
+        </dl>
+      </section>
+
+      <section id="tube">
+        <h2>Tube (trubice)</h2>
+        <dl class="controls">
+          <dt>Tube (0–100 %)</dt>
+          <dd>Rezonance samotného nástroje. Nejnižší leží těsně pod dronem a nechá základní tón vyniknout vysoko nad jeho harmonické, jako u skutečného didgeridoo; další se řídí knobem <span class="ui">Toot Pitch</span>. Hlasitost zůstává zhruba stejná. Na nule je trubice vynechaná.</dd>
           <dt>Toot Vel (64–127, Off)</dt>
           <dd>Velocity, od které se nota přefoukne. Úplně nahoře („Off“) je přefuk vypnutý.</dd>
           <dt>Toot Pitch (7–24 st)</dt>
-          <dd>O kolik půltónů přefouknutá nota vyskočí nad hranou klávesu.</dd>
+          <dd>O kolik půltónů přefouknutá nota vyskočí nad hranou klávesu. Se zapnutým knobem <span class="ui">Tube</span> také říká, o jakou trubici jde: 19 st je rovná roura, která zvýrazňuje liché harmonické dronu; kolem 16 st je rozšiřující se přírodní nástroj, jehož harmonické nad základním tónem jsou slabé.</dd>
+          <dt>Toot Len (Hold, 1–1000 ms)</dt>
+          <dd>Jak dlouho přefouknutá nota trvá. Na hodnotě <b>Hold</b> zní, dokud držíte klávesu. S nastavenou délkou je to krátké štěknutí, po kterém se vrátí dron téže klávesy: tak hráči vhazují přefuk do rytmu.</dd>
+          <dt>Glide (0–1000 ms)</dt>
+          <dd>Jak dlouho trvá sklouznutí z jedné noty na druhou.</dd>
+          <dt>Bend Range (0–12 st)</dt>
+          <dd>Rozsah pitch bendu v půltónech.</dd>
+          <dt>Octave (−2 až +2)</dt>
+          <dd>Posouvá celý nástroj po oktávách. Na nule zní klávesa o dvě oktávy níž než její MIDI nota, takže rozsah didgeridoo leží kolem středu klaviatury. +2 hraje přímo MIDI notu, pro pady a klaviatury, které začínají nízko. Znějící nota na novou oktávu plynule přeladí. Programy tento knob nechávají tam, kam jste ho dali.</dd>
         </dl>
       </section>
 
       <section id="rhythm">
         <h2>Rhythm (rytmus)</h2>
-        <p>Pulz začíná na každém kroku v plné síle a do dalšího kroku slábne. Když jsou <span class="ui">Rhy Depth</span> i <span class="ui">Rhy&gt;Vowel</span> na nule, nedělá nic. V aplikaci běží v tempu nastaveném v poli <span class="ui">Tempo</span>; v hostitelském programu sleduje skladbu.</p>
+        <p>Pulz začíná na každém kroku v plné síle a do dalšího kroku slábne. Když jsou <span class="ui">Rhy Depth</span>, <span class="ui">Rhy&gt;Vowel</span>, <span class="ui">Accent</span> i <span class="ui">Breath In</span> na nule, nedělá nic. V aplikaci běží v tempu nastaveném v poli <span class="ui">Tempo</span>; v hostitelském programu sleduje skladbu.</p>
         <dl class="controls">
           <dt>Rhythm Div (1/64 až 2/1)</dt>
           <dd>Délka jednoho kroku, včetně triolových (T) a tečkovaných (D) hodnot.</dd>
+          <dt>Pattern (Even, A-b, A-b-b, A-b-b-A-b-A)</dt>
+          <dd>Které kroky jsou akcenty (A) a které měkké (b). Na měkkém kroku posouvá <span class="ui">Rhy&gt;Vowel</span> samohlásku opačným směrem, jako když se jazyk po akcentu vrací. <b>Even</b> bere všechny kroky stejně.</dd>
           <dt>Rhy Depth (0–100 %)</dt>
           <dd>O kolik hlasitost mezi pulzy klesne.</dd>
           <dt>Rhy&gt;Vowel (−100 až +100 %)</dt>
           <dd>O kolik každý pulz posune samohlásku: kladné hodnoty směrem k „i“, záporné k „u“.</dd>
           <dt>Rhy Decay (0–100 %)</dt>
           <dd>Tvar pulzu, od dlouhého náběhu na nule po krátký úder na stovce.</dd>
-          <dt>Bend Range (0–12 st)</dt>
-          <dd>Rozsah pitch bendu v půltónech.</dd>
-          <dt>Octave (−2 až +2)</dt>
-          <dd>Posouvá celý nástroj po oktávách. Na nule zní klávesa o dvě oktávy níž než její MIDI nota, takže rozsah didgeridoo leží kolem středu klaviatury. +2 hraje přímo MIDI notu, pro pady a klaviatury, které začínají nízko. Znějící nota na novou oktávu plynule přeladí. Programy tento knob nechávají tam, kam jste ho dali.</dd>
+          <dt>Accent (0–100 %)</dt>
+          <dd>O kolik hlasitěji a jasněji začíná krok s akcentem a o kolik tišší jsou měkké kroky.</dd>
+          <dt>Breath In (0–100 %)</dt>
+          <dd>Rychlý nádech nosem na každém měkkém kroku, jako při cirkulárním dýchání: první pětinu sekundy dron poklesne, je slyšet dech a jazyk povolí. Potřebuje pattern s měkkými kroky.</dd>
         </dl>
       </section>
 
@@ -208,7 +232,7 @@
             <img src="../assets/manual/plugin-window.png" alt="Okno pluginu v hostitelském programu">
           </div>
         </figure>
-        <p>Plugin má stejný zvuk, stejných 26 parametrů a stejných šest programů (jako tovární presety) jako aplikace. Jeho okno je panel z aplikace: nabídka <span class="ui">Program</span> a knoby skupin Mouth, Lips a Rhythm. Tempo, nastavení MIDI a zvuku i klaviaturu má hostitelský program vlastní, proto v okně nejsou. Knoby sledují automatizaci hostitelského programu a otočení knobem lze jako automatizaci nahrát. Zvuk se ukládá s projektem. Rytmický pulz sleduje tempo a pozici ve skladbě.</p>
+        <p>Plugin má stejný zvuk, stejných 33 parametrů a stejných deset programů (jako tovární presety) jako aplikace. Jeho okno je panel z aplikace: nabídka <span class="ui">Program</span> a knoby skupin Mouth, Lips, Tube a Rhythm. Tempo, nastavení MIDI a zvuku i klaviaturu má hostitelský program vlastní, proto v okně nejsou. Knoby sledují automatizaci hostitelského programu a otočení knobem lze jako automatizaci nahrát. Zvuk se ukládá s projektem. Rytmický pulz sleduje tempo a pozici ve skladbě.</p>
         <p>Po aktualizaci aplikace klikněte na <span class="ui">Install Audio Unit</span> znovu, aby se aktualizoval i plugin.</p>
       </section>
 

@@ -40,6 +40,7 @@
         <li><a href="#playing">Playing</a></li>
         <li><a href="#mouth">Mouth</a></li>
         <li><a href="#lips">Lips</a></li>
+        <li><a href="#tube">Tube</a></li>
         <li><a href="#rhythm">Rhythm</a></li>
         <li><a href="#settings">Settings</a></li>
         <li><a href="#plugin">The Audio Unit plug-in</a></li>
@@ -62,28 +63,31 @@
       <section id="window">
         <h2>The main window</h2>
         <figure class="fig">
-          <div class="view" style="--iw:2200;--ih:1496">
+          <div class="view" style="--iw:2200;--ih:1580">
             <img src="assets/didgeridoo-window.png" alt="The Didgeridoo window with its areas marked">
-            <div class="mark" style="--x:1.6;--y:3.9;--w:19;--h:5.6"><b>1</b></div>
-            <div class="mark" style="--x:56;--y:4.6;--w:42.8;--h:4.2"><b>2</b></div>
-            <div class="mark" style="--x:1.5;--y:11.5;--w:48;--h:38.4"><b>3</b></div>
-            <div class="mark" style="--x:50.5;--y:11.5;--w:48;--h:54.8"><b>4</b></div>
-            <div class="mark" style="--x:1.5;--y:51.4;--w:48;--h:38.4"><b>5</b></div>
-            <div class="mark" style="--x:1.5;--y:91.3;--w:97;--h:8.5"><b>6</b></div>
+            <div class="mark" style="--x:1.4;--y:5.9;--w:19.1;--h:6.3"><b>1</b></div>
+            <div class="mark" style="--x:56.5;--y:6.8;--w:42.4;--h:4.8"><b>2</b></div>
+            <div class="mark" style="--x:1.4;--y:13.5;--w:48.3;--h:36.7"><b>3</b></div>
+            <div class="mark" style="--x:50.4;--y:13.5;--w:48.3;--h:36.7"><b>4</b></div>
+            <div class="mark" style="--x:1.4;--y:51.4;--w:48.3;--h:36.7"><b>5</b></div>
+            <div class="mark" style="--x:50.4;--y:51.4;--w:48.3;--h:36.7"><b>6</b></div>
+            <div class="mark" style="--x:1.4;--y:89.1;--w:97.3;--h:9.1"><b>7</b></div>
           </div>
         </figure>
         <dl class="controls">
           <dt><span class="n">1</span>Name</dt>
           <dd>The instrument's name.</dd>
           <dt><span class="n">2</span>Program, Tempo, Settings</dt>
-          <dd><b>Program</b> loads one of the six built-in sounds. It overwrites every knob except <span class="ui">Octave</span> and cuts off a sounding note; your own changes are not kept in the program. <b>Tempo</b> (20–300 BPM) sets the speed of the rhythm pulse. <b>Settings</b> opens MIDI input, audio output and the Audio Unit installer.</dd>
+          <dd><b>Program</b> loads one of the ten built-in sounds. It overwrites every knob except <span class="ui">Octave</span> and cuts off a sounding note; your own changes are not kept in the program. The first six are plain synthesizer sounds; <b>Eucalyptus</b>, <b>Hard Tongue</b>, <b>Pipe</b> and <b>Singer</b> use <span class="ui">Tongue</span>, <span class="ui">Tube</span> and the other knobs that follow measurements of real instruments. <b>Tempo</b> (20–300 BPM) sets the speed of the rhythm pulse. <b>Settings</b> opens MIDI input, audio output and the Audio Unit installer.</dd>
           <dt><span class="n">3</span>Mouth</dt>
-          <dd>The shape of the mouth: which vowel the drone speaks and how it moves. See <a href="#mouth">Mouth</a>.</dd>
+          <dd>The shape of the mouth: which vowel the drone speaks, what the tongue takes away and how both move. See <a href="#mouth">Mouth</a>.</dd>
           <dt><span class="n">4</span>Lips</dt>
-          <dd>The source of the sound: lips, breath, voice, pitch and how notes begin and end. See <a href="#lips">Lips</a>.</dd>
-          <dt><span class="n">5</span>Rhythm</dt>
-          <dd>The tempo-synced pulse, the pitch bend range and the octave. See <a href="#rhythm">Rhythm</a>.</dd>
-          <dt><span class="n">6</span>Keyboard</dt>
+          <dd>The source of the sound: lips, breath, voice and how notes begin and end. See <a href="#lips">Lips</a>.</dd>
+          <dt><span class="n">5</span>Tube</dt>
+          <dd>The instrument itself: its resonances, the overblown note, glide, the pitch bend range and the octave. See <a href="#tube">Tube</a>.</dd>
+          <dt><span class="n">6</span>Rhythm</dt>
+          <dd>The tempo-synced pulse with its accents and in-breaths. See <a href="#rhythm">Rhythm</a>.</dd>
+          <dt><span class="n">7</span>Keyboard</dt>
           <dd>Click a key to play it. Clicking near the top of a key plays softly; clicking near its bottom edge is the hardest hit and overblows the note.</dd>
         </dl>
         <h3>Turning a knob</h3>
@@ -95,7 +99,7 @@
         <p>Didgeridoo plays one note at a time. Hold a key for the drone; a second key slides the pitch there (<span class="ui">Glide</span>), and releasing it falls back to the key still held. With <span class="ui">Octave</span> at 0 the range of a real instrument sits around middle C: C3–G3 (MIDI notes 60–67).</p>
         <dl class="controls">
           <dt>Hard hit</dt>
-          <dd>A velocity at or above <span class="ui">Toot Vel</span> overblows: the note jumps up by <span class="ui">Toot Pitch</span> semitones with a bright, trumpet-like tone.</dd>
+          <dd>A velocity at or above <span class="ui">Toot Vel</span> overblows: the note jumps up by <span class="ui">Toot Pitch</span> semitones with a bright, trumpet-like tone, for as long as you hold the key or, with <span class="ui">Toot Len</span>, as a short stab.</dd>
           <dt>Mod wheel</dt>
           <dd>Opens the mouth: moves the vowel towards “i” by up to <span class="ui">Wheel Vowel</span>.</dd>
           <dt>Aftertouch</dt>
@@ -116,6 +120,8 @@
           <dd>How much of the vowel resonances is mixed into the sound. At 0 the drone is plain.</dd>
           <dt>Reso (0–100 %)</dt>
           <dd>How sharp the vowel resonances are: higher values sound more vocal and nasal.</dd>
+          <dt>Tongue (0–100 %)</dt>
+          <dd>What a raised tongue takes out of the sound. A player's mouth adds nothing: it holds the sound back at three resonances of its own, and the band left between them is the bright overtone you hear moving, between about 1 and 2.2 kHz. The band follows <span class="ui">Vowel</span> and everything that moves it. Below about 25 % of <span class="ui">Vowel</span> the tongue lies low and nothing happens; from 80 % it works in full. A raised tongue also lifts the drone by up to a third of a semitone. For a sound close to a real instrument, turn <span class="ui">Tongue</span> up and <span class="ui">Formant</span> down.</dd>
           <dt>Tone (200–8000 Hz)</dt>
           <dd>A low-pass filter on the direct sound. Lower is darker.</dd>
           <dt>Wobble Rate (0.05–10 Hz)</dt>
@@ -140,41 +146,59 @@
           <dd>Saturation at the output: adds grit and compresses the level.</dd>
           <dt>Breath (0–100 %)</dt>
           <dd>Breath noise passing through the tube and the mouth.</dd>
-          <dt>Growl (0–100 %)</dt>
-          <dd>A voice sung into the tube, which makes the drone rough and beating.</dd>
-          <dt>Growl Pitch (0–24 st)</dt>
-          <dd>The interval of that voice above the drone, in semitones.</dd>
           <dt>Drift (0–100 %)</dt>
-          <dd>Slow, random wandering of the pitch, up to about a third of a semitone.</dd>
-          <dt>Glide (0–1000 ms)</dt>
-          <dd>How long the pitch takes to slide from one note to the next.</dd>
+          <dd>Slow, random wandering of the pitch, up to about a third of a semitone. A real drone is steady: keep it low for a faithful sound.</dd>
+          <dt>Growl (0–100 %)</dt>
+          <dd>A voice sung into the tube, slightly out of tune with it, which makes the drone rough and beating.</dd>
+          <dt>Growl Pitch (0–24 st)</dt>
+          <dd>The interval of the sung voice above the drone, in semitones, for <span class="ui">Growl</span> and for <span class="ui">Voice</span>.</dd>
+          <dt>Voice (0–100 %)</dt>
+          <dd>Singing into the tube the way players do it: the voice opens and closes the same stream of air as the lips, exactly in tune with the drone at the interval of <span class="ui">Growl Pitch</span>. A fifth (7 st) or a tenth (16 st) adds a tone one octave below the drone. Unlike <span class="ui">Growl</span> it does not beat.</dd>
           <dt>Attack (5–2000 ms)</dt>
           <dd>How quickly a note fades in.</dd>
           <dt>Release (10–3000 ms)</dt>
           <dd>How quickly it fades out after the key is released.</dd>
+        </dl>
+      </section>
+
+      <section id="tube">
+        <h2>Tube</h2>
+        <dl class="controls">
+          <dt>Tube (0–100 %)</dt>
+          <dd>The resonances of the instrument itself. The lowest lies just under the drone and makes the fundamental stand far above its harmonics, as on a real didgeridoo; the next ones follow <span class="ui">Toot Pitch</span>. The loudness stays about the same. At 0 the tube is left out.</dd>
           <dt>Toot Vel (64–127, Off)</dt>
           <dd>The velocity from which a note overblows. Turn it fully up (“Off”) to disable overblowing.</dd>
           <dt>Toot Pitch (7–24 st)</dt>
-          <dd>How far an overblown note jumps above the played key.</dd>
+          <dd>How far an overblown note jumps above the played key. With <span class="ui">Tube</span> turned up it also says what kind of tube this is: 19 st is a plain pipe, which favours the odd harmonics of the drone; around 16 st is a flared, natural instrument, whose harmonics above the fundamental are weak.</dd>
+          <dt>Toot Len (Hold, 1–1000 ms)</dt>
+          <dd>How long an overblown note lasts. At <b>Hold</b> it sounds as long as the key is held. With a length it is a short stab, after which the drone of the same key comes back: the way players throw a toot into a rhythm.</dd>
+          <dt>Glide (0–1000 ms)</dt>
+          <dd>How long the pitch takes to slide from one note to the next.</dd>
+          <dt>Bend Range (0–12 st)</dt>
+          <dd>The pitch bend range in semitones.</dd>
+          <dt>Octave (−2 to +2)</dt>
+          <dd>Moves the whole instrument by octaves. At 0 a key sounds two octaves below its MIDI note, which puts a didgeridoo's range around middle C. +2 plays the MIDI note itself, for pads and keyboards that start low. A sounding note slides to the new octave. Programs leave this knob where you put it.</dd>
         </dl>
       </section>
 
       <section id="rhythm">
         <h2>Rhythm</h2>
-        <p>The pulse starts at full strength on every step and fades until the next one. With <span class="ui">Rhy Depth</span> and <span class="ui">Rhy&gt;Vowel</span> at zero it does nothing. In the app it runs at the <span class="ui">Tempo</span> in the header; in a host it follows the song.</p>
+        <p>The pulse starts at full strength on every step and fades until the next one. With <span class="ui">Rhy Depth</span>, <span class="ui">Rhy&gt;Vowel</span>, <span class="ui">Accent</span> and <span class="ui">Breath In</span> at zero it does nothing. In the app it runs at the <span class="ui">Tempo</span> in the header; in a host it follows the song.</p>
         <dl class="controls">
           <dt>Rhythm Div (1/64 to 2/1)</dt>
           <dd>The length of one step, including triplet (T) and dotted (D) values.</dd>
+          <dt>Pattern (Even, A-b, A-b-b, A-b-b-A-b-A)</dt>
+          <dd>Which steps are accents (A) and which are soft (b). On a soft step <span class="ui">Rhy&gt;Vowel</span> pushes the vowel the other way, as the tongue swings back after an accent. <b>Even</b> treats every step alike.</dd>
           <dt>Rhy Depth (0–100 %)</dt>
           <dd>How far the volume drops between pulses.</dd>
           <dt>Rhy&gt;Vowel (−100 to +100 %)</dt>
           <dd>How far each pulse pushes the vowel: positive towards “i”, negative towards “u”.</dd>
           <dt>Rhy Decay (0–100 %)</dt>
           <dd>The shape of the pulse, from a long swell at 0 to a short stab at 100.</dd>
-          <dt>Bend Range (0–12 st)</dt>
-          <dd>The pitch bend range in semitones.</dd>
-          <dt>Octave (−2 to +2)</dt>
-          <dd>Moves the whole instrument by octaves. At 0 a key sounds two octaves below its MIDI note, which puts a didgeridoo's range around middle C. +2 plays the MIDI note itself, for pads and keyboards that start low. A sounding note slides to the new octave. Programs leave this knob where you put it.</dd>
+          <dt>Accent (0–100 %)</dt>
+          <dd>How much louder and brighter an accented step begins, and how much quieter the soft steps are.</dd>
+          <dt>Breath In (0–100 %)</dt>
+          <dd>A quick breath through the nose on every soft step, as in circular breathing: for the first fifth of a second the drone drops, the breath is heard and the tongue lets go. It needs a pattern with soft steps.</dd>
         </dl>
       </section>
 
@@ -208,7 +232,7 @@
             <img src="assets/manual/plugin-window.png" alt="The plug-in's window in a host">
           </div>
         </figure>
-        <p>The plug-in has the same sound, the same 26 parameters and the same six programs (as factory presets) as the app. Its window is the app's panel: the <span class="ui">Program</span> menu and the knobs of Mouth, Lips and Rhythm. The tempo, the MIDI and audio settings and a keyboard are the host's own, so the window leaves them out. The knobs follow the host's automation, and turning one can be recorded as automation. The host saves the sound with the project. The rhythm pulse follows the host's tempo and song position.</p>
+        <p>The plug-in has the same sound, the same 33 parameters and the same ten programs (as factory presets) as the app. Its window is the app's panel: the <span class="ui">Program</span> menu and the knobs of Mouth, Lips, Tube and Rhythm. The tempo, the MIDI and audio settings and a keyboard are the host's own, so the window leaves them out. The knobs follow the host's automation, and turning one can be recorded as automation. The host saves the sound with the project. The rhythm pulse follows the host's tempo and song position.</p>
         <p>After updating the app, click <span class="ui">Install Audio Unit</span> again to update the plug-in.</p>
       </section>
 
