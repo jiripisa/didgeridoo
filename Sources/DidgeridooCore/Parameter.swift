@@ -1,7 +1,7 @@
 import DidgeridooDSP
 
 /// One knob of the instrument. The table comes from the sound engine, so the
-/// app, the Audio Unit and the original MPC plugin always agree on it.
+/// app and the Audio Unit always agree on it.
 public struct Parameter: Identifiable, Sendable, Equatable {
 
     public enum Kind: Sendable, Equatable {
@@ -27,7 +27,7 @@ public struct Parameter: Identifiable, Sendable, Equatable {
     public var id: Int { index }
 
     /// True when zero sits in the middle of the range (a signed amount).
-    public var isBipolar: Bool { range.lowerBound < 0 && range.upperBound > 0 && defaultValue == 0 }
+    public var isBipolar: Bool { range.upperBound > 0 && range.lowerBound == -range.upperBound }
 
     /// Knob position (0...1) for a plain value.
     public func normalised(_ plain: Float) -> Float {

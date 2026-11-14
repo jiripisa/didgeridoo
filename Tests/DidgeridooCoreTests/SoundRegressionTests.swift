@@ -1,9 +1,8 @@
 import Testing
 @testable import DidgeridooCore
 
-/// Guards the sound itself. Phase 02 compared the engine sample by sample with
-/// the MPC plugin; the references below were taken from that engine, so a change
-/// in `DidgeridooDSP` that alters a single sample fails here.
+/// Guards the sound itself: the references below were taken from the engine,
+/// so a change in `DidgeridooDSP` that alters a single sample fails here.
 ///
 /// Each reference holds two things: a fingerprint of every sample, and the
 /// level of each second. They tell two cases apart:
@@ -46,7 +45,7 @@ struct SoundRegressionTests {
         Event(2.30, 0xE0, 0, 0x40),     // and centred
         Event(2.40, 0x80, 62, 0),       // release
         Event(2.80, 0x90, 60, 127),     // hard hit from silence: overblown
-        Event(3.20, 0xD0, 100, 0),      // aftertouch adds growl
+        Event(3.20, 0xD0, 100, 0),      // aftertouch adds the voice
         Event(3.40, 0x90, 65, 127),     // hard hit while a note sounds
         Event(3.50, 0xD0, 0, 0),
         Event(3.70, 0xB0, 64, 127),     // sustain pedal down
@@ -73,40 +72,31 @@ struct SoundRegressionTests {
         }
     }
 
-    /// The 44.1 kHz lines were taken on 2026-11-13 from the engine of phase 02,
-    /// which was verified identical to the MPC plugin at that rate. The 48 kHz
-    /// lines are from phase 03, which gave the pitch drift the same speed at
-    /// every sample rate; 48 kHz was never compared with the plugin.
-    ///
-    /// Phase 05 lowered the instrument by two octaves (the Octave knob, at 0)
-    /// and moved the phrase up by two: the samples, and so these lines, stayed
-    /// the same.
-    ///
-    /// Phase 09 added the tongue, the tube, the toot's length, the voice and the
-    /// rhythm's patterns, all at rest in the first six programs, whose lines
-    /// stayed the same. Programs 6 to 9 use them; their lines are from that
-    /// phase and were never part of the MPC plugin.
+    /// Taken on 2026-11-14 from the engine of phase 15, the model that replaced
+    /// the MPC plugin's synthesis. Nothing earlier holds: that phase changed
+    /// the sound of every program on purpose. A debug build and a release build
+    /// rendered the same samples.
     private static let references: [Reference] = [
-        Reference(program: 0, sampleRate: 44100, fingerprint: 0x8B745F4646867801, levels: [0.120198, 0.124292, 0.116127, 0.211169, 0.138925, 0.0]),
-        Reference(program: 1, sampleRate: 44100, fingerprint: 0xFEDDD1BB3179D75B, levels: [0.116259, 0.119507, 0.102175, 0.184046, 0.125087, 0.0]),
-        Reference(program: 2, sampleRate: 44100, fingerprint: 0x67D07AFA53833282, levels: [0.149203, 0.150765, 0.132479, 0.230336, 0.154741, 0.0]),
-        Reference(program: 3, sampleRate: 44100, fingerprint: 0xA700D3DE067B8EC9, levels: [0.126883, 0.133553, 0.102627, 0.166546, 0.105774, 0.0]),
-        Reference(program: 4, sampleRate: 44100, fingerprint: 0xBC2ADEF803228146, levels: [0.058466, 0.061773, 0.058769, 0.13848, 0.100131, 0.0]),
-        Reference(program: 5, sampleRate: 44100, fingerprint: 0x8E767AACC78225AA, levels: [0.054149, 0.056498, 0.057981, 0.113571, 0.077528, 0.0]),
-        Reference(program: 0, sampleRate: 48000, fingerprint: 0x6F16A93F8755FF2, levels: [0.120468, 0.124535, 0.11583, 0.211722, 0.138523, 0.0]),
-        Reference(program: 1, sampleRate: 48000, fingerprint: 0x1E7413AE9E3F93C9, levels: [0.115905, 0.11943, 0.101988, 0.184145, 0.125073, 0.0]),
-        Reference(program: 2, sampleRate: 48000, fingerprint: 0x9736BF000CD1E029, levels: [0.148625, 0.151501, 0.132646, 0.230297, 0.154133, 0.0]),
-        Reference(program: 3, sampleRate: 48000, fingerprint: 0xE8ADB3E6B6071E83, levels: [0.127398, 0.1348, 0.102905, 0.165961, 0.106753, 0.0]),
-        Reference(program: 4, sampleRate: 48000, fingerprint: 0x50A0B0765E4BFBB8, levels: [0.058908, 0.062696, 0.05883, 0.139418, 0.099974, 0.0]),
-        Reference(program: 5, sampleRate: 48000, fingerprint: 0xDA8181386EB95D68, levels: [0.054461, 0.057059, 0.058069, 0.113547, 0.077785, 0.0]),
-        Reference(program: 6, sampleRate: 44100, fingerprint: 0xF939806C7BFE123C, levels: [0.14624, 0.137945, 0.089566, 0.154091, 0.107089, 0.0]),
-        Reference(program: 7, sampleRate: 44100, fingerprint: 0xB8DB4F1F08DA1A4D, levels: [0.088125, 0.086487, 0.05753, 0.097976, 0.069606, 0.0]),
-        Reference(program: 8, sampleRate: 44100, fingerprint: 0xC5253355305A1951, levels: [0.144877, 0.137032, 0.089954, 0.137157, 0.106633, 0.0]),
-        Reference(program: 9, sampleRate: 44100, fingerprint: 0xA9273D59FD6EACD8, levels: [0.118383, 0.113646, 0.077383, 0.129339, 0.083308, 0.0]),
-        Reference(program: 6, sampleRate: 48000, fingerprint: 0xF7DCD74E0D99D872, levels: [0.146162, 0.136213, 0.089522, 0.154673, 0.106825, 0.0]),
-        Reference(program: 7, sampleRate: 48000, fingerprint: 0xD5086E8C5127DDA9, levels: [0.088063, 0.08539, 0.057339, 0.096994, 0.068797, 0.0]),
-        Reference(program: 8, sampleRate: 48000, fingerprint: 0xEF21BF3A25F048B7, levels: [0.144101, 0.138018, 0.09041, 0.1389, 0.107033, 0.0]),
-        Reference(program: 9, sampleRate: 48000, fingerprint: 0x2EFDE610B3E00C86, levels: [0.118175, 0.111987, 0.077069, 0.128777, 0.082164, 0.0]),
+        Reference(program: 0, sampleRate: 44100, fingerprint: 0xE628F8DF21F55265, levels: [0.111587, 0.10413, 0.09758, 0.121984, 0.065655, 0.0]),
+        Reference(program: 1, sampleRate: 44100, fingerprint: 0x642D47FEBF0ABC89, levels: [0.127432, 0.115589, 0.070862, 0.122319, 0.077353, 0.0]),
+        Reference(program: 2, sampleRate: 44100, fingerprint: 0xB451DD7EDDB3A38F, levels: [0.10186, 0.095268, 0.095612, 0.112371, 0.067594, 0.0]),
+        Reference(program: 3, sampleRate: 44100, fingerprint: 0x528EFBE3BB44D1EC, levels: [0.102047, 0.095405, 0.090827, 0.108265, 0.063241, 0.0]),
+        Reference(program: 4, sampleRate: 44100, fingerprint: 0x7C56D8A31983EA4A, levels: [0.071825, 0.066546, 0.053089, 0.087163, 0.048447, 0.0]),
+        Reference(program: 5, sampleRate: 44100, fingerprint: 0xABCF20944A3B88C3, levels: [0.051964, 0.0505, 0.054254, 0.059643, 0.033155, 0.0]),
+        Reference(program: 6, sampleRate: 44100, fingerprint: 0x7DEA770385EB9443, levels: [0.110967, 0.101511, 0.098919, 0.124725, 0.068795, 0.0]),
+        Reference(program: 7, sampleRate: 44100, fingerprint: 0xFCFBEF8ECA17132B, levels: [0.064424, 0.063562, 0.051394, 0.068008, 0.043514, 0.0]),
+        Reference(program: 8, sampleRate: 44100, fingerprint: 0x1A63C54DCAB775EC, levels: [0.129662, 0.119645, 0.136503, 0.156574, 0.079159, 0.0]),
+        Reference(program: 9, sampleRate: 44100, fingerprint: 0x6E324CC6ED537F79, levels: [0.10463, 0.099605, 0.0966, 0.11342, 0.055733, 0.0]),
+        Reference(program: 0, sampleRate: 48000, fingerprint: 0x60B95CB5DD79DB7C, levels: [0.111406, 0.104132, 0.102244, 0.120566, 0.06564, 0.0]),
+        Reference(program: 1, sampleRate: 48000, fingerprint: 0x4AF19DC4C7EF3203, levels: [0.12747, 0.115496, 0.071786, 0.121966, 0.077125, 0.0]),
+        Reference(program: 2, sampleRate: 48000, fingerprint: 0x415761B98A0D2260, levels: [0.101384, 0.095407, 0.099981, 0.110882, 0.06744, 0.0]),
+        Reference(program: 3, sampleRate: 48000, fingerprint: 0xD313AD7BD0411BC, levels: [0.1012, 0.095721, 0.096352, 0.104006, 0.061081, 0.0]),
+        Reference(program: 4, sampleRate: 48000, fingerprint: 0x5DD131BC850E7441, levels: [0.071484, 0.066194, 0.056463, 0.082386, 0.048243, 0.0]),
+        Reference(program: 5, sampleRate: 48000, fingerprint: 0x910C6D64B14421CD, levels: [0.051982, 0.05109, 0.059456, 0.060009, 0.033391, 0.0]),
+        Reference(program: 6, sampleRate: 48000, fingerprint: 0x6ED00957E92E92B2, levels: [0.110698, 0.101158, 0.101215, 0.123357, 0.068459, 0.0]),
+        Reference(program: 7, sampleRate: 48000, fingerprint: 0xF5CCFB5D96DDF204, levels: [0.064296, 0.062764, 0.053009, 0.068386, 0.043409, 0.0]),
+        Reference(program: 8, sampleRate: 48000, fingerprint: 0xB0F6EEDD8ED5F760, levels: [0.129717, 0.119573, 0.143624, 0.155726, 0.078797, 0.0]),
+        Reference(program: 9, sampleRate: 48000, fingerprint: 0xE617248C6D3374AD, levels: [0.104799, 0.099195, 0.101415, 0.117607, 0.061444, 0.0]),
     ]
 
     private static func render(program: Int, sampleRate: Double) -> [Float] {
