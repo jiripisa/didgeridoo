@@ -1,22 +1,21 @@
+import Foundation
 import Testing
 @testable import DidgeridooCore
 
 @Suite("Parameters")
 struct ParameterTests {
 
-    @Test("The table starts with the MPC plugin's 25 parameters in its order; newer ones follow")
-    func tableMatchesThePlugin() {
-        #expect(Parameters.all.count == 33)
-        #expect(Parameters.all.first?.identifier == "volume")
-        #expect(Parameters.all.map(\.identifier).dropFirst(24)
-                == ["drift", "octave", "tongue", "tube", "tootlen", "voice", "rhypattern", "rhyaccent", "rhybreath"])
-        #expect(Parameters.all.map(\.index) == Array(0..<33))
+    @Test("The table holds the 28 parameters group by group")
+    func tableFollowsTheGroups() {
+        #expect(Parameters.all.count == 28)
+        #expect(Parameters.all.map(\.identifier) == ParameterSection.all.flatMap(\.parameters).map(\.identifier))
+        #expect(Parameters.all.map(\.index) == Array(0..<28))
     }
 
     @Test("Every parameter sits in exactly one section")
     func sectionsCoverEverything() {
         let placed = ParameterSection.all.flatMap(\.parameters).map(\.identifier)
-        #expect(placed.count == 33)
+        #expect(placed.count == 28)
         #expect(Set(placed) == Set(Parameters.all.map(\.identifier)))
     }
 
@@ -28,13 +27,14 @@ struct ParameterTests {
         #expect(abs(glide.plain(glide.normalised(60)) - 60) < 0.01)
     }
 
-    @Test("Values read like on the MPC")
+    @Test("Values read as the knobs show them")
     func displayText() throws {
         let volume = try #require(Parameters.named("volume"))
         #expect(volume.label(-6) == "-6.0 dB")
-        let toot = try #require(Parameters.named("tootvel"))
-        #expect(toot.text(128) == "Off")
-        #expect(toot.text(115) == "115")
+        let voicePitch = try #require(Parameters.named("voicepitch"))
+        #expect(voicePitch.text(voicePitch.defaultValue) == "Tenth")
+        let flare = try #require(Parameters.named("flare"))
+        #expect(flare.label(33) == "33 %")
         let division = try #require(Parameters.named("rhythmdiv"))
         #expect(division.text(division.defaultValue) == "1/8")
         guard case .choice(let names) = division.kind else {
@@ -54,16 +54,16 @@ struct ParameterTests {
 
     @Test("Only signed amounts are bipolar")
     func bipolar() {
-        #expect(Parameters.all.filter(\.isBipolar).map(\.identifier) == ["rhyvowel", "octave"])
+        #expect(Parameters.all.filter(\.isBipolar).map(\.identifier) == ["octave", "rhyvowel"])
     }
 
     @Test("The sections and the order of their knobs are the window's")
     func sectionLayout() {
         #expect(ParameterSection.all.map(\.title) == ["Mouth", "Lips", "Tube", "Rhythm"])
         #expect(ParameterSection.all.map { $0.parameters.map(\.identifier) } == [
-            ["vowel", "formant", "reso", "tongue", "tone", "wobblerate", "wobbledepth", "wheelvowel", "volume"],
-            ["buzz", "body", "drive", "breath", "drift", "growl", "growlpitch", "voice", "attack", "release"],
-            ["tube", "tootvel", "tootpitch", "tootlen", "glide", "bendrange", "octave"],
+            ["vowel", "tongue", "wobblerate", "wobbledepth", "wheelvowel", "volume"],
+            ["buzz", "drive", "breath", "drift", "voice", "voicepitch", "rough", "attack", "release"],
+            ["tube", "tone", "flare", "glide", "bendrange", "octave"],
             ["rhythmdiv", "rhypattern", "rhydepth", "rhyvowel", "rhydecay", "rhyaccent", "rhybreath"],
         ])
     }
@@ -72,7 +72,7 @@ struct ParameterTests {
 @Suite("Programs")
 struct ProgramTests {
 
-    @Test("The built-in programs are there: the MPC plugin's six, then the newer ones")
+    @Test("The ten built-in programs are there")
     func names() {
         #expect(Programs.names == ["Classic Drone", "Deep Earth", "Vocal Wah", "Growler", "Rhythm Breath", "Gallop",
                                    "Eucalyptus", "Hard Tongue", "Pipe", "Singer"])
@@ -81,22 +81,22 @@ struct ProgramTests {
     @Test("Loading a program overwrites the parameters")
     func loading() throws {
         let synth = Synth()
-        let growl = try #require(Parameters.named("growl"))
-        #expect(synth.value(of: growl) == 0)
+        let voice = try #require(Parameters.named("voice"))
+        #expect(synth.value(of: voice) == 0)
         synth.loadProgram(3)
         #expect(synth.program == 3)
-        #expect(synth.value(of: growl) == 70)
-        #expect(Programs.value(program: 3, parameter: growl) == 70)
+        #expect(synth.value(of: voice) == 70)
+        #expect(Programs.value(program: 3, parameter: voice) == 70)
     }
 
     @Test("Loading a program leaves the octave where the player put it")
     func programKeepsTheOctave() throws {
         let synth = Synth()
         let octave = try #require(Parameters.named("octave"))
-        let growl = try #require(Parameters.named("growl"))
+        let voice = try #require(Parameters.named("voice"))
         synth.setValue(2, of: octave)
         synth.loadProgram(3)
-        #expect(synth.value(of: growl) == 70)
+        #expect(synth.value(of: voice) == 70)
         #expect(synth.value(of: octave) == 2)
     }
 }
@@ -146,6 +146,21 @@ struct SynthTests {
             let level = peak(of: synth, seconds: 1)
             #expect(level > 0.02, "program \(program) is silent")
             #expect(level <= 1, "program \(program) clips")
+        }
+    }
+
+    @Test("The output stays within full scale with Volume all the way up, the hardest hits included")
+    func loudestSettingStaysInScale() throws {
+        let volume = try #require(Parameters.named("volume"))
+        for program in Programs.names.indices {
+            let synth = Synth()
+            synth.loadProgram(program)
+            synth.setValue(volume.range.upperBound, of: volume)
+            synth.noteOn(62, velocity: 110)
+            var level = peak(of: synth, seconds: 1)
+            synth.noteOn(62, velocity: 127)                 // the hardest hit on the sounding drone
+            level = max(level, peak(of: synth, seconds: 1))
+            #expect(level <= 1, "program \(program) reaches \(level)")
         }
     }
 
@@ -218,6 +233,39 @@ struct SynthTests {
         #expect(other.program == 2)
         #expect(abs(other.value(of: vowel) - 77) < 0.001)
         #expect(SynthState(capturing: other) == state)
+    }
+
+    @Test("State also round-trips through the form it is stored in")
+    func stateSurvivesStorage() throws {
+        let synth = Synth()
+        synth.loadProgram(6)
+        synth.setValue(33, of: try #require(Parameters.named("tube")))
+        let stored = try JSONEncoder().encode(SynthState(capturing: synth))
+
+        let other = Synth()
+        try JSONDecoder().decode(SynthState.self, from: stored).apply(to: other)
+        let before = SynthState(capturing: synth), after = SynthState(capturing: other)
+        #expect(after.program == before.program)
+        #expect(after.model == before.model)
+        // A knob holds its position, not the value, so a value comes back within a rounding step.
+        for (identifier, value) in before.values {
+            let back = try #require(after.values[identifier])
+            #expect(abs(back - value) <= abs(value) * 1e-6, "\(identifier): \(value) came back as \(back)")
+        }
+    }
+
+    @Test("State stored by 1.0.x is left alone: its numbers belonged to another engine")
+    func earlierStateIsNotApplied() throws {
+        // As 1.0.2 wrote it: no word about the engine, values that mean something else now (Buzz
+        // was a pulse width, Tube rested at 0) and knobs that are gone.
+        let stored = Data(#"{"program":3,"values":{"vowel":90,"buzz":10,"tube":0,"tootlen":0,"growl":70}}"#.utf8)
+        let synth = Synth()
+        try JSONDecoder().decode(SynthState.self, from: stored).apply(to: synth)
+        #expect(synth.program == 0)
+        for identifier in ["vowel", "buzz", "tube"] {
+            let parameter = try #require(Parameters.named(identifier))
+            #expect(abs(synth.value(of: parameter) - parameter.defaultValue) < 0.001)
+        }
     }
 }
 

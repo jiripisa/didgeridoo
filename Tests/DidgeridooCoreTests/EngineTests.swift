@@ -90,8 +90,8 @@ struct EngineTests {
     /// zero crossings.
     private func plainSynth(sampleRate: Double = 44100, drift: Float = 0, octave: Float = 0) throws -> Synth {
         let synth = Synth(sampleRate: sampleRate)
-        let plain: [String: Float] = ["drift": drift, "octave": octave, "formant": 0, "body": 0, "breath": 0, "growl": 0,
-                                      "wobbledepth": 0, "drive": 0, "buzz": 0, "tone": 300, "attack": 5, "tootvel": 128]
+        let plain: [String: Float] = ["drift": drift, "octave": octave, "tube": 0, "tongue": 0, "breath": 0, "voice": 0,
+                                      "wobbledepth": 0, "drive": 0, "buzz": 0, "tone": 300, "attack": 5]
         for (identifier, value) in plain {
             synth.setValue(value, of: try #require(Parameters.named(identifier)))
         }

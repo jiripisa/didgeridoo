@@ -78,7 +78,7 @@ struct AudioUnitWindowTests {
         defer { AudioComponentInstanceDispose(unit) }
         let model = AudioUnitModel(unit: unit)
         let vowel = try #require(Parameters.named("vowel"))
-        #expect(abs(model.value(of: vowel) - 30) < 0.001)
+        #expect(abs(model.value(of: vowel) - vowel.defaultValue) < 0.001)
 
         AudioUnitSetParameter(unit, AudioUnitParameterID(vowel.index), kAudioUnitScope_Global, 0, 100, 0)
         model.refresh()
@@ -91,14 +91,14 @@ struct AudioUnitWindowTests {
         defer { AudioComponentInstanceDispose(unit) }
         let model = AudioUnitModel(unit: unit)
         let octave = try #require(Parameters.named("octave"))
-        let growl = try #require(Parameters.named("growl"))
+        let voice = try #require(Parameters.named("voice"))
         model.setPosition(1, of: octave)                    // +2
 
         model.loadProgram(3)                                // Growler
         #expect(model.program == 3)
         #expect(try presentPreset(of: unit) == 3)
-        #expect(try value(of: "growl", in: unit) == 70)
-        #expect(abs(model.value(of: growl) - 70) < 0.001)
+        #expect(try value(of: "voice", in: unit) == 70)
+        #expect(abs(model.value(of: voice) - 70) < 0.001)
         #expect(try value(of: "octave", in: unit) == 2)
     }
 
@@ -122,13 +122,13 @@ struct AudioUnitWindowTests {
         let unit = try PlugIn.make()
         defer { AudioComponentInstanceDispose(unit) }
         let model = AudioUnitModel(unit: unit)
-        let growl = try #require(Parameters.named("growl"))
+        let voice = try #require(Parameters.named("voice"))
         model.loadProgram(3)
-        model.setPosition(0, of: growl)
-        #expect(try value(of: "growl", in: unit) == 0)
+        model.setPosition(0, of: voice)
+        #expect(try value(of: "voice", in: unit) == 0)
 
-        model.resetToDefault(growl)
-        #expect(try value(of: "growl", in: unit) == 70)
+        model.resetToDefault(voice)
+        #expect(try value(of: "voice", in: unit) == 70)
     }
 
     /// A host's listener for one parameter. It runs on a queue of its own, so it

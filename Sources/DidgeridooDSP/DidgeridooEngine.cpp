@@ -2,34 +2,45 @@
 //
 // SPDX-License-Identifier: MIT
 //
-// The synthesis is the same code as the MPC plugin "Didgeridoo" (Jiri Pisa), lifted out of the
-// MPC plugin framework so that an Audio Unit and a standalone app can share it. Parameter
-// ranges, mappings, display texts and programs are identical to the plugin's.
+// The instrument as the published measurements describe it (see
+// .planning/research/reports/Didgeridoo acoustics and playing.md): one air stream through the
+// lips, held back by the vocal tract on one side and shaped by the tube on the other. The pitch
+// is an input, as a keyboard needs; the rest follows the physics.
 //
 // Signal path:
 //
-//   lips:   saw + narrow pulse (PolyBLEP, "Buzz" morphs between them)
-//             * voice growl (a sine sung into the tube, ring-modulates the buzz)
-//             + breath noise (pink)
+//   lips:   the flow through a valve that is shut for part of every cycle: a pulse with a sharp
+//           opening and a soft closure ("Buzz"), limited by what the pressure allows ("Drive")
+//             * the voice: the glottis, a second valve in the same stream ("Voice")
+//             + breath noise, which passes only while the lips are open ("Breath")
 //                |
-//                +--> tone lowpass ("Tone": the tube swallows the highs) ------+
-//                +--> formant 1 + formant 2 (band-pass pair = mouth shape,     +--> sum
-//                |    "Vowel" morphs u - o - a - e - i)                        |
-//   buzz only ---+--> body band-pass at the fundamental ("Body": drone weight) +
-//                                                                              |
-//   -> amp envelope * velocity * rhythm pulse -> drive (tanh) -> DC blocker -> volume -> L = R
+//   radiation:   the tube radiates the flow 6 dB per octave more strongly up to a corner
+//                ("Tone"): the flow's difference from sample to sample, then a low-pass
+//                |
+//   mouth:  three resonances of the vocal tract load the flow and cut it where they stand; the
+//           band left between them is the formant the ear follows ("Vowel", "Tongue")
+//                |
+//   tube:   eight resonances beside the direct sound ("Tube"), placed by the bore's flare
+//           ("Flare"); the first is tall and narrow and lies just under the drone
+//                |
+//   -> amp envelope * velocity * rhythm pulse -> DC blocker -> volume -> limiter -> L = R
 //
 // Pitch: last-note priority with glide, pitch bend, slow random drift. "Octave" moves the whole
 // instrument: at 0 a key sounds two octaves below its MIDI note, which puts a didgeridoo's range
-// around middle C. A hard hit
-// (velocity >= "Toot Vel") overblows: the pitch jumps up by "Toot Pitch" semitones and the
-// tone turns bright and trumpet-like.
+// around middle C. The instrument does not overblow: three attempts at the overblown note did
+// not pass the author's ear, and a hard hit is a loud drone.
 //
 // Vowel movement adds up from the Vowel knob, the mod wheel, a slow "Wobble" LFO and the
-// tempo-synced rhythm pulse. Channel aftertouch adds growl.
+// tempo-synced rhythm pulse. Channel aftertouch adds the voice.
 //
-// Expensive maths (pow, tan, exp) runs every 16 samples ("control rate"); oscillators,
-// filters and envelopes run every sample. Nothing allocates in process().
+// Expensive maths (pow, tan, exp, sin) runs every 16 samples ("control rate"); the lips, the
+// filters and the envelope run every sample. Nothing allocates in process().
+
+// A product and a sum stay two operations. Fused into one they round once instead of twice, and
+// an optimised build fuses where an unoptimised one does not: without this line two programs
+// rendered samples that differed in their last bit between a debug and a release build, and the
+// sound's references could hold for one of them only.
+#pragma clang fp contract(off)
 
 #include "DidgeridooDSP.h"
 
@@ -54,41 +65,41 @@ using namespace mpc::dsp;
 namespace {
 
 // ---------------------------------------------------------------------------------------------
-// Parameters. The order and the identifiers are permanent: only ever append.
+// Parameters, group by group. This is the table of the model that replaced the MPC plugin's
+// engine; its identifiers and its order are permanent from here on: only ever append.
 // ---------------------------------------------------------------------------------------------
 enum Params
 {
-    kVolume,        // dB    master volume
-    kVowel,         // %     mouth shape, u (0) - o - a - e - i (100)
-    kFormant,       // %     how much of the formant pair is mixed in
-    kReso,          // %     sharpness of the formants
-    kBuzz,          // %     lip source: 0 = round saw, 100 = thin nasal pulse
-    kTone,          // Hz    lowpass on the direct sound
-    kBody,          // %     resonance at the fundamental (drone weight)
-    kDrive,         // %     saturation at the output
-    kBreath,        // %     breath noise through the tube
-    kGrowl,         // %     voice sung into the tube (rough beating)
-    kGrowlPitch,    // st    interval of the sung voice above the drone
-    kGlide,         // ms    slide time between notes
-    kAttack,        // ms    amp envelope attack
-    kRelease,       // ms    amp envelope release
-    kTootVel,       // -     velocity at which a note overblows (128 = Off)
-    kTootPitch,     // st    how far the overblown note jumps up
-    kRhythmDiv,     // -     note division of the rhythm pulse
-    kRhyDepth,      // %     how deep the pulse ducks the volume
-    kRhyVowel,      // %     how far the pulse pushes the vowel (signed)
-    kRhyDecay,      // %     pulse shape: 0 = long swell, 100 = short stab
+    // Mouth
+    kVowel,         // %     mouth shape: where the tongue leaves its band, and how far it is raised
+    kTongue,        // %     how deep the vocal tract's resonances cut into the lip flow
     kWobbleRate,    // Hz    slow vowel LFO rate
     kWobbleDepth,   // %     slow vowel LFO depth
     kWheelVowel,    // %     how far the mod wheel moves the vowel
-    kBendRange,     // st    pitch bend range
+    kVolume,        // dB    master volume
+    // Lips
+    kBuzz,          // %     how hard the lips close: 0 = soft and mellow, 100 = hard and bright
+    kDrive,         // %     how far the lip valve is driven into its limit
+    kBreath,        // %     breath noise carried by the flow through the lips
     kDrift,         // %     slow random pitch instability
+    kVoice,         // %     a voice sung through the lips (a second valve in the same stream)
+    kVoicePitch,    // -     the interval of the voice above the drone
+    kRough,         // %     how far the voice is off its lock, so that it beats
+    kAttack,        // ms    amp envelope attack
+    kRelease,       // ms    amp envelope release
+    // Tube
+    kTube,          // %     how strongly the tube's own resonances stand out
+    kTone,          // Hz    the corner above which the tube radiates no more strongly
+    kFlare,         // %     the tube's shape: 0 = a plain pipe, 100 = a tube that widens to a wide bell
+    kGlide,         // ms    slide time between notes
+    kBendRange,     // st    pitch bend range
     kOctave,        // -     octave of the whole instrument; 0 = two octaves below the MIDI note
-    kTongue,        // %     how hard a raised tongue cuts the bands beside the formant
-    kTube,          // %     how much the tube's own resonances colour the sound
-    kTootLen,       // ms    length of an overblown stab; 0 = as long as the key is held
-    kVoice,         // %     a voice sung through the lips (two valves in a row)
+    // Rhythm
+    kRhythmDiv,     // -     note division of the rhythm pulse
     kRhyPattern,    // -     which steps of the rhythm are accents and which are soft
+    kRhyDepth,      // %     how deep the pulse ducks the volume
+    kRhyVowel,      // %     how far the pulse pushes the vowel (signed)
+    kRhyDecay,      // %     pulse shape: 0 = long swell, 100 = short stab
     kRhyAccent,     // %     surge of an accented step
     kRhyBreath,     // %     in-breath on a soft step
     kNumParams
@@ -155,8 +166,7 @@ Param choiceParam(const char* id, const char* name, int numChoices, int def)
 
 // ---------------------------------------------------------------------------------------------
 // Rhythm patterns: which steps of the pulse are accents (a surge, the tongue thrown forward) and
-// which are soft (the tongue drawn back, and the place for an in-breath). "Even" is every step
-// alike, the rhythm as the MPC plugin has it.
+// which are soft (the tongue drawn back, and the place for an in-breath).
 // ---------------------------------------------------------------------------------------------
 struct Pattern { const char* name; int length; bool accent[6]; };
 
@@ -168,54 +178,72 @@ const Pattern kPatterns[] = {
 };
 constexpr int kNumPatterns = (int)(sizeof(kPatterns) / sizeof(kPatterns[0]));
 
+// ---------------------------------------------------------------------------------------------
+// The voice's intervals above the drone: the simple ratios, because only those lock the voice to
+// the lips, so that its sums and differences with the drone fall on one steady series. A fifth
+// and a tenth give the tone an octave below the drone; players sing the tenth most.
+// ---------------------------------------------------------------------------------------------
+struct Interval { const char* name; float ratio; };
+
+const Interval kIntervals[] = {
+    { "Unison",  1.0f },
+    { "Third",   5.0f / 4.0f },
+    { "Fourth",  4.0f / 3.0f },
+    { "Fifth",   3.0f / 2.0f },
+    { "Octave",  2.0f },
+    { "Tenth",   5.0f / 2.0f },
+    { "Twelfth", 3.0f },
+};
+constexpr int kNumIntervals = (int)(sizeof(kIntervals) / sizeof(kIntervals[0]));
+constexpr int kIntervalFifth = 3, kIntervalTenth = 5;
+
 const Param kParams[kNumParams] = {
-    floatParam ("volume",      "Volume",       -40.0f, 6.0f, -6.0f, "dB", 1),
-    floatParam ("vowel",       "Vowel",        0.0f, 100.0f, 30.0f, "%", 0),
-    floatParam ("formant",     "Formant",      0.0f, 100.0f, 70.0f, "%", 0),
-    floatParam ("reso",        "Reso",         0.0f, 100.0f, 60.0f, "%", 0),
-    floatParam ("buzz",        "Buzz",         0.0f, 100.0f, 50.0f, "%", 0),
-    logParam   ("tone",        "Tone",         200.0f, 8000.0f, 1400.0f, "Hz", 0),
-    floatParam ("body",        "Body",         0.0f, 100.0f, 50.0f, "%", 0),
-    floatParam ("drive",       "Drive",        0.0f, 100.0f, 20.0f, "%", 0),
+    floatParam ("vowel",       "Vowel",        0.0f, 100.0f, 45.0f, "%", 0),
+    floatParam ("tongue",      "Tongue",       0.0f, 100.0f, 65.0f, "%", 0),
+    logParam   ("wobblerate",  "Wobble Rate",  0.05f, 10.0f, 0.3f, "Hz", 2),
+    floatParam ("wobbledepth", "Wobble Depth", 0.0f, 100.0f, 25.0f, "%", 0),
+    floatParam ("wheelvowel",  "Wheel Vowel",  0.0f, 100.0f, 100.0f, "%", 0),
+    floatParam ("volume",      "Volume",       -40.0f, 6.0f, 0.0f, "dB", 1),
+
+    floatParam ("buzz",        "Buzz",         0.0f, 100.0f, 75.0f, "%", 0),
+    floatParam ("drive",       "Drive",        0.0f, 100.0f, 55.0f, "%", 0),
     floatParam ("breath",      "Breath",       0.0f, 100.0f, 15.0f, "%", 0),
-    floatParam ("growl",       "Growl",        0.0f, 100.0f, 0.0f, "%", 0),
-    intParam   ("growlpitch",  "Growl Pitch",  0, 24, 7, "st"),
-    floatParam ("glide",       "Glide",        0.0f, 1000.0f, 60.0f, "ms", 0, 0.4f),
+    floatParam ("drift",       "Drift",        0.0f, 100.0f, 12.0f, "%", 0),
+    floatParam ("voice",       "Voice",        0.0f, 100.0f, 0.0f, "%", 0),
+    choiceParam("voicepitch",  "Voice Pitch",  kNumIntervals, kIntervalTenth),
+    floatParam ("rough",       "Rough",        0.0f, 100.0f, 0.0f, "%", 0),
     logParam   ("attack",      "Attack",       5.0f, 2000.0f, 60.0f, "ms", 0),
     logParam   ("release",     "Release",      10.0f, 3000.0f, 180.0f, "ms", 0),
-    intParam   ("tootvel",     "Toot Vel",     64, 128, 115),
-    intParam   ("tootpitch",   "Toot Pitch",   7, 24, 16, "st"),
+
+    floatParam ("tube",        "Tube",         0.0f, 100.0f, 60.0f, "%", 0),
+    logParam   ("tone",        "Tone",         200.0f, 8000.0f, 3000.0f, "Hz", 0),
+    floatParam ("flare",       "Flare",        0.0f, 100.0f, 33.0f, "%", 0),
+    floatParam ("glide",       "Glide",        0.0f, 1000.0f, 60.0f, "ms", 0, 0.4f),
+    intParam   ("bendrange",   "Bend Range",   0, 12, 1, "st"),
+    intParam   ("octave",      "Octave",       -2, 2, 0),
+
     choiceParam("rhythmdiv",   "Rhythm Div",   kNumDivisions, kDivisionEighth),
+    choiceParam("rhypattern",  "Pattern",      kNumPatterns, 0),
     floatParam ("rhydepth",    "Rhy Depth",    0.0f, 100.0f, 0.0f, "%", 0),
     floatParam ("rhyvowel",    "Rhy>Vowel",    -100.0f, 100.0f, 0.0f, "%", 0),
     floatParam ("rhydecay",    "Rhy Decay",    0.0f, 100.0f, 40.0f, "%", 0),
-    logParam   ("wobblerate",  "Wobble Rate",  0.05f, 10.0f, 0.4f, "Hz", 2),
-    floatParam ("wobbledepth", "Wobble Depth", 0.0f, 100.0f, 20.0f, "%", 0),
-    floatParam ("wheelvowel",  "Wheel Vowel",  0.0f, 100.0f, 100.0f, "%", 0),
-    intParam   ("bendrange",   "Bend Range",   0, 12, 2, "st"),
-    floatParam ("drift",       "Drift",        0.0f, 100.0f, 30.0f, "%", 0),
-    intParam   ("octave",      "Octave",       -2, 2, 0),
-    floatParam ("tongue",      "Tongue",       0.0f, 100.0f, 0.0f, "%", 0),
-    floatParam ("tube",        "Tube",         0.0f, 100.0f, 0.0f, "%", 0),
-    floatParam ("tootlen",     "Toot Len",     0.0f, 1000.0f, 0.0f, "ms", 0, 0.4f),
-    floatParam ("voice",       "Voice",        0.0f, 100.0f, 0.0f, "%", 0),
-    choiceParam("rhypattern",  "Pattern",      kNumPatterns, 0),
     floatParam ("rhyaccent",   "Accent",       0.0f, 100.0f, 0.0f, "%", 0),
     floatParam ("rhybreath",   "Breath In",    0.0f, 100.0f, 0.0f, "%", 0),
 };
 
 // ---------------------------------------------------------------------------------------------
 // Sections: the groups the parameters are shown in (the app's panels, the Audio Unit's parameter
-// groups) and the order inside each. Every parameter belongs to exactly one section.
+// groups) and the order inside each. Every parameter belongs to exactly one section, and the
+// table above lists them in this very order.
 // ---------------------------------------------------------------------------------------------
 struct Section { const char* name; std::vector<int> params; };
 
 const std::vector<Section>& sections()
 {
     static const std::vector<Section> table = {
-        { "Mouth",  { kVowel, kFormant, kReso, kTongue, kTone, kWobbleRate, kWobbleDepth, kWheelVowel, kVolume } },
-        { "Lips",   { kBuzz, kBody, kDrive, kBreath, kDrift, kGrowl, kGrowlPitch, kVoice, kAttack, kRelease } },
-        { "Tube",   { kTube, kTootVel, kTootPitch, kTootLen, kGlide, kBendRange, kOctave } },
+        { "Mouth",  { kVowel, kTongue, kWobbleRate, kWobbleDepth, kWheelVowel, kVolume } },
+        { "Lips",   { kBuzz, kDrive, kBreath, kDrift, kVoice, kVoicePitch, kRough, kAttack, kRelease } },
+        { "Tube",   { kTube, kTone, kFlare, kGlide, kBendRange, kOctave } },
         { "Rhythm", { kRhythmDiv, kRhyPattern, kRhyDepth, kRhyVowel, kRhyDecay, kRhyAccent, kRhyBreath } },
     };
     return table;
@@ -247,52 +275,63 @@ const std::vector<Program>& programs()
 {
     static const std::vector<Program> table = {
         makeProgram("Classic Drone", {}),
-        makeProgram("Deep Earth",    {{kVowel, 10}, {kFormant, 45}, {kBuzz, 25}, {kTone, 700}, {kBody, 85},
+        // A wide, dark tube under an open mouth: weight and no formant.
+        makeProgram("Deep Earth",    {{kVowel, 12}, {kTongue, 40}, {kBuzz, 35}, {kDrive, 35}, {kTone, 1100}, {kTube, 90}, {kFlare, 62},
                                       {kBreath, 8}, {kWobbleRate, 0.15f}, {kWobbleDepth, 12}, {kAttack, 150}}),
-        makeProgram("Vocal Wah",     {{kVowel, 45}, {kFormant, 95}, {kReso, 80}, {kBuzz, 65}, {kTone, 1100},
-                                      {kWobbleRate, 1.6f}, {kWobbleDepth, 70}}),
-        makeProgram("Growler",       {{kGrowl, 70}, {kGrowlPitch, 7}, {kDrive, 55}, {kBuzz, 70}, {kVowel, 40},
-                                      {kBreath, 25}, {kDrift, 50}}),
-        makeProgram("Rhythm Breath", {{kRhyDepth, 70}, {kRhyVowel, 80}, {kRhyDecay, 55}, {kRhythmDiv, (float)kDivisionEighth},
-                                      {kVowel, 15}, {kFormant, 90}, {kReso, 70}, {kWobbleDepth, 0}, {kBreath, 30}}),
-        makeProgram("Gallop",        {{kRhyDepth, 85}, {kRhyVowel, -60}, {kRhyDecay, 75}, {kRhythmDiv, (float)kDivisionSixteenth},
-                                      {kVowel, 70}, {kFormant, 85}, {kBuzz, 60}, {kDrive, 35}, {kWobbleDepth, 10}}),
-        // The programs below play the instrument as it was measured on real ones: the tube's
-        // own resonances, the tongue that takes sound away, a steady pitch, the toot as a stab.
-        makeProgram("Eucalyptus",    {{kTube, 70}, {kTongue, 60}, {kFormant, 30}, {kVowel, 45}, {kBuzz, 60}, {kBody, 30},
-                                      {kBreath, 12}, {kWobbleRate, 0.25f}, {kWobbleDepth, 35}, {kDrift, 12}, {kBendRange, 1},
-                                      {kTootLen, 150}}),
-        makeProgram("Hard Tongue",   {{kTube, 60}, {kTongue, 80}, {kFormant, 35}, {kVowel, 35}, {kBuzz, 60}, {kBody, 30},
-                                      {kWobbleDepth, 0}, {kDrift, 10}, {kBendRange, 1}, {kTootLen, 120},
-                                      {kRhythmDiv, (float)kDivisionEighth}, {kRhyPattern, 3}, {kRhyDepth, 45}, {kRhyVowel, 60},
-                                      {kRhyDecay, 50}, {kRhyAccent, 80}, {kRhyBreath, 60}}),
-        makeProgram("Pipe",          {{kTube, 100}, {kTootPitch, 19}, {kTongue, 40}, {kFormant, 40}, {kVowel, 35}, {kBuzz, 55},
-                                      {kBody, 20}, {kWobbleDepth, 15}, {kDrift, 10}, {kBendRange, 1}, {kTootLen, 200}}),
-        makeProgram("Singer",        {{kTube, 60}, {kTongue, 50}, {kFormant, 40}, {kVowel, 50}, {kBuzz, 55}, {kDrive, 25},
-                                      {kVoice, 60}, {kGrowlPitch, 7}, {kWobbleRate, 0.3f}, {kWobbleDepth, 30}, {kDrift, 15},
-                                      {kBendRange, 1}, {kTootLen, 150}}),
+        // The tongue rises and falls: the band comes, climbs and goes.
+        makeProgram("Vocal Wah",     {{kVowel, 50}, {kTongue, 100}, {kBuzz, 90}, {kTone, 4000}, {kTube, 45},
+                                      {kWobbleRate, 1.6f}, {kWobbleDepth, 80}}),
+        // A voice a fifth up, off its lock: the tone an octave down, beating.
+        makeProgram("Growler",       {{kVoice, 70}, {kVoicePitch, (float)kIntervalFifth}, {kRough, 27}, {kDrive, 80}, {kBuzz, 85},
+                                      {kVowel, 40}, {kBreath, 25}, {kDrift, 25}}),
+        // The pulse ducks the level between its steps, so these two are turned up a little.
+        makeProgram("Rhythm Breath", {{kVolume, 3}, {kRhyDepth, 70}, {kRhyVowel, 80}, {kRhyDecay, 55}, {kRhythmDiv, (float)kDivisionEighth},
+                                      {kVowel, 25}, {kTongue, 90}, {kWobbleDepth, 0}, {kBreath, 30}}),
+        makeProgram("Gallop",        {{kVolume, 5}, {kRhyDepth, 85}, {kRhyVowel, -60}, {kRhyDecay, 75}, {kRhythmDiv, (float)kDivisionSixteenth},
+                                      {kVowel, 75}, {kTongue, 85}, {kBuzz, 85}, {kDrive, 70}, {kWobbleDepth, 10}}),
+        // A termite-hollowed tube that players would rank high: a strong, narrow fundamental
+        // and a tongue that does the rest.
+        makeProgram("Eucalyptus",    {{kTube, 85}, {kFlare, 48}, {kTongue, 85}, {kVowel, 50}, {kBuzz, 70}, {kBreath, 12},
+                                      {kWobbleRate, 0.25f}, {kWobbleDepth, 35}, {kDrift, 10}}),
+        // The Yolngu way: a pitch that does not move, accents and in-breaths.
+        makeProgram("Hard Tongue",   {{kTube, 70}, {kFlare, 48}, {kTongue, 90}, {kVowel, 40}, {kWobbleDepth, 0}, {kDrift, 8},
+                                      {kRhythmDiv, (float)kDivisionEighth}, {kRhyPattern, 3}, {kRhyDepth, 45},
+                                      {kRhyVowel, 60}, {kRhyDecay, 50}, {kRhyAccent, 80}, {kRhyBreath, 60}}),
+        // A plastic pipe: a cylinder, which favours the odd harmonics.
+        makeProgram("Pipe",          {{kTube, 100}, {kFlare, 0}, {kTongue, 55}, {kVowel, 40}, {kBuzz, 65}, {kWobbleDepth, 15},
+                                      {kDrift, 8}}),
+        // A voice locked a tenth above the drone.
+        makeProgram("Singer",        {{kVoice, 45}, {kVoicePitch, (float)kIntervalTenth}, {kTongue, 60}, {kVowel, 50},
+                                      {kWobbleRate, 0.3f}, {kWobbleDepth, 30}}),
     };
     return table;
 }
 
-// The ratio of a sung interval: the simple ratio where there is one, so that the voice locks to
-// the lips and its sums and differences with the drone fall on a steady series.
-float justRatio(int semitones)
+// ---------------------------------------------------------------------------------------------
+// The tube's resonances. For a bore that flares a little, resonance n lies at
+//   (n - 1/2) * (1 + sqrt(1 + s / (n - 1/2)^2))     times c / 4L
+// where s grows with the flare (Fletcher et al. 2006): 1, 3, 5 ... for a cylinder (s = 0), closer
+// together for a flared tube. Flare runs from the cylinder to the tube whose second resonance
+// stands an octave above its first.
+// ---------------------------------------------------------------------------------------------
+constexpr int kNumModes = 8;
+
+float modePlace(int n, float s)
 {
-    switch (semitones)
+    const float h = (float)n - 0.5f;
+    return h * (1.0f + std::sqrt(1.0f + s / (h * h)));
+}
+
+// The flare whose second resonance stands `ratio` (2 to 3) above its first.
+float flareFor(float ratio)
+{
+    float low = 0.0f, high = 1.2f;                          // ratios 3.0 and 1.97
+    for (int i = 0; i < 24; ++i)
     {
-        case 0:  return 1.0f;
-        case 3:  return 6.0f / 5.0f;
-        case 4:  return 5.0f / 4.0f;
-        case 5:  return 4.0f / 3.0f;
-        case 7:  return 3.0f / 2.0f;
-        case 9:  return 5.0f / 3.0f;
-        case 12: return 2.0f;
-        case 16: return 5.0f / 2.0f;
-        case 19: return 3.0f;
-        case 24: return 4.0f;
-        default: return semitonesToRatio((float)semitones);
+        const float middle = 0.5f * (low + high);
+        if (modePlace(2, middle) / modePlace(1, middle) > ratio) low = middle; else high = middle;
     }
+    return 0.5f * (low + high);
 }
 
 // Octave belongs to the player's keyboard, not to a sound: a program leaves it alone.
@@ -320,6 +359,36 @@ struct TractResonance
     void reset() { ic1 = ic2 = 0.0f; }
 
     float k = 0.1f, a1 = 1.0f, a2 = 0.0f, a3 = 0.0f, ic1 = 0.0f, ic2 = 0.0f;
+};
+
+// A point going round the unit circle: the cosine and sine of an oscillator's phase, exact and
+// without a trigonometric call per sample. The lip flow is differentiated and scaled by the
+// pitch, which would bring out the steps of a sine table.
+struct Phasor
+{
+    void setIncrement(double cyclesPerSample)
+    {
+        stepC = std::cos(2.0 * 3.14159265358979323846 * cyclesPerSample);
+        stepS = std::sin(2.0 * 3.14159265358979323846 * cyclesPerSample);
+    }
+    void reset(double phase01)
+    {
+        c = std::cos(2.0 * 3.14159265358979323846 * phase01);
+        s = std::sin(2.0 * 3.14159265358979323846 * phase01);
+    }
+    void step()
+    {
+        const double next = c * stepC - s * stepS;
+        s = s * stepC + c * stepS;
+        c = next;
+    }
+    void normalise()                                        // keeps rounding from changing its length
+    {
+        const double length = std::sqrt(c * c + s * s);
+        if (length > 0.0) { c /= length; s /= length; }
+    }
+
+    double c = 1.0, s = 0.0, stepC = 1.0, stepS = 0.0;
 };
 
 struct MidiEvent
@@ -417,29 +486,21 @@ struct DidgeEngine
     void prepare(double sampleRate)
     {
         sr_ = (float)sampleRate;
-        saw_.setSampleRate(sampleRate);   saw_.setWave(Wave::Saw);
-        pulse_.setSampleRate(sampleRate); pulse_.setWave(Wave::Square);
-        voice_.setSampleRate(sampleRate);
-        formant1_.setSampleRate(sampleRate);
-        formant2_.setSampleRate(sampleRate);
         for (SVF& mode : tube_) mode.setSampleRate(sampleRate);
-        body_.setSampleRate(sampleRate);
         env_.setSampleRate(sampleRate);
         dc_.prepare(sampleRate, 20.0f);
+        breathLp_.setCutoff(1500.0f, sampleRate);
         volume_.setTime(20.0f, sampleRate);
         velocity_.setTime(15.0f, sampleRate);
         wheel_.setTime(25.0f, sampleRate);
         bend_.setTime(10.0f, sampleRate);
         pressure_.setTime(40.0f, sampleRate);
-        toot_.setTime(12.0f, sampleRate);
         rhythmGain_.setTime(4.0f, sampleRate);
-        note_.setTime(60.0f, sampleRate);
         base_.setTime(60.0f, sampleRate);
         glideMs_ = -1.0f;
 
-        // Drift is timed in control ticks. The numbers are the MPC plugin's at 44.1 kHz, where
-        // they stay exactly as they were; at other rates they are scaled so that the drift
-        // wanders equally fast everywhere.
+        // Drift is timed in control ticks, scaled so that it wanders equally fast at every
+        // sample rate.
         driftTickScale_ = sr_ / 44100.0f;
         driftEase_ = sr_ == 44100.0f ? 0.004f : 1.0f - std::pow(1.0f - 0.004f, 44100.0f / sr_);
         breathEase_ = 1.0f - std::exp(-(float)kControlInterval / (0.006f * sr_));      // an in-breath sets in within 6 ms
@@ -447,19 +508,18 @@ struct DidgeEngine
 
     void reset()
     {
-        saw_.resetPhase(); pulse_.resetPhase(); voice_.resetPhase();
-        formant1_.reset(); formant2_.reset(); body_.reset();
-        toneLp_.reset(); env_.reset(); dc_.reset(); breathNoise_.reset();
+        lips_.reset(0.5); glottis_.reset(0.0);
+        toneLp_.reset(); breathLp_.reset(); env_.reset(); dc_.reset(); breathNoise_.reset();
         for (TractResonance& resonance : tract_) resonance.reset();
         for (SVF& mode : tube_) mode.reset();
         numHeld_ = 0; sustain_ = false; sustained_ = false;
         volume_.snap(dbToGain(get(kVolume)));
         velocity_.snap(0.7f);
-        wheel_.snap(0.0f); bend_.snap(0.0f); pressure_.snap(0.0f); toot_.snap(0.0f);
+        wheel_.snap(0.0f); bend_.snap(0.0f); pressure_.snap(0.0f);
         rhythmGain_.snap(1.0f);
-        note_.snap(38.0f);
         base_.snap(38.0f);
-        tootTicks_ = 0; tongueNow_ = 0.0f; breathing_ = 0.0f;
+        flowBefore_ = noiseBefore_ = 0.0f; primeFlow_ = latch_ = true; sineBefore_ = 0.0f;
+        tongueNow_ = 0.0f; breathing_ = 0.0f;
         drift_ = driftTarget_ = 0.0f; driftCountdown_ = 0;
         wobblePhase_ = 0.0f; rhythmPulse_ = 1.0f;
         ppq_ = 0.0;
@@ -502,14 +562,17 @@ private:
     static constexpr int kOctaveAtRest = -2;      // octaves between a MIDI note and its pitch at Octave 0
     static constexpr uint32_t kPostSize = 512;    // a power of two: positions wrap around cleanly
 
+    static constexpr float kFirstQ = 25.0f;       // the first resonance: measured 12 to 86
+    static constexpr float kLevel = 0.2f;         // brings the sum to the level the limiter leaves alone
+
     // Parameters read once per block.
     struct Settings
     {
-        float vowel, formant, formantK, formantGain, buzz, tone, body, breath, growl, growlRatio;
-        float drivePre, drivePost, tootPitch, rhyBeats, rhyDepth, rhyVowel, rhyRate;
+        float vowel, tongue, buzz, drive, tone, breath, voice, voiceRatio;
+        float rhyBeats, rhyDepth, rhyVowel, rhyRate;
         float wobbleInc, wobbleDepth, wheelVowel, bendRange, drift;
-        float tongue, tube, tootRatio, tootLen, voice, voiceRatio, accent, breathIn;
-        int   tootVel, pattern;
+        float tube, flare, modeRatio[kNumModes], accent, breathIn;
+        int   pattern;
         double ppqPerSample;
     };
 
@@ -517,22 +580,14 @@ private:
     {
         Settings& s = s_;
         s.vowel   = get(kVowel) * 0.01f;
-        s.formant = get(kFormant) * 0.01f;
-        const float reso = 0.55f + 0.4f * get(kReso) * 0.01f;        // 0.55..0.95 into the SVF
-        formantReso_ = reso;
-        s.formantK = 2.0f - 1.98f * reso;                            // the SVF's 1/Q: makes the peak gain 1
-        s.formantGain = s.formant * 3.0f;
+        s.tongue  = get(kTongue) * 0.01f;
         s.buzz    = get(kBuzz) * 0.01f;
+        s.drive   = get(kDrive) * 0.01f;
         s.tone    = get(kTone);
-        s.body    = get(kBody) * 0.01f * 0.9f;
-        s.breath  = get(kBreath) * 0.01f * 1.6f;
-        s.growl   = get(kGrowl) * 0.01f;
-        s.growlRatio = semitonesToRatio(get(kGrowlPitch) + 0.08f);   // slightly sharp, so it beats
-        const float drive = get(kDrive) * 0.01f;
-        s.drivePre  = 1.0f + 5.0f * drive;
-        s.drivePost = 1.0f / std::pow(s.drivePre, 0.6f);             // keep the loudness roughly level
-        s.tootVel   = getInt(kTootVel);
-        s.tootPitch = get(kTootPitch);
+        s.breath  = get(kBreath) * 0.01f * kBreathLevel;
+        s.voice   = get(kVoice) * 0.01f;
+        // Rough pulls the voice up to 30 cents off its lock.
+        s.voiceRatio = kIntervals[clamp(getInt(kVoicePitch), 0, kNumIntervals - 1)].ratio * centsToRatio(0.3f * get(kRough));
         s.rhyBeats  = divisionBeats(getInt(kRhythmDiv));
         s.rhyDepth  = get(kRhyDepth) * 0.01f;
         s.rhyVowel  = get(kRhyVowel) * 0.01f * 0.6f;
@@ -542,32 +597,28 @@ private:
         s.wheelVowel  = get(kWheelVowel) * 0.01f;
         s.bendRange = get(kBendRange);
         s.drift     = get(kDrift) * 0.01f * 0.3f;                    // up to +-30 cents
-        s.tongue    = get(kTongue) * 0.01f;
-        s.tube      = get(kTube) * 0.01f;
-        s.tootRatio = semitonesToRatio(s.tootPitch);                 // the tube's second resonance is where its toot sounds
-        s.tootLen   = get(kTootLen);
-        s.voice     = get(kVoice) * 0.01f;
-        s.voiceRatio = justRatio(getInt(kGrowlPitch));               // players lock the voice to the lips: no beating
         s.pattern   = clamp(getInt(kRhyPattern), 0, kNumPatterns - 1);
         s.accent    = get(kRhyAccent) * 0.01f;
         s.breathIn  = get(kRhyBreath) * 0.01f;
 
+        // The tube: how much it flares says where its second resonance stands (three times the
+        // first for a pipe, twice for the widest bell), and with that where the others lie.
+        s.tube = get(kTube) * 0.01f;
+        const float second = 3.0f - get(kFlare) * 0.01f;
+        const float flare = flareFor(second);
+        s.flare = clamp(3.0f - second, 0.0f, 1.0f);                  // 0 = a cylinder, 1 = a cone
+        for (int m = 0; m < kNumModes; ++m) s.modeRatio[m] = modePlace(m + 1, flare) / modePlace(1, flare);
+
         volume_.setTarget(dbToGain(get(kVolume)));
         env_.set(get(kAttack), 1.0f, 1.0f, get(kRelease));
         const float glide = get(kGlide);
-        if (glide != glideMs_) { glideMs_ = glide; if (!tootActive_) note_.setTime(glide, sr_); }
+        if (glide != glideMs_) { glideMs_ = glide; base_.setTime(glide, sr_); }
 
-        // Octave. The shift is part of the note number, not added to the pitch afterwards, so a
-        // phrase played two octaves higher gives the very samples the engine gave before it had
-        // an octave. A sounding note slides to a new octave.
+        // Octave. The shift is part of the note number, so a sounding note slides to a new octave.
         const int shift = 12 * (getInt(kOctave) + kOctaveAtRest);
         if (shift != noteShift_)
         {
-            if (env_.isActive())
-            {
-                note_.setTarget(note_.target() + (float)(shift - noteShift_));
-                base_.setTarget(base_.target() + (float)(shift - noteShift_));
-            }
+            if (env_.isActive()) base_.setTarget(base_.target() + (float)(shift - noteShift_));
             noteShift_ = shift;
         }
 
@@ -583,7 +634,7 @@ private:
             removeHeld(ev.data1);
             if (numHeld_ == kMaxHeld) { for (int i = 1; i < kMaxHeld; ++i) held_[i - 1] = held_[i]; --numHeld_; }
             held_[numHeld_++] = ev.data1;
-            startNote(ev.data1, ev.data2, true);
+            startNote(ev.data1, ev.data2);
         }
         else if (ev.isNoteOff())
         {
@@ -593,7 +644,7 @@ private:
             {
                 if (sustain_) sustained_ = true; else env_.noteOff();
             }
-            else if (wasSounding) startNote(held_[numHeld_ - 1], -1, false);   // fall back to the held note
+            else if (wasSounding) startNote(held_[numHeld_ - 1], -1);   // fall back to the held note
         }
         else if (ev.isAllNotesOff())
         {
@@ -613,31 +664,18 @@ private:
         else if (ev.isAftertouch()) pressure_.setTarget(ev.data1 / 127.0f);
     }
 
-    // velocity < 0 means "returning to a note that is still held": keep the level, never toot.
-    void startNote(int note, int velocity, bool fresh)
+    // velocity < 0 means "returning to a note that is still held": keep the level.
+    void startNote(int note, int velocity)
     {
-        const bool toot = fresh && s_.tootVel <= 127 && velocity >= s_.tootVel;
-        const float target = (float)(note + noteShift_) + (toot ? s_.tootPitch : 0.0f);
+        const float target = (float)(note + noteShift_);
         const bool silent = !env_.isActive();
-
-        tootActive_ = toot;
-        // A toot with a length is a stab: after it the lips fall back to the drone (updateControl).
-        tootTicks_ = toot && s_.tootLen >= 0.5f ? 1 + (int)(s_.tootLen * 0.001f * sr_ / (float)kControlInterval) : 0;     // under 0.5 the knob reads "Hold"
-        base_.setTime(glideMs_, sr_);
-        toot_.setTarget(toot ? 1.0f : 0.0f);
-        note_.setTime(toot ? 12.0f : glideMs_, sr_);   // an overblown note snaps up fast
-        if (silent)
+        if (silent)                                     // from silence: no slide into the note
         {
-            note_.snap(target);                         // no slide into the first note
-            base_.snap((float)(note + noteShift_));
-            toot_.snap(toot ? 1.0f : 0.0f);
-            saw_.resetPhase(); pulse_.resetPhase(); voice_.resetPhase();
+            base_.snap(target);
+            lips_.reset(0.5); glottis_.reset(0.0);      // the lips start shut
+            primeFlow_ = latch_ = true;
         }
-        else
-        {
-            note_.setTarget(target);
-            base_.setTarget((float)(note + noteShift_));
-        }
+        else base_.setTarget(target);
 
         if (velocity >= 0) velocity_.setTarget(0.35f + 0.65f * (float)velocity / 127.0f);
         if (silent) velocity_.snap(velocity_.target());
@@ -653,60 +691,41 @@ private:
         numHeld_ = w;
     }
 
-    // Vowel table: first and second formant in Hz for u, o, a, e, i.
-    static void vowelFormants(float position, float& f1, float& f2)
-    {
-        static const float kF1[5] = { 300.0f, 450.0f, 700.0f, 500.0f, 300.0f };
-        static const float kF2[5] = { 650.0f, 850.0f, 1150.0f, 1750.0f, 2250.0f };
-        const float p = clamp(position, 0.0f, 1.0f) * 4.0f;
-        int i = (int)p; if (i > 3) i = 3;
-        const float f = p - (float)i;
-        f1 = kF1[i] + (kF1[i + 1] - kF1[i]) * f;
-        f2 = kF2[i] + (kF2[i + 1] - kF2[i]) * f;
-    }
-
-    // Everything that needs pow / tan / exp, every kControlInterval samples.
+    // Everything that needs pow / tan / exp / sin, every kControlInterval samples.
     void updateControl()
     {
         const Settings& s = s_;
-        // A toot that is a stab ends here: back to the drone while the key is still held.
-        if (tootActive_ && tootTicks_ > 0 && --tootTicks_ == 0)
-        {
-            tootActive_ = false;
-            toot_.setTarget(0.0f);
-            note_.setTime(25.0f, sr_);
-            note_.setTarget(base_.target());
-        }
-        const float toot = toot_.value();
 
         // Slow random pitch drift: a new random target a few times a second, eased in.
         if (--driftCountdown_ <= 0)
         {
-            const int ticks = 600 + (int)(rng_.nextFloat() * 900.0f);    // control ticks at 44.1 kHz: ~0.2-0.55 s
-            driftCountdown_ = (int)((float)ticks * driftTickScale_);
+            const int span = 600 + (int)(rng_.nextFloat() * 900.0f);     // control ticks at 44.1 kHz: ~0.2-0.55 s
+            driftCountdown_ = (int)((float)span * driftTickScale_);
             driftTarget_ = rng_.nextBipolar();
         }
         drift_ += driftEase_ * (driftTarget_ - drift_);
 
-        // A raised tongue lifts the drone by about a third of a semitone (measured: 34 cents).
-        const float pitch = note_.value() + bend_.value() * s.bendRange + drift_ * s.drift + 0.35f * tongueNow_;
-        const float hz = clamp(midiToHz(pitch), 16.0f, 4000.0f);
-        saw_.setFrequency(hz);
-        pulse_.setFrequency(hz);
-        voice_.setFrequency(clamp(hz * (s.voice > 0.0f ? s.voiceRatio : s.growlRatio), 16.0f, 8000.0f));
+        // Pitch. A raised tongue lifts the drone by about a third of a semitone (measured: 34 cents).
+        const float drone = base_.value() + bend_.value() * s.bendRange + drift_ * s.drift;
+        const float hz = clamp(midiToHz(drone + 0.35f * tongueNow_), 16.0f, 4000.0f);
+        const float inc = clamp(hz / sr_, 1.0e-5f, 0.45f);
+        lips_.setIncrement((double)inc);
+        lips_.normalise();
+        radiate_ = 1.0f / (kTwoPi * inc);                // the flow's difference, per cycle: the same level at every pitch
+        glottis_.setIncrement((double)clamp(hz * s.voiceRatio / sr_, 1.0e-5f, 0.45f));
+        glottis_.normalise();
 
-        // Lip shape: more buzz (and an overblown note) means a narrower pulse.
         // Rhythm: where in its step the pulse is, and what kind of step it is.
         const float phase = ppqPhase(ppq_, s.rhyBeats);
         rhythmPulse_ = std::exp(-phase * s.rhyRate);
         const Pattern& pattern = kPatterns[s.pattern];
         const long long step = (long long)std::floor(ppq_ / (double)s.rhyBeats);
         const bool accented = pattern.accent[(int)(((step % pattern.length) + pattern.length) % pattern.length)];
-        // An accent is a surge of the belly with the tongue thrown forward, and a flash of the
-        // overblown tone's brightness; a soft step draws the tongue back.
+        // An accent is a surge of the belly with the tongue thrown forward and, for a moment,
+        // lips that close harder; a soft step draws the tongue back.
         const float colour = accented ? 1.0f : -1.0f;
         const float surge = accented ? 1.0f + 0.8f * s.accent * rhythmPulse_ : 1.0f - 0.3f * s.accent;
-        const float bright = toot + (accented ? 0.5f * s.accent * rhythmPulse_ * rhythmPulse_ * rhythmPulse_ * rhythmPulse_ : 0.0f);
+        const float flash = accented ? 0.5f * s.accent * rhythmPulse_ * rhythmPulse_ * rhythmPulse_ * rhythmPulse_ : 0.0f;
         // An in-breath takes the first fifth of a second of a soft step: the level drops and keeps
         // falling, and only the closed mouth is left behind the lips.
         float breath = 0.0f;
@@ -716,27 +735,44 @@ private:
             if (seconds < 0.2f) breath = s.breathIn * (0.35f + 0.65f * seconds / 0.2f);
         }
         breathing_ += breathEase_ * (breath - breathing_);
-
         breathNow_ = s.breath * (1.0f + 3.0f * breathing_);                 // the in-breath is heard
-
-        buzzNow_ = clamp(s.buzz + 0.3f * bright, 0.0f, 1.0f);
-        const float pw = 0.5f - 0.38f * buzzNow_;
-        pulse_.setPulseWidth(pw);
-        pulseDc_ = 2.0f * pw - 1.0f;
 
         // Rhythm pulse: 1 at the start of each division, decaying towards 0.
         rhythmGain_.setTarget((1.0f - s.rhyDepth * (1.0f - rhythmPulse_)) * surge * (1.0f - 0.6f * breathing_));
 
-        // Vowel position from the knob, the wheel, the wobble LFO, the rhythm and the toot.
+        // The lips. They are shut for a good half of every cycle; the opening is sharp and the
+        // closure soft, and how soft is what Buzz sets. The softness never falls under what the
+        // sample rate can carry at this pitch.
+        const float softness = clamp(0.7f * (1.0f - s.buzz) - 0.25f * flash, 0.0f, 1.0f);
+        const float floorSoftness = 2.0f * kTwoPi * inc;
+        wanted_.softOpen = std::fmax(0.02f * std::pow(50.0f, softness), floorSoftness);
+        // (exp2 of a product, not a power of 8: an optimised build turns that power into this and an
+        // unoptimised one does not, the two round differently, and the builds would no longer render
+        // the same samples.)
+        wanted_.softClose = std::fmax(0.5f * std::exp2(3.0f * softness), floorSoftness);      // 0.5 to 4
+        wanted_.shut = 0.3f;                             // the part of the cycle's swing the lips spend shut
+        // What the soft closure leaves open at the bottom of the swing is taken off, so that
+        // softly closing lips still close.
+        const float bottom = -1.0f - wanted_.shut, softBottom = 0.5f * (wanted_.softOpen + wanted_.softClose);
+        wanted_.closed = 0.5f * (bottom + std::sqrt(bottom * bottom + softBottom * softBottom));
+        // The valve: the flow cannot grow beyond what the blowing pressure drives through the
+        // tube's resistance, so a wide opening flattens the pulse. The level is brought back.
+        wanted_.valve = 3.0f * s.drive;
+        // The opening is measured against its widest, so that every setting lets the same peak
+        // flow through and the knobs change the tone, not the loudness.
+        const float top = 1.0f - wanted_.shut;
+        // (A soft closure puts more of that flow into the fundamental, hence the last factor.)
+        wanted_.widest = 1.0f / ((0.5f * (top + std::sqrt(top * top + softBottom * softBottom)) - wanted_.closed) * (1.0f + 0.6f * softness));
+        wanted_.flowLevel = 1.0f / (std::sqrt(wanted_.valve * wanted_.valve + 1.0f) - wanted_.valve);
+
+        // The voice, and what aftertouch adds to it.
+        wanted_.voice = clamp(s.voice + pressure_.value() * 0.6f, 0.0f, 1.0f);
+
+        // Vowel position from the knob, the wheel, the wobble LFO and the rhythm.
         wobblePhase_ = wrapPhase(wobblePhase_ + s.wobbleInc);
         const float vowel = s.vowel + wheel_.value() * s.wheelVowel + fastSin01(wobblePhase_) * s.wobbleDepth
-                          + rhythmPulse_ * (s.rhyVowel * colour) + bright * 0.35f;
-        float f1, f2;
-        vowelFormants(vowel, f1, f2);
-        formant1_.set(f1, formantReso_);
-        formant2_.set(f2, formantReso_);
-        body_.set(hz, 0.8f);
-        toneLp_.setCutoff(clamp(s.tone * (1.0f + 2.0f * bright), 100.0f, 0.45f * sr_), sr_);
+                          + rhythmPulse_ * (s.rhyVowel * colour) + flash * 0.35f;
+        toneLp_.setCutoff(clamp(s.tone * (1.0f + flash), 100.0f, 0.45f * sr_), sr_);
 
         // The tongue. A real vocal tract takes energy out: with the tongue raised it resonates
         // near 0.83, 1.17 and 1.56 times a centre frequency, and where it resonates it holds the
@@ -761,36 +797,41 @@ private:
         }
 
         // The tube. Its first resonance is tall and narrow and lies 2.5 % under the drone; the
-        // second is where the toot sounds, and the next two follow from it: 3, 5, 7 times the
-        // first for a cylinder (toot a twelfth up), closer together and weaker for a flared tube.
+        // others stand where the flare puts them, lower and (for a flared tube) much weaker.
         if (s.tube > 0.0f)
         {
-            static const float kQ[4] = { 25.0f, 14.0f, 10.0f, 8.0f };
-            static const float kGain[4] = { 8.0f, 3.0f, 1.0f, 0.6f };
             const float first = clamp(midiToHz(base_.value()) / 1.025f, 16.0f, 2000.0f);
-            const float flare = 3.0f - clamp(s.tootRatio, 2.0f, 3.0f);                   // 0 = cylinder
-            const float ratio[4] = { 1.0f, s.tootRatio, 5.0f - 1.833f * flare, 7.0f - 2.667f * flare };
-            for (int m = 0; m < 4; ++m)
+            for (int m = 0; m < kNumModes; ++m)
             {
-                const float k = 1.0f / kQ[m];
-                tube_[m].set(clamp(first * ratio[m], 16.0f, 0.45f * sr_), (2.0f - k) / 1.98f);
-                tubeGain_[m] = s.tube * kGain[m] * k * (m == 0 ? 1.0f : 1.0f - 0.8f * flare);
+                const float place = first * s.modeRatio[m];
+                const float spread = std::sqrt(std::sqrt(s.modeRatio[m]));                 // ratio^(1/4)
+                const float q = m == 0 ? kFirstQ : kFirstQ * spread;
+                const float height = m == 0 ? 1.0f : (1.0f - 0.8f * s.flare) / spread;
+                const float k = 1.0f / q;
+                tube_[m].set(clamp(place, 16.0f, 0.45f * sr_), (2.0f - k) / 1.98f);
+                tubeGain_[m] = place < 0.45f * sr_ ? 8.0f * s.tube * height * k : 0.0f;
             }
-            tubeLevel_ = 1.0f / (1.0f + 2.45f * s.tube);     // the tube shapes the sound, it does not make it louder
+            tubeLevel_ = 1.0f / (1.0f + kTubeLoudness * s.tube);     // the tube shapes the sound, it does not make it louder
         }
+    }
 
-        growlNow_ = clamp(s.growl + pressure_.value() * 0.6f, 0.0f, 1.0f);
+    // The peaks are left alone up to 0.6 and bent towards 1 above it.
+    static float limit(float y)
+    {
+        const float size = std::fabs(y);
+        if (size <= 0.6f) return y;
+        const float bent = 0.6f + 0.4f * fastTanh((size - 0.6f) * 2.5f);
+        return y < 0.0f ? -bent : bent;
     }
 
     void render(float* outL, float* outR, int from, int to)
     {
         const Settings& s = s_;
-        const float bodyK = 2.0f - 1.98f * 0.8f;
 
         for (int i = from; i < to; ++i)
         {
             // Smoothers and clocks run even while silent so nothing jumps on the next note.
-            note_.process(); base_.process(); bend_.process(); wheel_.process(); pressure_.process(); toot_.process();
+            base_.process(); bend_.process(); wheel_.process(); pressure_.process();
             const float volume = volume_.process();
             const float velocity = velocity_.process();
             const float rhythm = rhythmGain_.process();
@@ -802,42 +843,62 @@ private:
             {
                 const float env = env_.process();
 
-                // Lips: saw <-> narrow pulse, roughened by the sung voice.
-                const float saw = saw_.process();
-                const float pulse = pulse_.process() - pulseDc_;
-                float buzz = saw + (pulse - saw) * buzzNow_;
-                const float sung = voice_.process();
-                buzz *= 1.0f - 0.5f * growlNow_ + 1.3f * growlNow_ * sung;
+                // Lips: the opening, soft where it closes, and the flow the valve lets through it.
+                lips_.step();
+                // What shapes the flow changes only at the bottom of the lips' swing, where they are
+                // shut and the flow is nothing whatever the shape: a step in the flow would come
+                // out of the radiation as a click.
+                const float sine = (float)lips_.s;
+                if (latch_ || (sine < 0.0f && sineBefore_ >= 0.0f)) { lip_ = wanted_; latch_ = false; }
+                sineBefore_ = sine;
+                const float swing = (float)lips_.c - lip_.shut;
+                const float soft = lip_.softOpen + (lip_.softClose - lip_.softOpen) * 0.5f * (1.0f + sine);
+                const float opening = (0.5f * (swing + std::sqrt(swing * swing + soft * soft)) - lip_.closed) * lip_.widest;
+                float flow = opening * (std::sqrt(lip_.valve * lip_.valve * opening * opening + 1.0f) - lip_.valve * opening) * lip_.flowLevel;
+                // Breath is noise carried by that flow: none passes shut lips. Turbulence is taken
+                // to thin out above 1.5 kHz; nobody has published its spectrum.
+                const float noise = breathLp_.process(breathNoise_.process()) * flow;
                 // Voice: the glottis is a second valve in the same air stream, open half its cycle.
-                if (s.voice > 0.0f) buzz *= 1.0f - s.voice + 2.0f * s.voice * (sung > 0.0f ? sung : 0.0f);
+                glottis_.step();
+                // It can only take from the flow; the last factor gives back some of the loudness.
+                if (lip_.voice > 0.0f)
+                {
+                    const float sung = (float)glottis_.s;
+                    const float glottis = 0.5f * (sung + std::sqrt(sung * sung + 0.0025f));      // 0 to 1
+                    flow *= (1.0f - lip_.voice + lip_.voice * glottis) / (1.0f - 0.3f * lip_.voice);
+                }
 
-                // Breath joins the buzz on its way through the mouth.
-                float excite = buzz + breathNoise_.process() * breathNow_;
+                // Radiation: the tube radiates the flow's rate of change, up to the corner Tone sets.
+                if (primeFlow_) { flowBefore_ = flow; noiseBefore_ = noise; primeFlow_ = false; }
+                float excite = (flow - flowBefore_) * radiate_ + (noise - noiseBefore_) * breathNow_;
+                flowBefore_ = flow; noiseBefore_ = noise;
+                excite = toneLp_.process(excite);
+
+                // Mouth: the tract's resonances hold the flow back where they stand.
                 if (s.tongue > 0.0f)
                 {
                     excite = (excite - tractLoad_ * (tract_[0].held() + tract_[1].held() + tract_[2].held())) * tractNow_;
                     for (TractResonance& resonance : tract_) resonance.step(excite);
                 }
 
-                const float direct = toneLp_.process(excite);
-                const float mouth = (formant1_.process(excite, SVF::Mode::Bandpass)
-                                   + 0.7f * formant2_.process(excite, SVF::Mode::Bandpass)) * s.formantK;
-                const float body = body_.process(buzz, SVF::Mode::Bandpass) * bodyK;
-
-                y = direct * (1.0f - 0.5f * s.formant) + mouth * s.formantGain + body * s.body;
+                // Tube: its resonances beside the direct sound.
+                y = excite;
                 if (s.tube > 0.0f)
                 {
-                    for (int m = 0; m < 4; ++m) y += tubeGain_[m] * tube_[m].process(excite, SVF::Mode::Bandpass);
+                    for (int m = 0; m < kNumModes; ++m) y += tubeGain_[m] * tube_[m].process(excite, SVF::Mode::Bandpass);
                     y *= tubeLevel_;
                 }
-                y *= env * velocity * rhythm * 0.75f;
-                y = fastTanh(y * s.drivePre) * s.drivePost;
-                y = dc_.process(y) * volume;
+                // The limiter comes last, after the volume: what leaves the instrument stays within
+                // full scale wherever the knob stands.
+                y = limit(dc_.process(y * env * velocity * rhythm * kLevel) * volume);
             }
             outL[i] = y;
             if (outR) outR[i] = y;
         }
     }
+
+    static constexpr float kBreathLevel = 150.0f;      // Breath at 100 %, against the lips' own sound
+    static constexpr float kTubeLoudness = 2.0f;      // how much louder the tube at 100 % would make the sound
 
     // --- parameters and cross-thread state -------------------------------------------------
     std::atomic<float>  values_[kNumParams];
@@ -854,25 +915,27 @@ private:
     uint32_t  postRead_ = 0;                // next position to read: the audio thread's own
 
     // --- DSP -------------------------------------------------------------------------------
-    PolyBlepOsc   saw_, pulse_;
-    WavetableSine voice_;
+    Phasor        lips_, glottis_;
     PinkNoise     breathNoise_;
     Xorshift32    rng_{0x51D6E21Du};
-    OnePoleLP     toneLp_;
-    SVF           formant1_, formant2_, body_;
-    SVF           tube_[4];
+    OnePoleLP     toneLp_, breathLp_;
+    SVF           tube_[kNumModes];
     TractResonance tract_[3];
     ADSR          env_;
     DCBlocker     dc_;
-    Smoother      volume_, velocity_, wheel_, bend_, pressure_, toot_, rhythmGain_, note_;
-    Smoother      base_;                          // the drone's note without a toot: what the tube is tuned to
+    Smoother      volume_, velocity_, wheel_, bend_, pressure_, rhythmGain_;
+    Smoother      base_;                          // the drone's note: what the keys ask for and what the tube is tuned to
 
     // --- state -----------------------------------------------------------------------------
     Settings s_{};
     float  sr_ = 44100.0f;
     float  glideMs_ = -1.0f;
-    float  formantReso_ = 0.8f;
-    float  buzzNow_ = 0.5f, pulseDc_ = 0.0f, growlNow_ = 0.0f;
+    // The shape of the lips' pulse and the depth of the voice: as the knobs want them, and as
+    // they are during the cycle that is sounding.
+    struct Lip { float softOpen = 0.05f, softClose = 0.5f, shut = 0.3f, closed = 0.0f, widest = 1.0f, valve = 0.0f, flowLevel = 1.0f, voice = 0.0f; };
+    Lip    wanted_, lip_;
+    float  radiate_ = 1.0f, sineBefore_ = 0.0f;
+    float  flowBefore_ = 0.0f, noiseBefore_ = 0.0f;
     float  drift_ = 0.0f, driftTarget_ = 0.0f;
     float  driftTickScale_ = 1.0f, driftEase_ = 0.004f, breathEase_ = 0.02f;
     float  wobblePhase_ = 0.0f, rhythmPulse_ = 1.0f;
@@ -881,9 +944,10 @@ private:
     int    held_[kMaxHeld] = {};
     int    numHeld_ = 0;
     int    noteShift_ = 12 * kOctaveAtRest;      // semitones from a MIDI note to the note that sounds
-    float  tongueNow_ = 0.0f, breathing_ = 0.0f, breathNow_ = 0.0f, tractLoad_ = 0.0f, tractNow_ = 1.0f, tubeGain_[4] = {}, tubeLevel_ = 1.0f;
-    int    tootTicks_ = 0;                        // control ticks left of a toot that is a stab
-    bool   sustain_ = false, sustained_ = false, tootActive_ = false;
+    float  tongueNow_ = 0.0f, breathing_ = 0.0f, breathNow_ = 0.0f, tractLoad_ = 0.0f, tractNow_ = 1.0f;
+    float  tubeGain_[kNumModes] = {}, tubeLevel_ = 1.0f;
+    bool   primeFlow_ = true, latch_ = true;
+    bool   sustain_ = false, sustained_ = false;
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -907,6 +971,7 @@ void didge_param_info(int index, DidgeParamInfo* out)
 const char* didge_param_choice(int index, int choice)
 {
     if (index == kRhyPattern) return kPatterns[clamp(choice, 0, kNumPatterns - 1)].name;
+    if (index == kVoicePitch) return kIntervals[clamp(choice, 0, kNumIntervals - 1)].name;
     if (index != kRhythmDiv) return "";
     return divisionName(choice);
 }
@@ -920,9 +985,7 @@ const char* didge_param_display(int index, float plain, char* buffer, int buffer
     buffer[0] = 0;
     if (!validParam(index)) return buffer;
     const Param& p = kParams[index];
-    if (index == kTootVel && plain >= 127.5f) std::snprintf(buffer, (size_t)bufferSize, "Off");   // top of the range = no overblowing
-    else if (index == kTootLen && plain < 0.5f) std::snprintf(buffer, (size_t)bufferSize, "Hold");   // as long as the key
-    else if (index == kOctave && plain >= 0.5f) std::snprintf(buffer, (size_t)bufferSize, "+%d", (int)std::lround(plain));
+    if (index == kOctave && plain >= 0.5f) std::snprintf(buffer, (size_t)bufferSize, "+%d", (int)std::lround(plain));
     else if (p.kind == DIDGE_KIND_CHOICE) std::snprintf(buffer, (size_t)bufferSize, "%s", didge_param_choice(index, (int)std::lround(plain)));
     else if (p.kind == DIDGE_KIND_INT) std::snprintf(buffer, (size_t)bufferSize, "%d", (int)std::lround(plain));
     else

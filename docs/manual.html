@@ -78,17 +78,17 @@
           <dt><span class="n">1</span>Name</dt>
           <dd>The instrument's name.</dd>
           <dt><span class="n">2</span>Program, Tempo, Settings</dt>
-          <dd><b>Program</b> loads one of the ten built-in sounds. It overwrites every knob except <span class="ui">Octave</span> and cuts off a sounding note; your own changes are not kept in the program. The first six are plain synthesizer sounds; <b>Eucalyptus</b>, <b>Hard Tongue</b>, <b>Pipe</b> and <b>Singer</b> use <span class="ui">Tongue</span>, <span class="ui">Tube</span> and the other knobs that follow measurements of real instruments. <b>Tempo</b> (20–300 BPM) sets the speed of the rhythm pulse. <b>Settings</b> opens MIDI input, audio output and the Audio Unit installer.</dd>
+          <dd><b>Program</b> loads one of the ten built-in sounds. It overwrites every knob except <span class="ui">Octave</span> and cuts off a sounding note; your own changes are not kept in the program. All ten play the same model of the instrument, built on measurements of real ones; they differ in the tube, the mouth and the way of playing. <b>Tempo</b> (20–300 BPM) sets the speed of the rhythm pulse. <b>Settings</b> opens MIDI input, audio output and the Audio Unit installer.</dd>
           <dt><span class="n">3</span>Mouth</dt>
-          <dd>The shape of the mouth: which vowel the drone speaks, what the tongue takes away and how both move. See <a href="#mouth">Mouth</a>.</dd>
+          <dd>The shape of the mouth: where the tongue stands, what it takes away from the drone and how it moves. See <a href="#mouth">Mouth</a>.</dd>
           <dt><span class="n">4</span>Lips</dt>
           <dd>The source of the sound: lips, breath, voice and how notes begin and end. See <a href="#lips">Lips</a>.</dd>
           <dt><span class="n">5</span>Tube</dt>
-          <dd>The instrument itself: its resonances, the overblown note, glide, the pitch bend range and the octave. See <a href="#tube">Tube</a>.</dd>
+          <dd>The instrument itself: its resonances and its shape, glide, the pitch bend range and the octave. See <a href="#tube">Tube</a>.</dd>
           <dt><span class="n">6</span>Rhythm</dt>
           <dd>The tempo-synced pulse with its accents and in-breaths. See <a href="#rhythm">Rhythm</a>.</dd>
           <dt><span class="n">7</span>Keyboard</dt>
-          <dd>Click a key to play it. Near the top of a key the hit is soft, further down it is firmer. The ochre band along the lower end of every key is the hardest hit, which overblows the note; a click anywhere above the band never does. With <span class="ui">Toot Vel</span> at “Off” the keys have no band.</dd>
+          <dd>Click a key to play it. Near the top of a key the hit is soft, further down it is firmer, and the bottom of a key is the hardest hit.</dd>
         </dl>
         <h3>Turning a knob</h3>
         <p>Drag a knob up or down. Hold <kbd>Shift</kbd> while dragging for fine steps. Double-click a knob to return it to the value of the current program. The app remembers the knobs, the program and the tempo between launches.</p>
@@ -98,12 +98,12 @@
         <h2>Playing</h2>
         <p>Didgeridoo plays one note at a time. Hold a key for the drone; a second key slides the pitch there (<span class="ui">Glide</span>), and releasing it falls back to the key still held. With <span class="ui">Octave</span> at 0 the range of a real instrument sits around middle C: C3–G3 (MIDI notes 60–67).</p>
         <dl class="controls">
-          <dt>Hard hit</dt>
-          <dd>A velocity at or above <span class="ui">Toot Vel</span> overblows: the note jumps up by <span class="ui">Toot Pitch</span> semitones with a bright, trumpet-like tone, for as long as you hold the key or, with <span class="ui">Toot Len</span>, as a short stab. On the keyboard in the window, click the ochre band at the lower end of a key.</dd>
+          <dt>Velocity</dt>
+          <dd>A harder hit is a louder note. The instrument has no overblown note: the hardest hit is a loud drone.</dd>
           <dt>Mod wheel</dt>
-          <dd>Opens the mouth: moves the vowel towards “i” by up to <span class="ui">Wheel Vowel</span>.</dd>
+          <dd>Raises the tongue: moves <span class="ui">Vowel</span> up by as much as <span class="ui">Wheel Vowel</span> allows.</dd>
           <dt>Aftertouch</dt>
-          <dd>Adds growl on top of the <span class="ui">Growl</span> knob.</dd>
+          <dd>Adds the sung voice on top of the <span class="ui">Voice</span> knob.</dd>
           <dt>Pitch bend</dt>
           <dd>Bends the pitch by up to <span class="ui">Bend Range</span> semitones.</dd>
           <dt>Sustain pedal</dt>
@@ -115,15 +115,9 @@
         <h2>Mouth</h2>
         <dl class="controls">
           <dt>Vowel (0–100 %)</dt>
-          <dd>The mouth shape, from “u” at 0 through “o”, “a” and “e” to “i” at 100.</dd>
-          <dt>Formant (0–100 %)</dt>
-          <dd>How much of the vowel resonances is mixed into the sound. At 0 the drone is plain.</dd>
-          <dt>Reso (0–100 %)</dt>
-          <dd>How sharp the vowel resonances are: higher values sound more vocal and nasal.</dd>
+          <dd>The mouth shape, from an open “aw” at 0, where the tongue lies low and the drone is plain, to a tight “ee” at 100. As it rises the tongue rises with it, and the bright band the tongue leaves in the sound climbs from about 1 to 2.2 kHz.</dd>
           <dt>Tongue (0–100 %)</dt>
-          <dd>What a raised tongue takes out of the sound. A player's mouth adds nothing: it holds the sound back at three resonances of its own, and the band left between them is the bright overtone you hear moving, between about 1 and 2.2 kHz. The band follows <span class="ui">Vowel</span> and everything that moves it. Below about 25 % of <span class="ui">Vowel</span> the tongue lies low and nothing happens; from 80 % it works in full. A raised tongue also lifts the drone by up to a third of a semitone. For a sound close to a real instrument, turn <span class="ui">Tongue</span> up and <span class="ui">Formant</span> down.</dd>
-          <dt>Tone (200–8000 Hz)</dt>
-          <dd>A low-pass filter on the direct sound. Lower is darker.</dd>
+          <dd>How deep the mouth cuts into the sound. A player's mouth adds nothing: with the tongue raised it holds the sound back at three resonances of its own, and the band left between them is the bright overtone you hear moving. At 0 the mouth does nothing, wherever <span class="ui">Vowel</span> stands. Below about 25 % of <span class="ui">Vowel</span> the tongue lies low and nothing happens either; from 80 % it works in full. A raised tongue also lifts the drone by up to a third of a semitone.</dd>
           <dt>Wobble Rate (0.05–10 Hz)</dt>
           <dd>Speed of a slow, steady movement of the vowel.</dd>
           <dt>Wobble Depth (0–100 %)</dt>
@@ -131,7 +125,7 @@
           <dt>Wheel Vowel (0–100 %)</dt>
           <dd>How far the mod wheel moves the vowel.</dd>
           <dt>Volume (−40 to +6 dB)</dt>
-          <dd>Output level.</dd>
+          <dd>Output level. The programs are balanced for 0 dB.</dd>
         </dl>
       </section>
 
@@ -139,21 +133,19 @@
         <h2>Lips</h2>
         <dl class="controls">
           <dt>Buzz (0–100 %)</dt>
-          <dd>The lip sound, from a round saw wave at 0 to a thin, nasal pulse at 100.</dd>
-          <dt>Body (0–100 %)</dt>
-          <dd>A resonance at the played pitch that gives the drone weight.</dd>
+          <dd>How hard the lips close. They are shut for a good half of every cycle: a hard closure (100) gives a bright, buzzing drone, a soft one (0) a mellow drone with few high harmonics.</dd>
           <dt>Drive (0–100 %)</dt>
-          <dd>Saturation at the output: adds grit and compresses the level.</dd>
+          <dd>How hard the lips are blown. The air that passes them cannot grow beyond what the blowing pressure allows, so a wide opening flattens each puff: more Drive gives a fuller, rougher tone with stronger harmonics. It works on the lips themselves, before the mouth and the tube shape the sound.</dd>
           <dt>Breath (0–100 %)</dt>
-          <dd>Breath noise passing through the tube and the mouth.</dd>
+          <dd>Breath noise. It passes only while the lips are open, so it comes in bursts at the pitch of the drone, and the mouth and the tube colour it as they colour the drone.</dd>
           <dt>Drift (0–100 %)</dt>
           <dd>Slow, random wandering of the pitch, up to about a third of a semitone. A real drone is steady: keep it low for a faithful sound.</dd>
-          <dt>Growl (0–100 %)</dt>
-          <dd>A voice sung into the tube, slightly out of tune with it, which makes the drone rough and beating.</dd>
-          <dt>Growl Pitch (0–24 st)</dt>
-          <dd>The interval of the sung voice above the drone, in semitones, for <span class="ui">Growl</span> and for <span class="ui">Voice</span>.</dd>
           <dt>Voice (0–100 %)</dt>
-          <dd>Singing into the tube the way players do it: the voice opens and closes the same stream of air as the lips, exactly in tune with the drone at the interval of <span class="ui">Growl Pitch</span>. A fifth (7 st) or a tenth (16 st) adds a tone one octave below the drone. Unlike <span class="ui">Growl</span> it does not beat.</dd>
+          <dd>Singing into the tube the way players do it: the voice opens and closes the same stream of air as the lips, at the interval of <span class="ui">Voice Pitch</span> above the drone. A fifth or a tenth adds a tone one octave below the drone. Aftertouch adds to it.</dd>
+          <dt>Voice Pitch (Unison, Third, Fourth, Fifth, Octave, Tenth, Twelfth)</dt>
+          <dd>The interval of the sung voice above the drone. These are the intervals at which a voice locks to the drone and stands still; players sing the tenth most.</dd>
+          <dt>Rough (0–100 %)</dt>
+          <dd>Pulls the voice off its lock, by up to a third of a semitone, so that it beats against the drone: a growl.</dd>
           <dt>Attack (5–2000 ms)</dt>
           <dd>How quickly a note fades in.</dd>
           <dt>Release (10–3000 ms)</dt>
@@ -165,17 +157,15 @@
         <h2>Tube</h2>
         <dl class="controls">
           <dt>Tube (0–100 %)</dt>
-          <dd>The resonances of the instrument itself. The lowest lies just under the drone and makes the fundamental stand far above its harmonics, as on a real didgeridoo; the next ones follow <span class="ui">Toot Pitch</span>. The loudness stays about the same. At 0 the tube is left out.</dd>
-          <dt>Toot Vel (64–127, Off)</dt>
-          <dd>The velocity from which a note overblows. Turn it fully up (“Off”) to disable overblowing.</dd>
-          <dt>Toot Pitch (7–24 st)</dt>
-          <dd>How far an overblown note jumps above the played key. With <span class="ui">Tube</span> turned up it also says what kind of tube this is: 19 st is a plain pipe, which favours the odd harmonics of the drone; around 16 st is a flared, natural instrument, whose harmonics above the fundamental are weak.</dd>
-          <dt>Toot Len (Hold, 1–1000 ms)</dt>
-          <dd>How long an overblown note lasts. At <b>Hold</b> it sounds as long as the key is held. With a length it is a short stab, after which the drone of the same key comes back: the way players throw a toot into a rhythm.</dd>
+          <dd>The resonances of the instrument itself. The lowest lies just under the drone and makes the fundamental stand far above its harmonics, as on a real didgeridoo; the others stand where <span class="ui">Flare</span> puts them. The loudness stays about the same. At 0 the tube is left out.</dd>
+          <dt>Tone (200–8000 Hz)</dt>
+          <dd>Up to this frequency the tube sends out higher harmonics more strongly than lower ones; above it no more. Lower is darker.</dd>
+          <dt>Flare (0–100 %)</dt>
+          <dd>The shape of the tube. At 0 it is a plain pipe, which favours the odd harmonics of the drone and sounds hollow; higher values are natural instruments that widen towards the end, whose harmonics above the fundamental are weak.</dd>
           <dt>Glide (0–1000 ms)</dt>
           <dd>How long the pitch takes to slide from one note to the next.</dd>
           <dt>Bend Range (0–12 st)</dt>
-          <dd>The pitch bend range in semitones.</dd>
+          <dd>The pitch bend range in semitones. A player's lips move the drone by about a semitone in all.</dd>
           <dt>Octave (−2 to +2)</dt>
           <dd>Moves the whole instrument by octaves. At 0 a key sounds two octaves below its MIDI note, which puts a didgeridoo's range around middle C. +2 plays the MIDI note itself, for pads and keyboards that start low. A sounding note slides to the new octave. Programs leave this knob where you put it.</dd>
         </dl>
@@ -192,11 +182,11 @@
           <dt>Rhy Depth (0–100 %)</dt>
           <dd>How far the volume drops between pulses.</dd>
           <dt>Rhy&gt;Vowel (−100 to +100 %)</dt>
-          <dd>How far each pulse pushes the vowel: positive towards “i”, negative towards “u”.</dd>
+          <dd>How far each pulse pushes <span class="ui">Vowel</span>: positive raises the tongue, negative lowers it.</dd>
           <dt>Rhy Decay (0–100 %)</dt>
           <dd>The shape of the pulse, from a long swell at 0 to a short stab at 100.</dd>
           <dt>Accent (0–100 %)</dt>
-          <dd>How much louder and brighter an accented step begins, and how much quieter the soft steps are.</dd>
+          <dd>How much louder an accented step begins, with lips that close harder for a moment, and how much quieter the soft steps are.</dd>
           <dt>Breath In (0–100 %)</dt>
           <dd>A quick breath through the nose on every soft step, as in circular breathing: for the first fifth of a second the drone drops, the breath is heard and the tongue lets go. It needs a pattern with soft steps.</dd>
         </dl>
