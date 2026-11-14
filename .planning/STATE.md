@@ -1,8 +1,9 @@
 # Didgeridoo — State
 
+- 2026-11-14 — phase 12: version 1.0.1 released (phase 11). See
+  `phases/12-v1.0.1-release/VERIFICATION.md`.
 - 2026-11-14 — phase 11 done: the dead spot on the names of the keys C2 to
-  C6 is gone. See `phases/11-key-name-click/VERIFICATION.md`. Not released
-  yet.
+  C6 is gone. See `phases/11-key-name-click/VERIFICATION.md`.
 - 2026-11-14 — phase 10: version 1.0.0 released (phase 09). See
   `phases/10-v1.0.0-release/VERIFICATION.md`. The author tries it on another
   Mac from the download; nobody has listened to the new sound yet.
