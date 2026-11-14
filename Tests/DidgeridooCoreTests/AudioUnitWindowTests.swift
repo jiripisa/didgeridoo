@@ -52,6 +52,26 @@ struct AudioUnitWindowTests {
         return value
     }
 
+    /// Renders one block of the unit, as a host does: MIDI it was sent is played in it. `block`
+    /// counts the blocks, because a unit renders a point in time only once.
+    private func render(_ unit: AudioUnit, block: Int) throws {
+        let frames: UInt32 = 256
+        var flags = AudioUnitRenderActionFlags()
+        var time = AudioTimeStamp()
+        time.mFlags = .sampleTimeValid
+        time.mSampleTime = Float64(block) * Float64(frames)
+        let buffers = AudioBufferList.allocate(maximumBuffers: 2)       // the unit fills buffers of its own
+        defer { free(buffers.unsafeMutablePointer) }
+        for index in 0..<2 { buffers[index] = AudioBuffer(mNumberChannels: 1, mDataByteSize: frames * 4, mData: nil) }
+        try #require(AudioUnitRender(unit, &flags, &time, 0, frames, buffers.unsafeMutablePointer) == noErr)
+    }
+
+    /// A control change as a host passes it to the instrument, and the block it is played in.
+    private func send(controller: Int, value: Int, to unit: AudioUnit, block: Int) throws {
+        try #require(MusicDeviceMIDIEvent(unit, 0xB0, UInt32(controller), UInt32(value), 0) == noErr)
+        try render(unit, block: block)
+    }
+
     private func presentPreset(of unit: AudioUnit) throws -> Int {
         var preset = AUPreset()
         var size = UInt32(MemoryLayout<AUPreset>.size)
@@ -173,5 +193,84 @@ struct AudioUnitWindowTests {
             try await Task.sleep(for: .milliseconds(10))
         }
         #expect(heard.all == ["begin", "value 50", "end"])
+    }
+    // MARK: MIDI controllers
+
+    @Test("A controller the host passes on moves the knob, and the unit's parameter follows")
+    func controllerMovesTheUnitsParameter() throws {
+        let unit = try PlugIn.make()
+        defer { AudioComponentInstanceDispose(unit) }
+        let model = AudioUnitModel(unit: unit)
+        let tone = try #require(Parameters.named("tone"))
+        #expect(model.controller(of: tone) == 74)
+
+        try send(controller: 74, value: 127, to: unit, block: 1)
+        #expect(try value(of: "tone", in: unit) == 8000)                // what a host reads and saves
+        model.refresh()
+        #expect(model.position(of: tone) == 1)
+
+        try send(controller: 74, value: 0, to: unit, block: 2)
+        #expect(try value(of: "tone", in: unit) == 200)
+    }
+
+    @Test("A knob the host has set stays there until its controller moves")
+    func hostAndControllerTakeTurns() throws {
+        let unit = try PlugIn.make()
+        defer { AudioComponentInstanceDispose(unit) }
+        let tone = try #require(Parameters.named("tone"))
+        try send(controller: 74, value: 127, to: unit, block: 1)
+        try #require(AudioUnitSetParameter(unit, AudioUnitParameterID(tone.index), kAudioUnitScope_Global, 0, 1000, 0) == noErr)
+        try render(unit, block: 2)
+        try send(controller: 7, value: 64, to: unit, block: 3)          // another knob's controller
+        #expect(try value(of: "tone", in: unit) == 1000)
+    }
+
+    @Test("The window teaches a knob a controller")
+    func windowLearns() throws {
+        let unit = try PlugIn.make()
+        defer { AudioComponentInstanceDispose(unit) }
+        let model = AudioUnitModel(unit: unit)
+        let tube = try #require(Parameters.named("tube")), tone = try #require(Parameters.named("tone"))
+        #expect(model.learning == nil)
+
+        model.learn(tube)
+        #expect(model.learning == tube)
+        try send(controller: 74, value: 127, to: unit, block: 1)        // Tone's controller
+        model.refresh()
+        #expect(model.learning == nil)
+        #expect(model.controller(of: tube) == 74)
+        #expect(model.controller(of: tone) == nil)
+        #expect(try value(of: "tube", in: unit) == 100)
+
+        model.setController(nil, of: tube)
+        #expect(model.controller(of: tube) == nil)
+        model.resetControllers()
+        #expect(model.controller(of: tube) == 29)
+        #expect(model.controller(of: tone) == 74)
+    }
+
+    @Test("The host saves the controllers with the project")
+    func controllersAreSavedWithTheProject() throws {
+        let unit = try PlugIn.make()
+        defer { AudioComponentInstanceDispose(unit) }
+        let tube = try #require(Parameters.named("tube")), tone = try #require(Parameters.named("tone"))
+        let model = AudioUnitModel(unit: unit)
+        model.setController(40, of: tube)
+        model.setController(nil, of: tone)
+
+        var state: Unmanaged<CFPropertyList>?
+        var size = UInt32(MemoryLayout<Unmanaged<CFPropertyList>?>.size)
+        try #require(AudioUnitGetProperty(unit, kAudioUnitProperty_ClassInfo, kAudioUnitScope_Global, 0, &state, &size) == noErr)
+        var saved = try #require(state)          // the unit hands its state over retained
+        defer { saved.release() }
+
+        let other = try PlugIn.make()
+        defer { AudioComponentInstanceDispose(other) }
+        try #require(AudioUnitSetProperty(other, kAudioUnitProperty_ClassInfo, kAudioUnitScope_Global, 0, &saved,
+                                          UInt32(MemoryLayout<Unmanaged<CFPropertyList>>.size)) == noErr)
+        let restored = AudioUnitModel(unit: other)
+        #expect(restored.controller(of: tube) == 40)
+        #expect(restored.controller(of: tone) == nil)
+        #expect(restored.controller(of: try #require(Parameters.named("volume"))) == 7)
     }
 }

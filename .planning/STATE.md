@@ -1,5 +1,11 @@
 # Didgeridoo — State
 
+- 2026-11-15 — phase 17 done on `feature/17-midi-learn` (which stands on
+  phase 16's branch): MIDI learn and a controller on every knob, in the app
+  and in the plug-in. Not merged, not released; no real controller has been
+  moved. See `phases/17-midi-learn/VERIFICATION.md`. An instrument
+  definition for the author's OXI E16 with these controllers lies with his
+  other definitions, outside this repository.
 - 2026-11-14 — phase 16 done on `feature/16-lfo` (which stands on phase 15's
   branch): two LFOs that move the knobs, with an amount per LFO on sixteen
   of them. Not merged, not released, not heard.
@@ -51,7 +57,7 @@
 - 2026-11-13 — skeleton created (phase 01): `build.sh` / `run.sh`,
   Developer ID + notarization pipeline, Sparkle auto-update, website on
   GitHub Pages.
-- Open: phases 15 and 16 wait on their branches for the author's word to
+- Open: phases 15 to 17 wait on their branches for the author's word to
   merge and release them (a major version: saved sounds and host projects of
   1.0.x do not carry over). He tries builds from the released download, so
-  he cannot try the LFO buttons before a release.
+  he cannot try the LFO buttons or MIDI learn before a release.

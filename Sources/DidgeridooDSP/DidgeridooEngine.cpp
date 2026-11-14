@@ -35,6 +35,9 @@
 // the engine only. The vowel also moves with the mod wheel and the tempo-synced rhythm pulse.
 // Channel aftertouch adds the voice.
 //
+// MIDI controllers: every knob listens to a control change number (it comes with one, and can be
+// given another: "learn"), and a control change puts the knob where its value says.
+//
 // Expensive maths (pow, tan, exp, sin) runs every 16 samples ("control rate"); the lips, the
 // filters and the envelope run every sample. Nothing allocates in process().
 
@@ -283,6 +286,29 @@ const Param* makeParams()
 const Param* const kParams = makeParams();
 
 // ---------------------------------------------------------------------------------------------
+// MIDI controllers. Every knob comes with one: the controller MIDI names for the thing where
+// there is one (7 Channel Volume, 5 Portamento Time, 74 Brightness ...), and for the others the
+// numbers MIDI leaves undefined, group by group. In the order of the knobs.
+// ---------------------------------------------------------------------------------------------
+constexpr int kNoController = -1;
+
+constexpr int kStandardController[kNumKnobs] = {
+    11, 71, 20, 76, 21, 22, 23, 7,       // Mouth: Vowel (Expression), Tongue (Timbre), Wheel Vowel, LFO 1 Rate (Vibrato Rate), LFO 1 Shape, LFO 2 Rate, LFO 2 Shape, Volume
+    70, 2, 24, 25, 26, 27, 28, 73, 72,   // Lips: Buzz (Sound Variation), Drive (Breath Controller), Breath, Drift, Voice, Voice Pitch, Rough, Attack, Release
+    29, 74, 30, 5, 31, 103,              // Tube: Tube, Tone (Brightness), Flare, Glide (Portamento Time), Bend Range, Octave
+    85, 86, 87, 88, 89, 90, 102,         // Rhythm: Rhythm Div, Pattern, Rhy Depth, Rhy>Vowel, Rhy Decay, Accent, Breath In
+};
+
+int standardController(int param) { return param >= 0 && param < kNumKnobs ? kStandardController[param] : kNoController; }
+
+// Controllers no knob can have: MIDI gives them a meaning of their own (bank select, data
+// entry, parameter numbers, channel mode), and the engine uses the mod wheel and the sustain pedal.
+constexpr bool controllerReserved(int cc)
+{
+    return cc <= 1 || cc == 6 || cc == 32 || cc == 38 || cc == 64 || (cc >= 96 && cc <= 101) || cc >= 120;
+}
+
+// ---------------------------------------------------------------------------------------------
 // Sections: the groups the parameters are shown in (the app's panels, the Audio Unit's parameter
 // groups) and the order inside each. Every parameter belongs to exactly one section, and the
 // table above lists them in this very order.
@@ -467,6 +493,7 @@ struct DidgeEngine
     DidgeEngine()
     {
         for (int i = 0; i < kNumParams; ++i) values_[i].store(kParams[i].toNormalised(kParams[i].def));
+        for (int i = 0; i < kNumParams; ++i) controller_[i].store((int8_t)standardController(i));
         for (uint32_t i = 0; i < kPostSize; ++i) posted_[i].turn.store(i, std::memory_order_relaxed);
         prepare(44100.0);
         reset();
@@ -491,6 +518,31 @@ struct DidgeEngine
     int program() const { return program_.load(std::memory_order_relaxed); }
 
     void requestReset() { resetPending_.store(true, std::memory_order_release); }   // any thread
+
+    // ----- MIDI controllers (any thread) --------------------------------------------------
+    int controllerOf(int param) const { return controller_[param].load(std::memory_order_relaxed); }
+
+    // A controller serves one knob: whoever had it before has none. A reserved one is not taken.
+    void setController(int param, int cc)
+    {
+        if (cc < 0) { controller_[param].store(kNoController, std::memory_order_relaxed); return; }
+        if (cc > 127 || controllerReserved(cc)) return;
+        for (int i = 0; i < kNumParams; ++i)
+            if (i != param && controller_[i].load(std::memory_order_relaxed) == cc) controller_[i].store(kNoController, std::memory_order_relaxed);
+        controller_[param].store((int8_t)cc, std::memory_order_relaxed);
+    }
+
+    void resetControllers()
+    {
+        for (int i = 0; i < kNumParams; ++i) controller_[i].store((int8_t)standardController(i), std::memory_order_relaxed);
+    }
+
+    // The knob that takes the next controller that moves; -1 for none.
+    void learn(int param) { learning_.store(param, std::memory_order_relaxed); }
+    int  learning() const { return learning_.load(std::memory_order_relaxed); }
+
+    // Counts what MIDI did behind a window's back: a knob moved by its controller, a controller learnt.
+    uint32_t changes() const { return changes_.load(std::memory_order_relaxed); }
 
     void setTransport(bool playing, double bpm, double ppq, bool ppqValid)
     {
@@ -780,6 +832,7 @@ private:
                 sustain_ = ev.data2 >= 64;
                 if (!sustain_ && sustained_) { sustained_ = false; if (numHeld_ == 0) env_.noteOff(); }
             }
+            else if (!controllerReserved(ev.data1)) controllerMoved(ev.data1, ev.data2);
         }
         else if (ev.isPitchBend())  bend_.setTarget((float)ev.pitchBend() / 8192.0f);
         else if (ev.isAftertouch()) pressure_.setTarget(ev.data1 / 127.0f);
@@ -803,6 +856,29 @@ private:
         sustained_ = false;
         env_.noteOn();
         controlCountdown_ = 0;                          // pick up the new pitch immediately
+    }
+
+    // A controller that is not one of MIDI's own: the knob that is learning takes it, and the
+    // knob that listens to it goes where its value says. The new place is read with the next block.
+    void controllerMoved(int cc, int value)
+    {
+        bool changed = false;
+        int learning = learning_.load(std::memory_order_relaxed);
+        if (learning >= 0 && learning_.compare_exchange_strong(learning, -1, std::memory_order_relaxed))
+        {
+            setController(learning, cc);
+            changed = true;
+        }
+        for (int i = 0; i < kNumParams; ++i)
+            if (controller_[i].load(std::memory_order_relaxed) == cc)
+            {
+                // 64 is the middle of a controller's travel: a knob that has a middle of its
+                // own (-100 … 100 %) stands on it there, which 64 / 127 would miss.
+                const bool onMiddle = value == 64 && kParams[i].max > 0.0f && kParams[i].min == -kParams[i].max;
+                setNormalised(i, onMiddle ? 0.5f : (float)value / 127.0f);
+                changed = true;
+            }
+        if (changed) changes_.fetch_add(1, std::memory_order_relaxed);
     }
 
     void removeHeld(int note)
@@ -1027,6 +1103,9 @@ private:
     std::atomic<bool>   resetPending_{false};
     std::atomic<double> bpm_{120.0}, transportPpq_{0.0};
     std::atomic<bool>   transportLocked_{false};
+    std::atomic<int8_t>   controller_[kNumParams];  // the controller each parameter listens to, kNoController for none
+    std::atomic<int>      learning_{-1};            // the parameter that takes the next controller
+    std::atomic<uint32_t> changes_{0};
 
     MidiEvent events_[kMaxEvents];
     int       numEvents_ = 0;
@@ -1131,6 +1210,15 @@ const char* didge_param_display(int index, float plain, char* buffer, int buffer
     }
     return buffer;
 }
+
+int didge_standard_controller(int param) { return validParam(param) ? standardController(param) : kNoController; }
+int didge_controller_reserved(int controller) { return controller < 0 || controller > 127 || controllerReserved(controller) ? 1 : 0; }
+int didge_get_controller(const DidgeEngine* engine, int param) { return validParam(param) ? engine->controllerOf(param) : kNoController; }
+void didge_set_controller(DidgeEngine* engine, int param, int controller) { if (validParam(param)) engine->setController(param, controller); }
+void didge_reset_controllers(DidgeEngine* engine) { engine->resetControllers(); }
+void didge_learn(DidgeEngine* engine, int param) { engine->learn(validParam(param) ? param : -1); }
+int didge_learning(const DidgeEngine* engine) { return engine->learning(); }
+unsigned didge_changes(const DidgeEngine* engine) { return engine->changes(); }
 
 int didge_num_lfos(void) { return kNumLfos; }
 int didge_lfo_amount(int lfo, int param) { return lfo >= 0 && lfo < kNumLfos && validParam(param) ? amountOf(lfo, param) : -1; }

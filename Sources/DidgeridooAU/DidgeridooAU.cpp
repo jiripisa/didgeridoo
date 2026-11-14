@@ -109,6 +109,18 @@ public:
             outWritable = false;
             return noErr;
         }
+        if (id == kDidgeridooProperty_Controllers && scope == kAudioUnitScope_Global)
+        {
+            outDataSize = static_cast<UInt32>(sizeof(SInt32) * applied_.size());
+            outWritable = true;
+            return noErr;
+        }
+        if (id == kDidgeridooProperty_Learn && scope == kAudioUnitScope_Global)
+        {
+            outDataSize = sizeof(SInt32);
+            outWritable = true;
+            return noErr;
+        }
         return Base::GetPropertyInfo(id, scope, element, outDataSize, outWritable);
     }
 
@@ -123,7 +135,68 @@ public:
             info->mCocoaAUViewClass[0] = CFStringCreateWithCString(nullptr, DIDGERIDOO_AU_VIEW_CLASS, kCFStringEncodingUTF8);
             return noErr;
         }
+        if (id == kDidgeridooProperty_Controllers && scope == kAudioUnitScope_Global)
+        {
+            auto* controllers = static_cast<SInt32*>(outData);
+            for (int i = 0; i < static_cast<int>(applied_.size()); ++i) controllers[i] = didge_get_controller(engine_, i);
+            return noErr;
+        }
+        if (id == kDidgeridooProperty_Learn && scope == kAudioUnitScope_Global)
+        {
+            *static_cast<SInt32*>(outData) = didge_learning(engine_);
+            return noErr;
+        }
         return Base::GetProperty(id, scope, element, outData);
+    }
+
+    // ----- MIDI controllers -----------------------------------------------------------------
+    // Which controller moves which parameter lives in the engine. The window reads and sets it
+    // through two properties of the unit's own, and a host saves it with the project.
+    OSStatus SetProperty(AudioUnitPropertyID id, AudioUnitScope scope, AudioUnitElement element,
+                         const void* inData, UInt32 inDataSize) override
+    {
+        if (id == kDidgeridooProperty_Controllers && scope == kAudioUnitScope_Global)
+        {
+            if (inDataSize != sizeof(SInt32) * applied_.size()) return kAudioUnitErr_InvalidPropertyValue;
+            setControllers(static_cast<const SInt32*>(inData), static_cast<int>(applied_.size()));
+            return noErr;
+        }
+        if (id == kDidgeridooProperty_Learn && scope == kAudioUnitScope_Global)
+        {
+            if (inDataSize != sizeof(SInt32)) return kAudioUnitErr_InvalidPropertyValue;
+            didge_learn(engine_, *static_cast<const SInt32*>(inData));
+            return noErr;
+        }
+        return Base::SetProperty(id, scope, element, inData, inDataSize);
+    }
+
+    OSStatus SaveState(CFPropertyListRef* outData) override
+    {
+        const OSStatus status = Base::SaveState(outData);
+        if (status != noErr || !outData || !*outData || CFGetTypeID(*outData) != CFDictionaryGetTypeID()) return status;
+        std::vector<SInt32> controllers(applied_.size());
+        for (size_t i = 0; i < controllers.size(); ++i) controllers[i] = didge_get_controller(engine_, static_cast<int>(i));
+        CFDataRef data = CFDataCreate(nullptr, reinterpret_cast<const UInt8*>(controllers.data()),
+                                      static_cast<CFIndex>(controllers.size() * sizeof(SInt32)));
+        // The base class made this dictionary a moment ago and nobody else holds it yet.
+        CFDictionarySetValue(static_cast<CFMutableDictionaryRef>(const_cast<void*>(*outData)), controllersKey(), data);
+        CFRelease(data);
+        return noErr;
+    }
+
+    // State saved before the unit had controllers carries none: they stay as they are. A list
+    // from a version with fewer parameters covers the first of them; the table only ever grows
+    // at its end.
+    OSStatus RestoreState(CFPropertyListRef plist) override
+    {
+        const OSStatus status = Base::RestoreState(plist);
+        if (status != noErr || !plist || CFGetTypeID(plist) != CFDictionaryGetTypeID()) return status;
+        const void* stored = CFDictionaryGetValue(static_cast<CFDictionaryRef>(plist), controllersKey());
+        if (!stored || CFGetTypeID(stored) != CFDataGetTypeID()) return status;
+        const auto data = static_cast<CFDataRef>(stored);
+        const int count = static_cast<int>(CFDataGetLength(data) / static_cast<CFIndex>(sizeof(SInt32)));
+        setControllers(reinterpret_cast<const SInt32*>(CFDataGetBytePtr(data)), count < static_cast<int>(applied_.size()) ? count : static_cast<int>(applied_.size()));
+        return status;
     }
 
     // ----- parameters -----------------------------------------------------------------------
@@ -234,12 +307,41 @@ public:
         float* left = static_cast<float*>(buffers.mBuffers[0].mData);
         float* right = buffers.mNumberBuffers > 1 ? static_cast<float*>(buffers.mBuffers[1].mData) : nullptr;
         didge_process(engine_, left, right, static_cast<int>(frames));
+
+        // A controller moved a knob inside the engine: the unit's own parameters follow, since
+        // they are what a host and the window read and what is saved.
+        const unsigned changes = didge_changes(engine_);
+        if (changes != seenChanges_)
+        {
+            seenChanges_ = changes;
+            for (int i = 0; i < count; ++i)
+            {
+                const float value = didge_get_plain(engine_, i);
+                if (value != applied_[static_cast<size_t>(i)])
+                {
+                    applied_[static_cast<size_t>(i)] = value;
+                    Globals()->SetParameterRT(static_cast<AudioUnitParameterID>(i), value, true);
+                }
+            }
+        }
         return noErr;
     }
 
 private:
+    // First the parameters that are to have none, then the others: giving a controller takes
+    // it from whoever has it.
+    void setControllers(const SInt32* controllers, int count)
+    {
+        for (int i = 0; i < count; ++i) if (controllers[i] < 0) didge_set_controller(engine_, i, -1);
+        for (int i = 0; i < count; ++i) if (controllers[i] >= 0) didge_set_controller(engine_, i, controllers[i]);
+    }
+
+    // The key of the controllers in the unit's saved state.
+    static CFStringRef controllersKey() { return CFSTR("didgeridoo-controllers"); }
+
     DidgeEngine* engine_;
     std::vector<float> applied_;     // the plain value last handed to the engine, per parameter
+    unsigned seenChanges_ = 0;       // the engine's count of what MIDI changed, as of the last block
 };
 
 AUSDK_COMPONENT_ENTRY(ausdk::AUMusicDeviceFactory, DidgeridooAU)
