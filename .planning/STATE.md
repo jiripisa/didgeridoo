@@ -1,5 +1,10 @@
 # Didgeridoo — State
 
+- 2026-11-15 — phase 18: version 2.0.0 released (phases 15 to 17, merged
+  into `main` one by one). See `phases/18-v2.0.0-release/VERIFICATION.md`.
+  The author tries it on another Mac from the download: the LFO buttons,
+  MIDI learn with a real controller and the plug-in in a host wait for his
+  hands.
 - 2026-11-15 — phase 17 done on `feature/17-midi-learn` (which stands on
   phase 16's branch): MIDI learn and a controller on every knob, in the app
   and in the plug-in. Not merged, not released; no real controller has been
@@ -57,7 +62,5 @@
 - 2026-11-13 — skeleton created (phase 01): `build.sh` / `run.sh`,
   Developer ID + notarization pipeline, Sparkle auto-update, website on
   GitHub Pages.
-- Open: phases 15 to 17 wait on their branches for the author's word to
-  merge and release them (a major version: saved sounds and host projects of
-  1.0.x do not carry over). He tries builds from the released download, so
-  he cannot try the LFO buttons or MIDI learn before a release.
+- Open: what 2.0.0's "Not verified" lists name, above all the author's
+  hands and ear on the LFOs and on MIDI learn.

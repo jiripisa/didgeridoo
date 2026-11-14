@@ -5,9 +5,10 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 | Phase | Goal | Status |
 |---|---|---|
-| 17-midi-learn | MIDI learn: every knob listens to a MIDI controller, comes with one (Volume 7, Tone 74, Vowel 11 …) and learns another with the MIDI button in the header and a move of a control. The same in the plug-in; the app remembers the controllers and a host saves them with the project. Stands on phase 16, not released — 2026-11-15 | ✅ |
-| 16-lfo | Two LFOs (rate, shape) and an amount for each on sixteen knobs, set on the knobs themselves with a button per LFO in the header; Wobble became LFO 1 on Vowel. Stands on phase 15, not released — 2026-11-14 | ✅ |
-| 15-one-model | One model of the instrument in place of two: lips as a valve, the tongue alone as the mouth, the tube's eight resonances, one voice. The author's ear approved the sound; the overblown note failed it three times and was removed. 28 knobs. Not released yet — 2026-11-14 | ✅ |
+| 18-v2.0.0-release | Version 2.0.0: phases 15 to 17 released — 2026-11-15 | ✅ |
+| 17-midi-learn | MIDI learn: every knob listens to a MIDI controller, comes with one (Volume 7, Tone 74, Vowel 11 …) and learns another with the MIDI button in the header and a move of a control. The same in the plug-in; the app remembers the controllers and a host saves them with the project. Released in 2.0.0 — 2026-11-15 | ✅ |
+| 16-lfo | Two LFOs (rate, shape) and an amount for each on sixteen knobs, set on the knobs themselves with a button per LFO in the header; Wobble became LFO 1 on Vowel. Released in 2.0.0 — 2026-11-14 | ✅ |
+| 15-one-model | One model of the instrument in place of two: lips as a valve, the tongue alone as the mouth, the tube's eight resonances, one voice. The author's ear approved the sound; the overblown note failed it three times and was removed. 28 knobs then. Released in 2.0.0 — 2026-11-14 | ✅ |
 | 14-v1.0.2-release | Version 1.0.2: phase 13 released — 2026-11-14 | ✅ |
 | 13-overblow-band | The keys of the app's keyboard show a band at their lower end: a click there overblows, a click anywhere else never does; the names sit above it — 2026-11-14 | ✅ |
 | 12-v1.0.1-release | Version 1.0.1: phase 11 released — 2026-11-14 | ✅ |
