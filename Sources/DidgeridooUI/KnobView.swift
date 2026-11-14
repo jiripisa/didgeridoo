@@ -5,10 +5,17 @@ import DidgeridooCore
 /// One parameter as a knob: its name, a value arc around the cap, the value
 /// below. Drag up and down to turn it (Shift for fine steps), double-click to
 /// go back to the program's value.
+///
+/// A knob an LFO moves shows a thin arc in that LFO's colour: the part of its
+/// travel the LFO sweeps. While an LFO's button in the header is on
+/// (`assigning`), the knob sets that LFO's amount instead of its own value:
+/// the same drag and double click, the amount below. Knobs an LFO cannot move
+/// step back meanwhile; the LFOs' own knobs stay as they are.
 public struct KnobView: View {
 
     private let parameter: Parameter
     private let model: any InstrumentModel
+    private let assigning: Int?
 
     @State private var dragStart: Float?
 
@@ -18,10 +25,22 @@ public struct KnobView: View {
     private static let sweep = 270.0          // degrees of travel
     private static let size: CGFloat = 62
 
-    public init(parameter: Parameter, model: any InstrumentModel) {
+    public init(parameter: Parameter, model: any InstrumentModel, assigning: Int? = nil) {
         self.parameter = parameter
         self.model = model
+        self.assigning = assigning
     }
+
+    /// The amount this knob is setting right now, if an LFO's button is on and
+    /// that LFO can move the knob.
+    private var amount: Parameter? { assigning.flatMap { LFOs.amount(of: parameter, lfo: $0) } }
+
+    /// Whether the knob is out of play: an LFO's button is on and this is
+    /// neither a knob it can move nor one of the LFOs' own.
+    private var steppedBack: Bool { assigning != nil && amount == nil && !parameter.identifier.hasPrefix("lfo") }
+
+    /// What a drag and a double click act on: the amount while one is being set, else the knob.
+    private var edited: Parameter { amount ?? parameter }
 
     public var body: some View {
         let position = Double(model.position(of: parameter))
@@ -34,7 +53,16 @@ public struct KnobView: View {
                 arc(from: 0, to: 1)
                     .stroke(Color.white.opacity(0.12), style: StrokeStyle(lineWidth: 4, lineCap: .round))
                 arc(from: parameter.isBipolar ? min(0.5, position) : 0, to: parameter.isBipolar ? max(0.5, position) : position)
-                    .stroke(Artwork.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .stroke(Artwork.accent.opacity(amount == nil ? 1 : 0.4), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                // What the LFOs sweep: an arc each, inside the ring.
+                ForEach(0..<LFOs.count, id: \.self) { lfo in
+                    if let moved = LFOs.amount(of: parameter, lfo: lfo), model.value(of: moved) != 0 {
+                        let range = LFOs.arc(position: position, amount: Double(model.value(of: moved)))
+                        arc(from: range.lowerBound, to: range.upperBound)
+                            .stroke(Artwork.lfo(lfo), style: StrokeStyle(lineWidth: assigning == lfo ? 3.5 : 2.5, lineCap: .round))
+                            .padding(lfo == 0 ? 4.5 : 7.5)
+                    }
+                }
                 cap
                     .frame(width: Self.size * 0.86, height: Self.size * 0.86)
                 // The pointer: a short cream line turning with the value.
@@ -47,16 +75,24 @@ public struct KnobView: View {
             .frame(width: Self.size + 10, height: Self.size + 10)
             .contentShape(Circle())
             .gesture(drag)
-            .onTapGesture(count: 2) { model.resetToDefault(parameter) }
-            Text(parameter.label(model.value(of: parameter)))
+            .onTapGesture(count: 2) { model.resetToDefault(edited) }
+            Text(valueText)
                 .font(.system(size: 12, weight: .semibold).monospacedDigit())
-                .foregroundStyle(.white)
+                .foregroundStyle(amount == nil ? Color.white : Artwork.lfo(assigning ?? 0))
                 .lineLimit(1)
         }
         .frame(width: Self.width)
+        .opacity(steppedBack ? 0.3 : 1)
+        .allowsHitTesting(!steppedBack)
         .accessibilityElement()
-        .accessibilityLabel(parameter.name)
-        .accessibilityValue(parameter.label(model.value(of: parameter)))
+        .accessibilityLabel(amount?.name ?? parameter.name)
+        .accessibilityValue(valueText)
+    }
+
+    /// Below the knob: its value, or the amount being set.
+    private var valueText: String {
+        if let amount { return LFOs.label(amount: model.value(of: amount)) }
+        return parameter.label(model.value(of: parameter))
     }
 
     @ViewBuilder
@@ -79,20 +115,26 @@ public struct KnobView: View {
     private var drag: some Gesture {
         DragGesture(minimumDistance: 1)
             .onChanged { value in
+                let edited = edited
                 let start: Float
                 if let dragStart {
                     start = dragStart
                 } else {
-                    start = model.position(of: parameter)
+                    start = model.position(of: edited)
                     dragStart = start
-                    model.beginEditing(parameter)
+                    model.beginEditing(edited)
                 }
                 let fine = NSEvent.modifierFlags.contains(.shift) ? 0.1 : 1.0
-                model.setPosition(start - Float(value.translation.height / 200 * fine), of: parameter)
+                var position = start - Float(value.translation.height / 200 * fine)
+                if amount != nil {
+                    // An amount close to nothing is nothing, so that an LFO can be taken off a knob.
+                    position = edited.normalised(LFOs.snapped(amount: edited.plain(min(max(position, 0), 1))))
+                }
+                model.setPosition(position, of: edited)
             }
             .onEnded { _ in
                 dragStart = nil
-                model.endEditing(parameter)
+                model.endEditing(edited)
             }
     }
 }

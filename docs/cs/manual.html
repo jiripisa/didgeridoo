@@ -42,6 +42,7 @@
         <li><a href="#lips">Lips (rty)</a></li>
         <li><a href="#tube">Tube (trubice)</a></li>
         <li><a href="#rhythm">Rhythm (rytmus)</a></li>
+        <li><a href="#lfo">LFO</a></li>
         <li><a href="#settings">Nastavení</a></li>
         <li><a href="#plugin">Plugin Audio Unit</a></li>
         <li><a href="#updates">Aktualizace</a></li>
@@ -66,7 +67,7 @@
           <div class="view" style="--iw:2200;--ih:1572">
             <img src="../assets/didgeridoo-window.png" alt="Okno aplikace Didgeridoo s vyznačenými oblastmi">
             <div class="mark" style="--x:1.4;--y:5.5;--w:19.1;--h:6.4"><b>1</b></div>
-            <div class="mark" style="--x:56.1;--y:6.4;--w:42.8;--h:4.8"><b>2</b></div>
+            <div class="mark" style="--x:41.0;--y:6.4;--w:57.9;--h:4.8"><b>2</b></div>
             <div class="mark" style="--x:1.4;--y:13.1;--w:48.3;--h:36.9"><b>3</b></div>
             <div class="mark" style="--x:50.4;--y:13.1;--w:48.3;--h:36.9"><b>4</b></div>
             <div class="mark" style="--x:1.4;--y:51.1;--w:48.3;--h:36.9"><b>5</b></div>
@@ -77,10 +78,10 @@
         <dl class="controls">
           <dt><span class="n">1</span>Název</dt>
           <dd>Název nástroje.</dd>
-          <dt><span class="n">2</span>Program, Tempo, Settings</dt>
-          <dd><b>Program</b> načte jeden z deseti vestavěných zvuků. Přepíše všechny knoby kromě <span class="ui">Octave</span> a utne znějící notu; vlastní úpravy se do programu neukládají. Všech deset hraje na stejný model nástroje, postavený na měřeních skutečných didgeridoo; liší se trubicí, ústy a způsobem hry. <b>Tempo</b> (20–300 BPM) určuje rychlost rytmického pulzu. <b>Settings</b> otevře nastavení MIDI vstupu, zvukového výstupu a instalaci pluginu Audio Unit.</dd>
+          <dt><span class="n">2</span>Program, LFO 1 a LFO 2, Tempo, Settings</dt>
+          <dd><b>Program</b> načte jeden z deseti vestavěných zvuků. Přepíše všechny knoby kromě <span class="ui">Octave</span> a utne znějící notu; vlastní úpravy se do programu neukládají. Všech deset hraje na stejný model nástroje, postavený na měřeních skutečných didgeridoo; liší se trubicí, ústy a způsobem hry. <b>LFO 1</b> a <b>LFO 2</b> promění knoby v míry, o které jimi dané LFO hýbe (viz <a href="#lfo">LFO</a>). <b>Tempo</b> (20–300 BPM) určuje rychlost rytmického pulzu. <b>Settings</b> otevře nastavení MIDI vstupu, zvukového výstupu a instalaci pluginu Audio Unit.</dd>
           <dt><span class="n">3</span>Mouth</dt>
-          <dd>Tvar úst: kde stojí jazyk, co dronu ubírá a jak se pohybuje. Viz <a href="#mouth">Mouth</a>.</dd>
+          <dd>Tvar úst: kde stojí jazyk a co dronu ubírá. Jsou tu i knoby obou LFO. Viz <a href="#mouth">Mouth</a>.</dd>
           <dt><span class="n">4</span>Lips</dt>
           <dd>Zdroj zvuku: rty, dech, hlas a to, jak noty začínají a končí. Viz <a href="#lips">Lips</a>.</dd>
           <dt><span class="n">5</span>Tube</dt>
@@ -118,12 +119,14 @@
           <dd>Tvar úst, od otevřeného „o“ na nule, kdy jazyk leží nízko a dron je holý, po sevřené „í“ na stovce. Jak hodnota roste, jazyk se zvedá a jasné pásmo, které ve zvuku nechává, stoupá zhruba od 1 do 2,2 kHz.</dd>
           <dt>Tongue (0–100 %)</dt>
           <dd>Jak hluboko ústa do zvuku řežou. Ústa hráče nic nepřidávají: se zvednutým jazykem zvuk na třech vlastních rezonancích zadržují a pásmo, které mezi nimi zůstane, je ten jasný alikvót, který slyšíte putovat. Na nule ústa nedělají nic, ať <span class="ui">Vowel</span> stojí kdekoli. Pod asi 25 % knobu <span class="ui">Vowel</span> leží jazyk nízko a neděje se také nic; od 80 % působí naplno. Zvednutý jazyk také zvýší dron až o třetinu půltónu.</dd>
-          <dt>Wobble Rate (0,05–10 Hz)</dt>
-          <dd>Rychlost pomalého, pravidelného pohybu samohlásky.</dd>
-          <dt>Wobble Depth (0–100 %)</dt>
-          <dd>Míra tohoto pohybu. Nula ho vypne.</dd>
           <dt>Wheel Vowel (0–100 %)</dt>
           <dd>O kolik mod wheel posune samohlásku.</dd>
+          <dt>LFO 1 Rate (0,02–20 Hz)</dt>
+          <dd>Jak často LFO 1 oběhne. Čím hýbe a o kolik, se nastavuje přímo na knobech: viz <a href="#lfo">LFO</a>.</dd>
+          <dt>LFO 1 Shape (Sine, Triangle, Ramp Up, Ramp Down, Square, Steps, Wander)</dt>
+          <dd>Tvar jeho cyklu. Sine a Triangle se houpou; rampy stoupají nebo klesají a skočí zpět; Square přepíná mezi dvěma polohami; Steps si v každém cyklu vybere novou náhodnou polohu a drží ji; Wander si ji vybere a plynule k ní dojde.</dd>
+          <dt>LFO 2 Rate, LFO 2 Shape</dt>
+          <dd>Totéž pro LFO 2.</dd>
           <dt>Volume (−40 až +6 dB)</dt>
           <dd>Výstupní hlasitost. Programy jsou vyvážené pro 0 dB.</dd>
         </dl>
@@ -192,6 +195,26 @@
         </dl>
       </section>
 
+      <section id="lfo">
+        <h2>LFO</h2>
+        <p>Dvě LFO umějí hýbat knoby za vás. Každé obíhá svou rychlostí a ve svém tvaru (jejich čtyři knoby jsou ve skupině <a href="#mouth">Mouth</a>) a každý knob, kterým lze hýbat, má pro každé LFO svou míru: o kolik jím to LFO na obě strany pohne, jako část dráhy knobu. LFO knobem neotáčí; přičítá se k tomu, kde knob stojí.</p>
+        <figure class="fig">
+          <div class="view" style="--iw:2200;--ih:1572">
+            <img src="../assets/manual/lfo-amounts.png" alt="Okno se zapnutým tlačítkem LFO 1: knoby ukazují míry LFO 1">
+          </div>
+        </figure>
+        <dl class="controls">
+          <dt>Nastavení míry</dt>
+          <dd>Klikněte v hlavičce na <span class="ui">LFO 1</span> nebo <span class="ui">LFO 2</span>. Knoby teď ukazují míry toho LFO, v jeho barvě: tažením nahoru nastavíte kladnou míru, dolů zápornou, která pohyb obrátí. Oblouk uvnitř prstence knobu ukazuje část dráhy, kterou LFO projíždí. Dvojklik vrátí míru na hodnotu programu. Dalším kliknutím na tlačítko se vrátíte ke knobům.</dd>
+          <dt>Čím lze hýbat</dt>
+          <dd>Vowel, Tongue, Volume, Buzz, Drive, Breath, Voice, Rough, Tube, Tone, Flare, Rhy Depth, Rhy&gt;Vowel, Rhy Decay, Accent a Breath In. Přepínače, časy a několik dalších knobů při zapnutém tlačítku ustoupí; vlastní knoby LFO zůstávají v provozu. Jedním knobem mohou hýbat obě LFO: jejich pohyby se sčítají a zastaví se na koncích dráhy knobu.</dd>
+          <dt>Jak je to vidět</dt>
+          <dd>S oběma tlačítky vypnutými si knob, kterým LFO hýbe, nechává svůj oblouk, šalvějově zelený pro LFO 1 a světle modrý pro LFO 2, takže hned vidíte, co se hýbe. Ukazatel knobu zůstává tam, kam jste ho dali.</dd>
+          <dt>Výchozí stav</dt>
+          <dd>Ve většině programů LFO 1 trochu houpe knobem <span class="ui">Vowel</span>: pomalý pohyb úst. LFO běží samy a nová nota je nespouští znovu. Míry se ukládají se zvukem a v hostitelském programu je každá samostatným parametrem („LFO 1&gt;Vowel“), který lze automatizovat.</dd>
+        </dl>
+      </section>
+
       <section id="settings">
         <h2>Nastavení</h2>
         <dl class="controls">
@@ -222,7 +245,7 @@
             <img src="../assets/manual/plugin-window.png" alt="Okno pluginu v hostitelském programu">
           </div>
         </figure>
-        <p>Plugin má stejný zvuk, stejných 33 parametrů a stejných deset programů (jako tovární presety) jako aplikace. Jeho okno je panel z aplikace: nabídka <span class="ui">Program</span> a knoby skupin Mouth, Lips, Tube a Rhythm. Tempo, nastavení MIDI a zvuku i klaviaturu má hostitelský program vlastní, proto v okně nejsou. Knoby sledují automatizaci hostitelského programu a otočení knobem lze jako automatizaci nahrát. Zvuk se ukládá s projektem. Rytmický pulz sleduje tempo a pozici ve skladbě.</p>
+        <p>Plugin má stejný zvuk, stejné knoby a LFO a stejných deset programů (jako tovární presety) jako aplikace. Jeho okno je panel z aplikace: nabídka <span class="ui">Program</span>, tlačítka LFO a knoby skupin Mouth, Lips, Tube a Rhythm. Tempo, nastavení MIDI a zvuku i klaviaturu má hostitelský program vlastní, proto v okně nejsou. Knoby sledují automatizaci hostitelského programu a otočení knobem lze jako automatizaci nahrát. Zvuk se ukládá s projektem. Rytmický pulz sleduje tempo a pozici ve skladbě.</p>
         <p>Po aktualizaci aplikace klikněte na <span class="ui">Install Audio Unit</span> znovu, aby se aktualizoval i plugin.</p>
       </section>
 

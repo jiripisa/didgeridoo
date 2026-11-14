@@ -30,8 +30,10 @@
 // around middle C. The instrument does not overblow: three attempts at the overblown note did
 // not pass the author's ear, and a hard hit is a loud drone.
 //
-// Vowel movement adds up from the Vowel knob, the mod wheel, a slow "Wobble" LFO and the
-// tempo-synced rhythm pulse. Channel aftertouch adds the voice.
+// Two LFOs move the knobs: each has a rate and a shape, and every knob that can be moved has an
+// amount for each of them. An LFO does not turn the knob; it adds to where the knob stands, for
+// the engine only. The vowel also moves with the mod wheel and the tempo-synced rhythm pulse.
+// Channel aftertouch adds the voice.
 //
 // Expensive maths (pow, tan, exp, sin) runs every 16 samples ("control rate"); the lips, the
 // filters and the envelope run every sample. Nothing allocates in process().
@@ -73,9 +75,11 @@ enum Params
     // Mouth
     kVowel,         // %     mouth shape: where the tongue leaves its band, and how far it is raised
     kTongue,        // %     how deep the vocal tract's resonances cut into the lip flow
-    kWobbleRate,    // Hz    slow vowel LFO rate
-    kWobbleDepth,   // %     slow vowel LFO depth
     kWheelVowel,    // %     how far the mod wheel moves the vowel
+    kLfo1Rate,      // Hz    how often LFO 1 goes round
+    kLfo1Shape,     // -     the shape of its cycle
+    kLfo2Rate,      // Hz    the same for LFO 2
+    kLfo2Shape,     // -
     kVolume,        // dB    master volume
     // Lips
     kBuzz,          // %     how hard the lips close: 0 = soft and mellow, 100 = hard and bright
@@ -102,8 +106,32 @@ enum Params
     kRhyDecay,      // %     pulse shape: 0 = long swell, 100 = short stab
     kRhyAccent,     // %     surge of an accented step
     kRhyBreath,     // %     in-breath on a soft step
-    kNumParams
+    kNumKnobs,
+    // After the knobs come the LFOs' amounts, one for each LFO and each knob an LFO can move
+    // (amountOf): how far that LFO moves that knob, as a part of the knob's travel.
+    kNumParams = kNumKnobs + 2 * 16
 };
+
+constexpr int kNumLfos = 2;
+
+// The knobs an LFO can move: the continuous ones. Not the switches, not the times, not Wheel
+// Vowel and Drift (amounts of something else already), not the LFOs' own knobs.
+constexpr int kTargets[] = { kVowel, kTongue, kVolume, kBuzz, kDrive, kBreath, kVoice, kRough, kTube, kTone, kFlare,
+                             kRhyDepth, kRhyVowel, kRhyDecay, kRhyAccent, kRhyBreath };
+constexpr int kNumTargets = (int)(sizeof(kTargets) / sizeof(kTargets[0]));
+static_assert(kNumParams == kNumKnobs + kNumLfos * kNumTargets, "the amounts do not fill the table");
+
+// The parameter that says how far LFO `lfo` moves `knob`; -1 when it cannot move it.
+constexpr int amountOf(int lfo, int knob)
+{
+    for (int t = 0; t < kNumTargets; ++t) if (kTargets[t] == knob) return kNumKnobs + lfo * kNumTargets + t;
+    return -1;
+}
+
+// The shapes of an LFO's cycle. Steps takes a new random level each cycle and holds it; Wander
+// takes one and moves there smoothly.
+enum LfoShape { kLfoSine, kLfoTriangle, kLfoRampUp, kLfoRampDown, kLfoSquare, kLfoSteps, kLfoWander, kNumLfoShapes };
+const char* const kLfoShapeNames[kNumLfoShapes] = { "Sine", "Triangle", "Ramp Up", "Ramp Down", "Square", "Steps", "Wander" };
 
 struct Param
 {
@@ -197,12 +225,14 @@ const Interval kIntervals[] = {
 constexpr int kNumIntervals = (int)(sizeof(kIntervals) / sizeof(kIntervals[0]));
 constexpr int kIntervalFifth = 3, kIntervalTenth = 5;
 
-const Param kParams[kNumParams] = {
+const Param kKnobs[kNumKnobs] = {
     floatParam ("vowel",       "Vowel",        0.0f, 100.0f, 45.0f, "%", 0),
     floatParam ("tongue",      "Tongue",       0.0f, 100.0f, 65.0f, "%", 0),
-    logParam   ("wobblerate",  "Wobble Rate",  0.05f, 10.0f, 0.3f, "Hz", 2),
-    floatParam ("wobbledepth", "Wobble Depth", 0.0f, 100.0f, 25.0f, "%", 0),
     floatParam ("wheelvowel",  "Wheel Vowel",  0.0f, 100.0f, 100.0f, "%", 0),
+    logParam   ("lfo1rate",    "LFO 1 Rate",   0.02f, 20.0f, 0.3f, "Hz", 2),
+    choiceParam("lfo1shape",   "LFO 1 Shape",  kNumLfoShapes, kLfoSine),
+    logParam   ("lfo2rate",    "LFO 2 Rate",   0.02f, 20.0f, 2.0f, "Hz", 2),
+    choiceParam("lfo2shape",   "LFO 2 Shape",  kNumLfoShapes, kLfoSine),
     floatParam ("volume",      "Volume",       -40.0f, 6.0f, 0.0f, "dB", 1),
 
     floatParam ("buzz",        "Buzz",         0.0f, 100.0f, 75.0f, "%", 0),
@@ -231,6 +261,27 @@ const Param kParams[kNumParams] = {
     floatParam ("rhybreath",   "Breath In",    0.0f, 100.0f, 0.0f, "%", 0),
 };
 
+// The whole table: the knobs, then the amounts, named after their LFO and their knob
+// ("lfo1vowel", "LFO 1>Vowel"). As the instrument comes, LFO 1 sways the vowel a little.
+char amountIds[kNumLfos * kNumTargets][24], amountNames[kNumLfos * kNumTargets][40];
+
+const Param* makeParams()
+{
+    static Param table[kNumParams];
+    for (int i = 0; i < kNumKnobs; ++i) table[i] = kKnobs[i];
+    for (int lfo = 0; lfo < kNumLfos; ++lfo)
+        for (int t = 0; t < kNumTargets; ++t)
+        {
+            const int slot = lfo * kNumTargets + t;
+            std::snprintf(amountIds[slot], sizeof amountIds[slot], "lfo%d%s", lfo + 1, kKnobs[kTargets[t]].id);
+            std::snprintf(amountNames[slot], sizeof amountNames[slot], "LFO %d>%s", lfo + 1, kKnobs[kTargets[t]].name);
+            const float atRest = lfo == 0 && kTargets[t] == kVowel ? 8.75f : 0.0f;
+            table[kNumKnobs + slot] = floatParam(amountIds[slot], amountNames[slot], -100.0f, 100.0f, atRest, "%", 0);
+        }
+    return table;
+}
+const Param* const kParams = makeParams();
+
 // ---------------------------------------------------------------------------------------------
 // Sections: the groups the parameters are shown in (the app's panels, the Audio Unit's parameter
 // groups) and the order inside each. Every parameter belongs to exactly one section, and the
@@ -241,7 +292,7 @@ struct Section { const char* name; std::vector<int> params; };
 const std::vector<Section>& sections()
 {
     static const std::vector<Section> table = {
-        { "Mouth",  { kVowel, kTongue, kWobbleRate, kWobbleDepth, kWheelVowel, kVolume } },
+        { "Mouth",  { kVowel, kTongue, kWheelVowel, kLfo1Rate, kLfo1Shape, kLfo2Rate, kLfo2Shape, kVolume } },
         { "Lips",   { kBuzz, kDrive, kBreath, kDrift, kVoice, kVoicePitch, kRough, kAttack, kRelease } },
         { "Tube",   { kTube, kTone, kFlare, kGlide, kBendRange, kOctave } },
         { "Rhythm", { kRhythmDiv, kRhyPattern, kRhyDepth, kRhyVowel, kRhyDecay, kRhyAccent, kRhyBreath } },
@@ -277,32 +328,32 @@ const std::vector<Program>& programs()
         makeProgram("Classic Drone", {}),
         // A wide, dark tube under an open mouth: weight and no formant.
         makeProgram("Deep Earth",    {{kVowel, 12}, {kTongue, 40}, {kBuzz, 35}, {kDrive, 35}, {kTone, 1100}, {kTube, 90}, {kFlare, 62},
-                                      {kBreath, 8}, {kWobbleRate, 0.15f}, {kWobbleDepth, 12}, {kAttack, 150}}),
-        // The tongue rises and falls: the band comes, climbs and goes.
+                                      {kBreath, 8}, {kLfo1Rate, 0.15f}, {amountOf(0, kVowel), 4.2f}, {kAttack, 150}}),
+        // The tongue rises and falls with LFO 1: the band comes, climbs and goes.
         makeProgram("Vocal Wah",     {{kVowel, 50}, {kTongue, 100}, {kBuzz, 90}, {kTone, 4000}, {kTube, 45},
-                                      {kWobbleRate, 1.6f}, {kWobbleDepth, 80}}),
+                                      {kLfo1Rate, 1.6f}, {amountOf(0, kVowel), 28}}),
         // A voice a fifth up, off its lock: the tone an octave down, beating.
         makeProgram("Growler",       {{kVoice, 70}, {kVoicePitch, (float)kIntervalFifth}, {kRough, 27}, {kDrive, 80}, {kBuzz, 85},
                                       {kVowel, 40}, {kBreath, 25}, {kDrift, 25}}),
         // The pulse ducks the level between its steps, so these two are turned up a little.
         makeProgram("Rhythm Breath", {{kVolume, 3}, {kRhyDepth, 70}, {kRhyVowel, 80}, {kRhyDecay, 55}, {kRhythmDiv, (float)kDivisionEighth},
-                                      {kVowel, 25}, {kTongue, 90}, {kWobbleDepth, 0}, {kBreath, 30}}),
+                                      {kVowel, 25}, {kTongue, 90}, {amountOf(0, kVowel), 0}, {kBreath, 30}}),
         makeProgram("Gallop",        {{kVolume, 5}, {kRhyDepth, 85}, {kRhyVowel, -60}, {kRhyDecay, 75}, {kRhythmDiv, (float)kDivisionSixteenth},
-                                      {kVowel, 75}, {kTongue, 85}, {kBuzz, 85}, {kDrive, 70}, {kWobbleDepth, 10}}),
+                                      {kVowel, 75}, {kTongue, 85}, {kBuzz, 85}, {kDrive, 70}, {amountOf(0, kVowel), 3.5f}}),
         // A termite-hollowed tube that players would rank high: a strong, narrow fundamental
         // and a tongue that does the rest.
         makeProgram("Eucalyptus",    {{kTube, 85}, {kFlare, 48}, {kTongue, 85}, {kVowel, 50}, {kBuzz, 70}, {kBreath, 12},
-                                      {kWobbleRate, 0.25f}, {kWobbleDepth, 35}, {kDrift, 10}}),
+                                      {kLfo1Rate, 0.25f}, {amountOf(0, kVowel), 12.25f}, {kDrift, 10}}),
         // The Yolngu way: a pitch that does not move, accents and in-breaths.
-        makeProgram("Hard Tongue",   {{kTube, 70}, {kFlare, 48}, {kTongue, 90}, {kVowel, 40}, {kWobbleDepth, 0}, {kDrift, 8},
+        makeProgram("Hard Tongue",   {{kTube, 70}, {kFlare, 48}, {kTongue, 90}, {kVowel, 40}, {amountOf(0, kVowel), 0}, {kDrift, 8},
                                       {kRhythmDiv, (float)kDivisionEighth}, {kRhyPattern, 3}, {kRhyDepth, 45},
                                       {kRhyVowel, 60}, {kRhyDecay, 50}, {kRhyAccent, 80}, {kRhyBreath, 60}}),
         // A plastic pipe: a cylinder, which favours the odd harmonics.
-        makeProgram("Pipe",          {{kTube, 100}, {kFlare, 0}, {kTongue, 55}, {kVowel, 40}, {kBuzz, 65}, {kWobbleDepth, 15},
+        makeProgram("Pipe",          {{kTube, 100}, {kFlare, 0}, {kTongue, 55}, {kVowel, 40}, {kBuzz, 65}, {amountOf(0, kVowel), 5.25f},
                                       {kDrift, 8}}),
         // A voice locked a tenth above the drone.
         makeProgram("Singer",        {{kVoice, 45}, {kVoicePitch, (float)kIntervalTenth}, {kTongue, 60}, {kVowel, 50},
-                                      {kWobbleRate, 0.3f}, {kWobbleDepth, 30}}),
+                                      {kLfo1Rate, 0.3f}, {amountOf(0, kVowel), 10.5f}}),
     };
     return table;
 }
@@ -521,7 +572,8 @@ struct DidgeEngine
         flowBefore_ = noiseBefore_ = 0.0f; primeFlow_ = latch_ = true; sineBefore_ = 0.0f;
         tongueNow_ = 0.0f; breathing_ = 0.0f;
         drift_ = driftTarget_ = 0.0f; driftCountdown_ = 0;
-        wobblePhase_ = 0.0f; rhythmPulse_ = 1.0f;
+        for (int lfo = 0; lfo < kNumLfos; ++lfo) lfoPhase_[lfo] = lfoValue_[lfo] = lfoFrom_[lfo] = lfoTo_[lfo] = 0.0f;
+        rhythmPulse_ = 1.0f;
         ppq_ = 0.0;
         controlCountdown_ = 0;
     }
@@ -570,52 +622,41 @@ private:
     {
         float vowel, tongue, buzz, drive, tone, breath, voice, voiceRatio;
         float rhyBeats, rhyDepth, rhyVowel, rhyRate;
-        float wobbleInc, wobbleDepth, wheelVowel, bendRange, drift;
+        float wheelVowel, bendRange, drift;
         float tube, flare, modeRatio[kNumModes], accent, breathIn;
         int   pattern;
         double ppqPerSample;
     };
 
+    // Where a knob stands for the engine right now: where it was put, and what the LFOs add.
+    float plain(int knob) const { return kParams[knob].toPlain(now_[knob]); }
+    int   choice(int knob) const { return (int)std::lround(plain(knob)); }
+
     void readBlockSettings()
     {
-        Settings& s = s_;
-        s.vowel   = get(kVowel) * 0.01f;
-        s.tongue  = get(kTongue) * 0.01f;
-        s.buzz    = get(kBuzz) * 0.01f;
-        s.drive   = get(kDrive) * 0.01f;
-        s.tone    = get(kTone);
-        s.breath  = get(kBreath) * 0.01f * kBreathLevel;
-        s.voice   = get(kVoice) * 0.01f;
-        // Rough pulls the voice up to 30 cents off its lock.
-        s.voiceRatio = kIntervals[clamp(getInt(kVoicePitch), 0, kNumIntervals - 1)].ratio * centsToRatio(0.3f * get(kRough));
-        s.rhyBeats  = divisionBeats(getInt(kRhythmDiv));
-        s.rhyDepth  = get(kRhyDepth) * 0.01f;
-        s.rhyVowel  = get(kRhyVowel) * 0.01f * 0.6f;
-        s.rhyRate   = 1.5f + 9.0f * get(kRhyDecay) * 0.01f;
-        s.wobbleInc = get(kWobbleRate) * (float)kControlInterval / sr_;
-        s.wobbleDepth = get(kWobbleDepth) * 0.01f * 0.35f;
-        s.wheelVowel  = get(kWheelVowel) * 0.01f;
-        s.bendRange = get(kBendRange);
-        s.drift     = get(kDrift) * 0.01f * 0.3f;                    // up to +-30 cents
-        s.pattern   = clamp(getInt(kRhyPattern), 0, kNumPatterns - 1);
-        s.accent    = get(kRhyAccent) * 0.01f;
-        s.breathIn  = get(kRhyBreath) * 0.01f;
+        for (int i = 0; i < kNumParams; ++i) knob_[i] = getNormalised(i);
+        for (int i = 0; i < kNumKnobs; ++i) now_[i] = knob_[i];
+        moving_ = false;
+        for (int lfo = 0; lfo < kNumLfos; ++lfo)
+        {
+            for (int t = 0; t < kNumTargets; ++t)
+            {
+                const int index = kNumKnobs + lfo * kNumTargets + t;
+                amount_[lfo][t] = kParams[index].toPlain(knob_[index]) * 0.01f;
+                if (amount_[lfo][t] != 0.0f) moving_ = true;
+            }
+            lfoInc_[lfo] = plain(kLfo1Rate + 2 * lfo) * (float)kControlInterval / sr_;
+            lfoShape_[lfo] = clamp(choice(kLfo1Shape + 2 * lfo), 0, (int)kNumLfoShapes - 1);
+        }
+        if (moving_) moveKnobs();
+        deriveSettings();
 
-        // The tube: how much it flares says where its second resonance stands (three times the
-        // first for a pipe, twice for the widest bell), and with that where the others lie.
-        s.tube = get(kTube) * 0.01f;
-        const float second = 3.0f - get(kFlare) * 0.01f;
-        const float flare = flareFor(second);
-        s.flare = clamp(3.0f - second, 0.0f, 1.0f);                  // 0 = a cylinder, 1 = a cone
-        for (int m = 0; m < kNumModes; ++m) s.modeRatio[m] = modePlace(m + 1, flare) / modePlace(1, flare);
-
-        volume_.setTarget(dbToGain(get(kVolume)));
-        env_.set(get(kAttack), 1.0f, 1.0f, get(kRelease));
-        const float glide = get(kGlide);
+        env_.set(plain(kAttack), 1.0f, 1.0f, plain(kRelease));
+        const float glide = plain(kGlide);
         if (glide != glideMs_) { glideMs_ = glide; base_.setTime(glide, sr_); }
 
         // Octave. The shift is part of the note number, so a sounding note slides to a new octave.
-        const int shift = 12 * (getInt(kOctave) + kOctaveAtRest);
+        const int shift = 12 * (choice(kOctave) + kOctaveAtRest);
         if (shift != noteShift_)
         {
             if (env_.isActive()) base_.setTarget(base_.target() + (float)(shift - noteShift_));
@@ -623,8 +664,88 @@ private:
         }
 
         // Rhythm clock: follow the song while it plays, free-run at the tempo otherwise.
-        s.ppqPerSample = (double)safeBpm(bpm_.load(std::memory_order_relaxed)) / 60.0 / (double)sr_;
+        s_.ppqPerSample = (double)safeBpm(bpm_.load(std::memory_order_relaxed)) / 60.0 / (double)sr_;
         if (transportLocked_.load(std::memory_order_relaxed)) ppq_ = transportPpq_.load(std::memory_order_relaxed);
+    }
+
+    // The LFOs go round, one step of the control rate at a time, whether a note sounds or not.
+    void turnLfos()
+    {
+        for (int lfo = 0; lfo < kNumLfos; ++lfo)
+        {
+            float phase = lfoPhase_[lfo] + lfoInc_[lfo];
+            if (phase >= 1.0f)                                   // a new cycle: Steps and Wander take a new level
+            {
+                phase = wrapPhase(phase);
+                lfoFrom_[lfo] = lfoTo_[lfo];
+                lfoTo_[lfo] = lfoRng_.nextBipolar();
+            }
+            lfoPhase_[lfo] = phase;
+            float value = 0.0f;
+            switch (lfoShape_[lfo])
+            {
+                case kLfoSine:     value = fastSin01(phase); break;
+                case kLfoTriangle: value = phase < 0.25f ? 4.0f * phase : (phase < 0.75f ? 2.0f - 4.0f * phase : 4.0f * phase - 4.0f); break;
+                case kLfoRampUp:   value = 2.0f * phase - 1.0f; break;
+                case kLfoRampDown: value = 1.0f - 2.0f * phase; break;
+                case kLfoSquare:   value = phase < 0.5f ? 1.0f : -1.0f; break;
+                case kLfoSteps:    value = lfoTo_[lfo]; break;
+                default:           value = lfoFrom_[lfo] + (lfoTo_[lfo] - lfoFrom_[lfo]) * phase * phase * (3.0f - 2.0f * phase); break;
+            }
+            lfoValue_[lfo] = value;
+        }
+    }
+
+    // The knobs an LFO has an amount on, moved to where they stand at this moment. A knob stops
+    // at the ends of its travel.
+    void moveKnobs()
+    {
+        for (int t = 0; t < kNumTargets; ++t)
+        {
+            float position = knob_[kTargets[t]];
+            for (int lfo = 0; lfo < kNumLfos; ++lfo) position += amount_[lfo][t] * lfoValue_[lfo];
+            now_[kTargets[t]] = clamp(position, 0.0f, 1.0f);
+        }
+    }
+
+    // What the knobs mean for the sound. Once a block, and at the control rate while an LFO
+    // moves a knob.
+    void deriveSettings()
+    {
+        Settings& s = s_;
+        s.vowel   = plain(kVowel) * 0.01f;
+        s.tongue  = plain(kTongue) * 0.01f;
+        s.buzz    = plain(kBuzz) * 0.01f;
+        s.drive   = plain(kDrive) * 0.01f;
+        s.tone    = plain(kTone);
+        s.breath  = plain(kBreath) * 0.01f * kBreathLevel;
+        s.voice   = plain(kVoice) * 0.01f;
+        // Rough pulls the voice up to 30 cents off its lock.
+        s.voiceRatio = kIntervals[clamp(choice(kVoicePitch), 0, kNumIntervals - 1)].ratio * centsToRatio(0.3f * plain(kRough));
+        s.rhyBeats  = divisionBeats(choice(kRhythmDiv));
+        s.rhyDepth  = plain(kRhyDepth) * 0.01f;
+        s.rhyVowel  = plain(kRhyVowel) * 0.01f * 0.6f;
+        s.rhyRate   = 1.5f + 9.0f * plain(kRhyDecay) * 0.01f;
+        s.wheelVowel  = plain(kWheelVowel) * 0.01f;
+        s.bendRange = plain(kBendRange);
+        s.drift     = plain(kDrift) * 0.01f * 0.3f;                  // up to +-30 cents
+        s.pattern   = clamp(choice(kRhyPattern), 0, kNumPatterns - 1);
+        s.accent    = plain(kRhyAccent) * 0.01f;
+        s.breathIn  = plain(kRhyBreath) * 0.01f;
+
+        // The tube: how much it flares says where its second resonance stands (three times the
+        // first for a pipe, twice for the widest bell), and with that where the others lie.
+        s.tube = plain(kTube) * 0.01f;
+        const float second = 3.0f - plain(kFlare) * 0.01f;
+        if (second != second_)
+        {
+            second_ = second;
+            const float flare = flareFor(second);
+            s.flare = clamp(3.0f - second, 0.0f, 1.0f);              // 0 = a cylinder, 1 = a cone
+            for (int m = 0; m < kNumModes; ++m) s.modeRatio[m] = modePlace(m + 1, flare) / modePlace(1, flare);
+        }
+
+        volume_.setTarget(dbToGain(plain(kVolume)));
     }
 
     void handleMidi(const MidiEvent& ev)
@@ -694,6 +815,8 @@ private:
     // Everything that needs pow / tan / exp / sin, every kControlInterval samples.
     void updateControl()
     {
+        turnLfos();
+        if (moving_) { moveKnobs(); deriveSettings(); }
         const Settings& s = s_;
 
         // Slow random pitch drift: a new random target a few times a second, eased in.
@@ -768,10 +891,8 @@ private:
         // The voice, and what aftertouch adds to it.
         wanted_.voice = clamp(s.voice + pressure_.value() * 0.6f, 0.0f, 1.0f);
 
-        // Vowel position from the knob, the wheel, the wobble LFO and the rhythm.
-        wobblePhase_ = wrapPhase(wobblePhase_ + s.wobbleInc);
-        const float vowel = s.vowel + wheel_.value() * s.wheelVowel + fastSin01(wobblePhase_) * s.wobbleDepth
-                          + rhythmPulse_ * (s.rhyVowel * colour) + flash * 0.35f;
+        // Vowel position from the knob (and the LFOs on it), the wheel and the rhythm.
+        const float vowel = s.vowel + wheel_.value() * s.wheelVowel + rhythmPulse_ * (s.rhyVowel * colour) + flash * 0.35f;
         toneLp_.setCutoff(clamp(s.tone * (1.0f + flash), 100.0f, 0.45f * sr_), sr_);
 
         // The tongue. A real vocal tract takes energy out: with the tongue raised it resonates
@@ -938,7 +1059,16 @@ private:
     float  flowBefore_ = 0.0f, noiseBefore_ = 0.0f;
     float  drift_ = 0.0f, driftTarget_ = 0.0f;
     float  driftTickScale_ = 1.0f, driftEase_ = 0.004f, breathEase_ = 0.02f;
-    float  wobblePhase_ = 0.0f, rhythmPulse_ = 1.0f;
+    float  rhythmPulse_ = 1.0f;
+    // The knobs as they were put (all parameters), as they stand with the LFOs on them (the
+    // knobs only), and the LFOs: their amounts on the knobs they can move, and where they are.
+    float  knob_[kNumParams] = {}, now_[kNumKnobs] = {};
+    float  amount_[kNumLfos][kNumTargets] = {};
+    float  lfoInc_[kNumLfos] = {}, lfoPhase_[kNumLfos] = {}, lfoValue_[kNumLfos] = {}, lfoFrom_[kNumLfos] = {}, lfoTo_[kNumLfos] = {};
+    int    lfoShape_[kNumLfos] = {};
+    Xorshift32 lfoRng_{0x2F6E2B11u};                // Steps and Wander draw here, so the drift's sequence is its own
+    float  second_ = -1.0f;                        // the tube's second resonance the mode ratios were worked out for
+    bool   moving_ = false;                        // an LFO has an amount on some knob
     double ppq_ = 0.0;
     int    driftCountdown_ = 0, controlCountdown_ = 0;
     int    held_[kMaxHeld] = {};
@@ -972,6 +1102,7 @@ const char* didge_param_choice(int index, int choice)
 {
     if (index == kRhyPattern) return kPatterns[clamp(choice, 0, kNumPatterns - 1)].name;
     if (index == kVoicePitch) return kIntervals[clamp(choice, 0, kNumIntervals - 1)].name;
+    if (index == kLfo1Shape || index == kLfo2Shape) return kLfoShapeNames[clamp(choice, 0, (int)kNumLfoShapes - 1)];
     if (index != kRhythmDiv) return "";
     return divisionName(choice);
 }
@@ -1000,6 +1131,9 @@ const char* didge_param_display(int index, float plain, char* buffer, int buffer
     }
     return buffer;
 }
+
+int didge_num_lfos(void) { return kNumLfos; }
+int didge_lfo_amount(int lfo, int param) { return lfo >= 0 && lfo < kNumLfos && validParam(param) ? amountOf(lfo, param) : -1; }
 
 static bool validSection(int s) { return s >= 0 && s < (int)sections().size(); }
 

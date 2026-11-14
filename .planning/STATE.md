@@ -1,5 +1,9 @@
 # Didgeridoo — State
 
+- 2026-11-14 — phase 16 done on `feature/16-lfo` (which stands on phase 15's
+  branch): two LFOs that move the knobs, with an amount per LFO on sixteen
+  of them. Not merged, not released, not heard.
+  See `phases/16-lfo/VERIFICATION.md`.
 - 2026-11-14 — phase 15 done on its branch, not merged and not released:
   the engine is one model of the instrument (lips, tongue, tube, voice),
   built without compatibility with 1.0.x at the author's word. His ear
@@ -47,7 +51,7 @@
 - 2026-11-13 — skeleton created (phase 01): `build.sh` / `run.sh`,
   Developer ID + notarization pipeline, Sparkle auto-update, website on
   GitHub Pages.
-- Open: phase 15 waits on `feature/15-one-model` for the author's word to
-  merge and release it (a major version: saved sounds and host projects of
-  1.0.x do not carry over). Next: the things he wants to work on, which he
-  has not named yet.
+- Open: phases 15 and 16 wait on their branches for the author's word to
+  merge and release them (a major version: saved sounds and host projects of
+  1.0.x do not carry over). He tries builds from the released download, so
+  he cannot try the LFO buttons before a release.
