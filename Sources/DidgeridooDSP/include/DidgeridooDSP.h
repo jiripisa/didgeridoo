@@ -54,6 +54,11 @@ const char* didge_section_name(int section);
 int         didge_section_size(int section);
 int         didge_section_param(int section, int position);   // a parameter index, -1 if none
 
+// The LFOs. Each has an amount on every knob it can move: a parameter of its own, shown in no
+// section. didge_lfo_amount gives its index, or -1 for a knob an LFO cannot move.
+int         didge_num_lfos(void);
+int         didge_lfo_amount(int lfo, int param);
+
 int         didge_num_programs(void);
 const char* didge_program_name(int program);
 float       didge_program_value(int program, int param);   // plain

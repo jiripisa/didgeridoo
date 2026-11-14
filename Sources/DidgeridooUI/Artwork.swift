@@ -18,6 +18,12 @@ public enum Artwork {
     /// Ochre: value arcs, the selected key, section titles.
     public static let accent = Color(red: 0.86, green: 0.60, blue: 0.24)
     public static let cream = Color(red: 0.94, green: 0.89, blue: 0.77)
+
+    /// The colour of an LFO (0 for the first): its button in the header and its
+    /// arcs on the knobs it moves. Sage for LFO 1, a pale blue for LFO 2.
+    public static func lfo(_ index: Int) -> Color {
+        index == 0 ? Color(red: 0.56, green: 0.80, blue: 0.66) : Color(red: 0.58, green: 0.72, blue: 0.93)
+    }
     public static let panel = Color.black.opacity(0.28)
 
     private static func image(_ name: String) -> NSImage? {

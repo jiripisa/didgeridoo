@@ -5,7 +5,8 @@ A playable synthesized didgeridoo: drone, moving overtones, voice, breath and rh
 One download contains a standalone macOS app (with its own MIDI input and
 audio output settings) and an Audio Unit instrument for Ableton Live, Logic
 Pro and other hosts; the app installs the plug-in from its Settings window.
-Both share one sound engine with 28 parameters and ten built-in programs.
+Both share one sound engine with 30 knobs, two LFOs that can move them and ten
+built-in programs.
 
 Native macOS (SwiftUI, macOS 14 or later), built with Swift Package Manager
 and shell scripts; no Xcode project. The sound engine is C++. The download is

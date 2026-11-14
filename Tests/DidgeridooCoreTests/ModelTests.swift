@@ -14,10 +14,10 @@ struct ModelTests {
     /// D2, the drone of key 62 at Octave 0.
     private static let drone = 440.0 * pow(2.0, Double(38 - 69) / 12.0)
 
-    /// A synth that holds still (no drift, wobble or rhythm), with `values` set.
+    /// A synth that holds still (no drift, LFO or rhythm), with `values` set.
     private func synth(_ values: [String: Float] = [:]) throws -> Synth {
         let synth = Synth(sampleRate: Self.sampleRate)
-        var all: [String: Float] = ["drift": 0, "wobbledepth": 0]
+        var all: [String: Float] = ["drift": 0, "lfo1vowel": 0]
         all.merge(values) { _, new in new }
         for (identifier, value) in all {
             synth.setValue(value, of: try #require(Parameters.named(identifier)))

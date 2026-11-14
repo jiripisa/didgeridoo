@@ -42,6 +42,7 @@
         <li><a href="#lips">Lips</a></li>
         <li><a href="#tube">Tube</a></li>
         <li><a href="#rhythm">Rhythm</a></li>
+        <li><a href="#lfo">LFOs</a></li>
         <li><a href="#settings">Settings</a></li>
         <li><a href="#plugin">The Audio Unit plug-in</a></li>
         <li><a href="#updates">Updates</a></li>
@@ -66,7 +67,7 @@
           <div class="view" style="--iw:2200;--ih:1572">
             <img src="assets/didgeridoo-window.png" alt="The Didgeridoo window with its areas marked">
             <div class="mark" style="--x:1.4;--y:5.5;--w:19.1;--h:6.4"><b>1</b></div>
-            <div class="mark" style="--x:56.1;--y:6.4;--w:42.8;--h:4.8"><b>2</b></div>
+            <div class="mark" style="--x:41.0;--y:6.4;--w:57.9;--h:4.8"><b>2</b></div>
             <div class="mark" style="--x:1.4;--y:13.1;--w:48.3;--h:36.9"><b>3</b></div>
             <div class="mark" style="--x:50.4;--y:13.1;--w:48.3;--h:36.9"><b>4</b></div>
             <div class="mark" style="--x:1.4;--y:51.1;--w:48.3;--h:36.9"><b>5</b></div>
@@ -77,10 +78,10 @@
         <dl class="controls">
           <dt><span class="n">1</span>Name</dt>
           <dd>The instrument's name.</dd>
-          <dt><span class="n">2</span>Program, Tempo, Settings</dt>
-          <dd><b>Program</b> loads one of the ten built-in sounds. It overwrites every knob except <span class="ui">Octave</span> and cuts off a sounding note; your own changes are not kept in the program. All ten play the same model of the instrument, built on measurements of real ones; they differ in the tube, the mouth and the way of playing. <b>Tempo</b> (20–300 BPM) sets the speed of the rhythm pulse. <b>Settings</b> opens MIDI input, audio output and the Audio Unit installer.</dd>
+          <dt><span class="n">2</span>Program, LFO 1 and LFO 2, Tempo, Settings</dt>
+          <dd><b>Program</b> loads one of the ten built-in sounds. It overwrites every knob except <span class="ui">Octave</span> and cuts off a sounding note; your own changes are not kept in the program. All ten play the same model of the instrument, built on measurements of real ones; they differ in the tube, the mouth and the way of playing. <b>LFO 1</b> and <b>LFO 2</b> turn the knobs into the amounts by which that LFO moves them (see <a href="#lfo">LFOs</a>). <b>Tempo</b> (20–300 BPM) sets the speed of the rhythm pulse. <b>Settings</b> opens MIDI input, audio output and the Audio Unit installer.</dd>
           <dt><span class="n">3</span>Mouth</dt>
-          <dd>The shape of the mouth: where the tongue stands, what it takes away from the drone and how it moves. See <a href="#mouth">Mouth</a>.</dd>
+          <dd>The shape of the mouth: where the tongue stands and what it takes away from the drone. The knobs of the two LFOs are here too. See <a href="#mouth">Mouth</a>.</dd>
           <dt><span class="n">4</span>Lips</dt>
           <dd>The source of the sound: lips, breath, voice and how notes begin and end. See <a href="#lips">Lips</a>.</dd>
           <dt><span class="n">5</span>Tube</dt>
@@ -118,12 +119,14 @@
           <dd>The mouth shape, from an open “aw” at 0, where the tongue lies low and the drone is plain, to a tight “ee” at 100. As it rises the tongue rises with it, and the bright band the tongue leaves in the sound climbs from about 1 to 2.2 kHz.</dd>
           <dt>Tongue (0–100 %)</dt>
           <dd>How deep the mouth cuts into the sound. A player's mouth adds nothing: with the tongue raised it holds the sound back at three resonances of its own, and the band left between them is the bright overtone you hear moving. At 0 the mouth does nothing, wherever <span class="ui">Vowel</span> stands. Below about 25 % of <span class="ui">Vowel</span> the tongue lies low and nothing happens either; from 80 % it works in full. A raised tongue also lifts the drone by up to a third of a semitone.</dd>
-          <dt>Wobble Rate (0.05–10 Hz)</dt>
-          <dd>Speed of a slow, steady movement of the vowel.</dd>
-          <dt>Wobble Depth (0–100 %)</dt>
-          <dd>Amount of that movement. 0 switches it off.</dd>
           <dt>Wheel Vowel (0–100 %)</dt>
           <dd>How far the mod wheel moves the vowel.</dd>
+          <dt>LFO 1 Rate (0.02–20 Hz)</dt>
+          <dd>How often LFO 1 goes round. What it moves, and how far, is set on the knobs themselves: see <a href="#lfo">LFOs</a>.</dd>
+          <dt>LFO 1 Shape (Sine, Triangle, Ramp Up, Ramp Down, Square, Steps, Wander)</dt>
+          <dd>The shape of its cycle. Sine and Triangle sway; the ramps rise or fall and jump back; Square switches between two places; Steps takes a new random place every cycle and holds it; Wander takes one and moves there smoothly.</dd>
+          <dt>LFO 2 Rate, LFO 2 Shape</dt>
+          <dd>The same for LFO 2.</dd>
           <dt>Volume (−40 to +6 dB)</dt>
           <dd>Output level. The programs are balanced for 0 dB.</dd>
         </dl>
@@ -192,6 +195,26 @@
         </dl>
       </section>
 
+      <section id="lfo">
+        <h2>LFOs</h2>
+        <p>Two LFOs can move the knobs for you. Each goes round at its own rate in its own shape (their four knobs are in <a href="#mouth">Mouth</a>), and every knob that can be moved has an amount for each LFO: how far that LFO swings it either way, as a part of the knob's travel. An LFO does not turn the knob; it adds to where the knob stands.</p>
+        <figure class="fig">
+          <div class="view" style="--iw:2200;--ih:1572">
+            <img src="assets/manual/lfo-amounts.png" alt="The window with the LFO 1 button on: the knobs show the amounts of LFO 1">
+          </div>
+        </figure>
+        <dl class="controls">
+          <dt>Setting an amount</dt>
+          <dd>Click <span class="ui">LFO 1</span> or <span class="ui">LFO 2</span> in the header. The knobs now show that LFO's amounts, in its colour: drag a knob up for a positive amount, down for a negative one, which turns the movement round. An arc inside the knob's ring shows the part of its travel the LFO sweeps. Double-click a knob to put its amount back to the program's. Click the button again to get the knobs back.</dd>
+          <dt>What can be moved</dt>
+          <dd>Vowel, Tongue, Volume, Buzz, Drive, Breath, Voice, Rough, Tube, Tone, Flare, Rhy Depth, Rhy&gt;Vowel, Rhy Decay, Accent and Breath In. The switches, the times and a few others step back while a button is on; the LFOs' own knobs stay in use. Both LFOs can move the same knob: their movements add up and stop at the ends of the knob's travel.</dd>
+          <dt>Seeing it</dt>
+          <dd>With both buttons off, a knob that an LFO moves keeps its arc, sage green for LFO 1 and pale blue for LFO 2, so you see at a glance what is moving. The knob's pointer stays where you put it.</dd>
+          <dt>As it comes</dt>
+          <dd>In most programs LFO 1 sways <span class="ui">Vowel</span> a little: the slow movement of the mouth. The LFOs run on their own and a new note does not start them again. The amounts are stored with the sound, and in a host each one is a parameter of its own (“LFO 1&gt;Vowel”) that can be automated.</dd>
+        </dl>
+      </section>
+
       <section id="settings">
         <h2>Settings</h2>
         <dl class="controls">
@@ -222,7 +245,7 @@
             <img src="assets/manual/plugin-window.png" alt="The plug-in's window in a host">
           </div>
         </figure>
-        <p>The plug-in has the same sound, the same 33 parameters and the same ten programs (as factory presets) as the app. Its window is the app's panel: the <span class="ui">Program</span> menu and the knobs of Mouth, Lips, Tube and Rhythm. The tempo, the MIDI and audio settings and a keyboard are the host's own, so the window leaves them out. The knobs follow the host's automation, and turning one can be recorded as automation. The host saves the sound with the project. The rhythm pulse follows the host's tempo and song position.</p>
+        <p>The plug-in has the same sound, the same knobs and LFOs and the same ten programs (as factory presets) as the app. Its window is the app's panel: the <span class="ui">Program</span> menu, the LFO buttons and the knobs of Mouth, Lips, Tube and Rhythm. The tempo, the MIDI and audio settings and a keyboard are the host's own, so the window leaves them out. The knobs follow the host's automation, and turning one can be recorded as automation. The host saves the sound with the project. The rhythm pulse follows the host's tempo and song position.</p>
         <p>After updating the app, click <span class="ui">Install Audio Unit</span> again to update the plug-in.</p>
       </section>
 

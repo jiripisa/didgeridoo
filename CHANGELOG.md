@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Two LFOs can move the knobs. Each has a Rate (0.02 to 20 Hz) and a Shape
+  (Sine, Triangle, Ramp Up, Ramp Down, Square, Steps, Wander); their four
+  knobs are in Mouth. Click LFO 1 or LFO 2 in the header and the knobs set
+  how far that LFO moves them: drag for the amount (down for a negative one),
+  double-click to put it back. An arc on a knob shows what an LFO sweeps.
+  Sixteen knobs can be moved, by both LFOs at once. The amounts are stored
+  with the sound, and a host sees each as a parameter ("LFO 1>Vowel").
+- Wobble Rate and Wobble Depth are gone: Wobble is LFO 1 on Vowel now, and
+  the programs keep their movement.
 - The instrument is now one model, built on the measurements of real
   didgeridoos, and no longer a synthesizer with those measurements beside
   it. Every program sounds different from 1.0.x. This is a deliberate
@@ -30,7 +39,7 @@
   tube that widens towards its end.
 - As it comes, the instrument has the tube and the tongue on, Drift at 12 %
   and Bend Range at 1 semitone. Volume rests at 0 dB.
-- 28 knobs instead of 33. The ten programs keep their names and were voiced
+- 30 knobs instead of 33. The ten programs keep their names and were voiced
   again.
 - Sounds stored by 1.0.x are not carried over: the app starts with Classic
   Drone, and a host project saved with the 1.0.x plug-in restores wrong

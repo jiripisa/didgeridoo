@@ -5,18 +5,20 @@ import Testing
 @Suite("Parameters")
 struct ParameterTests {
 
-    @Test("The table holds the 28 parameters group by group")
+    @Test("The table holds the 30 knobs group by group, then the LFOs' amounts")
     func tableFollowsTheGroups() {
-        #expect(Parameters.all.count == 28)
-        #expect(Parameters.all.map(\.identifier) == ParameterSection.all.flatMap(\.parameters).map(\.identifier))
-        #expect(Parameters.all.map(\.index) == Array(0..<28))
+        let knobs = ParameterSection.all.flatMap(\.parameters).map(\.identifier)
+        #expect(knobs.count == 30)
+        #expect(Parameters.all.count == 62)
+        #expect(Array(Parameters.all.map(\.identifier).prefix(30)) == knobs)
+        #expect(Parameters.all.dropFirst(30).allSatisfy { $0.identifier.hasPrefix("lfo") })
+        #expect(Parameters.all.map(\.index) == Array(0..<62))
     }
 
-    @Test("Every parameter sits in exactly one section")
-    func sectionsCoverEverything() {
+    @Test("Every knob sits in exactly one section")
+    func sectionsCoverTheKnobs() {
         let placed = ParameterSection.all.flatMap(\.parameters).map(\.identifier)
-        #expect(placed.count == 28)
-        #expect(Set(placed) == Set(Parameters.all.map(\.identifier)))
+        #expect(Set(placed).count == placed.count)
     }
 
     @Test("Plain values survive the trip through the knob position")
@@ -52,16 +54,16 @@ struct ParameterTests {
         #expect(octave.label(-2) == "-2")
     }
 
-    @Test("Only signed amounts are bipolar")
+    @Test("Of the knobs, only the signed amounts are bipolar")
     func bipolar() {
-        #expect(Parameters.all.filter(\.isBipolar).map(\.identifier) == ["octave", "rhyvowel"])
+        #expect(ParameterSection.all.flatMap(\.parameters).filter(\.isBipolar).map(\.identifier) == ["octave", "rhyvowel"])
     }
 
     @Test("The sections and the order of their knobs are the window's")
     func sectionLayout() {
         #expect(ParameterSection.all.map(\.title) == ["Mouth", "Lips", "Tube", "Rhythm"])
         #expect(ParameterSection.all.map { $0.parameters.map(\.identifier) } == [
-            ["vowel", "tongue", "wobblerate", "wobbledepth", "wheelvowel", "volume"],
+            ["vowel", "tongue", "wheelvowel", "lfo1rate", "lfo1shape", "lfo2rate", "lfo2shape", "volume"],
             ["buzz", "drive", "breath", "drift", "voice", "voicepitch", "rough", "attack", "release"],
             ["tube", "tone", "flare", "glide", "bendrange", "octave"],
             ["rhythmdiv", "rhypattern", "rhydepth", "rhyvowel", "rhydecay", "rhyaccent", "rhybreath"],
