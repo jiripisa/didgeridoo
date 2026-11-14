@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 — 2026-11-14
 
 - A click on the name of a key (C2 to C6) on the app's keyboard now plays
   the key. The name used to take the click, which left a dead spot in the
