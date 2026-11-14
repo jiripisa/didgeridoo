@@ -5,6 +5,7 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 | Phase | Goal | Status |
 |---|---|---|
+| 13-overblow-band | The keys of the app's keyboard show a band at their lower end: a click there overblows, a click anywhere else never does; the names sit above it — 2026-11-14 | ✅ |
 | 12-v1.0.1-release | Version 1.0.1: phase 11 released — 2026-11-14 | ✅ |
 | 11-key-name-click | A press on the name of a key of the keyboard strip plays the key; the name used to take it — 2026-11-14 | ✅ |
 | 10-v1.0.0-release | Version 1.0.0: phase 09 released — 2026-11-14 | ✅ |
