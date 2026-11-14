@@ -5,6 +5,7 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 | Phase | Goal | Status |
 |---|---|---|
+| 19-e16-definition | The instrument definition for the OXI E16 as a download in the manual's MIDI section, held to the engine's table by a test; `CLAUDE.md` says what the instrument is since 2.0.0 — 2026-11-15 | ✅ |
 | 18-v2.0.0-release | Version 2.0.0: phases 15 to 17 released — 2026-11-15 | ✅ |
 | 17-midi-learn | MIDI learn: every knob listens to a MIDI controller, comes with one (Volume 7, Tone 74, Vowel 11 …) and learns another with the MIDI button in the header and a move of a control. The same in the plug-in; the app remembers the controllers and a host saves them with the project. Released in 2.0.0 — 2026-11-15 | ✅ |
 | 16-lfo | Two LFOs (rate, shape) and an amount for each on sixteen knobs, set on the knobs themselves with a button per LFO in the header; Wobble became LFO 1 on Vowel. Released in 2.0.0 — 2026-11-14 | ✅ |
@@ -40,8 +41,9 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
   (phase 16 built the two free-running LFOs).
 - **More of MIDI**: controllers for the LFOs' amounts, a soft takeover
   (a knob waits until its control passes it), the knobs' places sent back to
-  a controller that can show them; the OXI E16 definition as a download
-  (phase 17 built learn and a controller for every knob).
+  a controller that can show them; names for the switches' steps in the
+  OXI E16 definition (phase 17 built learn and a controller for every knob,
+  phase 19 put the definition on the website).
 - **Stereo**: the instrument is mono; a room, width or a doubled voice.
 - **User presets**: save, name and recall your own sounds in the app.
 - **Computer keyboard** as a MIDI keyboard in the app; an output level meter.

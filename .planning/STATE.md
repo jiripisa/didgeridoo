@@ -1,5 +1,10 @@
 # Didgeridoo — State
 
+- 2026-11-15 — phase 19 done: the instrument definition for the OXI E16 is
+  on the website (`docs/assets/Didgeridoo.oxiindef`, linked from the
+  manual's MIDI section) and `E16DefinitionTests` holds it to the engine.
+  Nobody has imported it into the OXI App yet.
+  See `phases/19-e16-definition/VERIFICATION.md`.
 - 2026-11-15 — phase 18: version 2.0.0 released (phases 15 to 17, merged
   into `main` one by one). See `phases/18-v2.0.0-release/VERIFICATION.md`.
   The author tries it on another Mac from the download: the LFO buttons,

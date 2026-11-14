@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The website has an instrument definition for the OXI E16 controller: the
+  knobs by name with their MIDI controllers and the value of each knob's
+  default place (see MIDI controllers in the manual).
+
 ## 2.0.0 — 2026-11-15
 
 - MIDI learn: every knob listens to a MIDI controller (CC). Click MIDI in
