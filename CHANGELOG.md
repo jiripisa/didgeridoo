@@ -1,5 +1,44 @@
 # Changelog
 
+## Unreleased
+
+- The instrument is now one model, built on the measurements of real
+  didgeridoos, and no longer a synthesizer with those measurements beside
+  it. Every program sounds different from 1.0.x. This is a deliberate
+  departure from the MPC plugin "Didgeridoo", whose synthesis it replaces.
+  - Lips: the source is the air that passes lips which are shut for part of
+    every cycle. Buzz sets how hard they close (it used to narrow a pulse);
+    Drive is how hard they are blown and works on the lips themselves (it
+    used to distort the finished sound, which also filled in the notches of
+    the tongue).
+  - Mouth: only the tongue is left. Vowel says where the tongue stands and
+    Tongue how deep it cuts. Formant and Reso are gone: they added peaks
+    where a real mouth takes sound away.
+  - Tube: eight resonances, placed by the flare that Toot Pitch implies.
+    Body is gone; the tube's first resonance does its work. Tone moved here.
+  - Voice: one sung voice with a list of intervals that lock to the drone
+    (Voice Pitch: Unison to Twelfth, the tenth as it comes) and a new knob,
+    Rough, that pulls it off the lock so that it beats. Growl and Growl
+    Pitch are gone; aftertouch now adds Voice.
+  - Breath passes the lips, so its noise comes in bursts at the drone's
+    pitch.
+- The overblown note was measured on recordings of real instruments and
+  rebuilt: the drone stops, the pitch jumps there within a hundredth of a
+  second without sliding, the tone is nearly plain (it used to be bright and
+  buzzing), it is about 6 dB louder than the drone, and it is a short stab
+  (Toot Len 120 ms) after which the drone returns. "Hold" is now at the top
+  of Toot Len. Toot Pitch runs from 12 to 19 semitones, what tubes do, and
+  rests at 17.
+- As it comes, the instrument has the tube and the tongue on, Drift at 12 %
+  and Bend Range at 1 semitone. Volume rests at 0 dB.
+- 30 knobs instead of 33. The ten programs keep their names and were voiced
+  again.
+- Sounds stored by 1.0.x are not carried over: the app starts with Classic
+  Drone, and a host project saved with the 1.0.x plug-in restores wrong
+  values, so choose a program again. Several knobs kept their name and
+  changed their meaning.
+- Turning Buzz, Drive or Voice while a note sounds makes no click.
+
 ## 1.0.2 — 2026-11-14
 
 - The keys of the app's keyboard show an ochre band at their lower end. A

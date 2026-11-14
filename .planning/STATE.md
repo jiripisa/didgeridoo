@@ -1,5 +1,10 @@
 # Didgeridoo — State
 
+- 2026-11-14 — phase 15 done on its branch, not merged and not released:
+  the engine is one model of the instrument (lips, tongue, tube, voice) and
+  the overblown note was rebuilt from recordings. The author asked for it
+  without compatibility with 1.0.x and listens to three demo files first.
+  See `phases/15-one-model/VERIFICATION.md`.
 - 2026-11-14 — phase 14: version 1.0.2 released (phase 13). See
   `phases/14-v1.0.2-release/VERIFICATION.md`.
 - 2026-11-14 — phase 13 done: the overblow band on the keys of the app's
@@ -41,6 +46,6 @@
 - 2026-11-13 — skeleton created (phase 01): `build.sh` / `run.sh`,
   Developer ID + notarization pipeline, Sparkle auto-update, website on
   GitHub Pages.
-- No phase open. Next: the author listens to 1.0.0; tune the four new
-  programs and the new knobs by his ear, then pick the next phase from the
-  ideas in `ROADMAP.md`.
+- Open: phase 15 waits on `feature/15-one-model` for the author's ear. Next:
+  tune the model by what he hears, merge, release (a major version: saved
+  sounds and host projects of 1.0.x do not carry over).
