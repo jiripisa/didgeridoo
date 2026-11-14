@@ -47,7 +47,7 @@ float       didge_param_to_normalised(int index, float plain);
 // Text for a plain value, without the unit ("1400", "-6.0", "1/8", "Off"). Returns buffer.
 const char* didge_param_display(int index, float plain, char* buffer, int bufferSize);
 
-// The sections the parameters are shown in ("Mouth", "Lips", "Rhythm") and the parameters of
+// The sections the parameters are shown in ("Mouth", "Lips", "Tube", "Rhythm") and the parameters of
 // each in the order they are shown: the app's panels and the Audio Unit's parameter groups.
 int         didge_num_sections(void);
 const char* didge_section_name(int section);

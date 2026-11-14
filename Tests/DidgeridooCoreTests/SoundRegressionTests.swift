@@ -81,6 +81,11 @@ struct SoundRegressionTests {
     /// Phase 05 lowered the instrument by two octaves (the Octave knob, at 0)
     /// and moved the phrase up by two: the samples, and so these lines, stayed
     /// the same.
+    ///
+    /// Phase 09 added the tongue, the tube, the toot's length, the voice and the
+    /// rhythm's patterns, all at rest in the first six programs, whose lines
+    /// stayed the same. Programs 6 to 9 use them; their lines are from that
+    /// phase and were never part of the MPC plugin.
     private static let references: [Reference] = [
         Reference(program: 0, sampleRate: 44100, fingerprint: 0x8B745F4646867801, levels: [0.120198, 0.124292, 0.116127, 0.211169, 0.138925, 0.0]),
         Reference(program: 1, sampleRate: 44100, fingerprint: 0xFEDDD1BB3179D75B, levels: [0.116259, 0.119507, 0.102175, 0.184046, 0.125087, 0.0]),
@@ -94,6 +99,14 @@ struct SoundRegressionTests {
         Reference(program: 3, sampleRate: 48000, fingerprint: 0xE8ADB3E6B6071E83, levels: [0.127398, 0.1348, 0.102905, 0.165961, 0.106753, 0.0]),
         Reference(program: 4, sampleRate: 48000, fingerprint: 0x50A0B0765E4BFBB8, levels: [0.058908, 0.062696, 0.05883, 0.139418, 0.099974, 0.0]),
         Reference(program: 5, sampleRate: 48000, fingerprint: 0xDA8181386EB95D68, levels: [0.054461, 0.057059, 0.058069, 0.113547, 0.077785, 0.0]),
+        Reference(program: 6, sampleRate: 44100, fingerprint: 0xF939806C7BFE123C, levels: [0.14624, 0.137945, 0.089566, 0.154091, 0.107089, 0.0]),
+        Reference(program: 7, sampleRate: 44100, fingerprint: 0xB8DB4F1F08DA1A4D, levels: [0.088125, 0.086487, 0.05753, 0.097976, 0.069606, 0.0]),
+        Reference(program: 8, sampleRate: 44100, fingerprint: 0xC5253355305A1951, levels: [0.144877, 0.137032, 0.089954, 0.137157, 0.106633, 0.0]),
+        Reference(program: 9, sampleRate: 44100, fingerprint: 0xA9273D59FD6EACD8, levels: [0.118383, 0.113646, 0.077383, 0.129339, 0.083308, 0.0]),
+        Reference(program: 6, sampleRate: 48000, fingerprint: 0xF7DCD74E0D99D872, levels: [0.146162, 0.136213, 0.089522, 0.154673, 0.106825, 0.0]),
+        Reference(program: 7, sampleRate: 48000, fingerprint: 0xD5086E8C5127DDA9, levels: [0.088063, 0.08539, 0.057339, 0.096994, 0.068797, 0.0]),
+        Reference(program: 8, sampleRate: 48000, fingerprint: 0xEF21BF3A25F048B7, levels: [0.144101, 0.138018, 0.09041, 0.1389, 0.107033, 0.0]),
+        Reference(program: 9, sampleRate: 48000, fingerprint: 0x2EFDE610B3E00C86, levels: [0.118175, 0.111987, 0.077069, 0.128777, 0.082164, 0.0]),
     ]
 
     private static func render(program: Int, sampleRate: Double) -> [Float] {
@@ -143,7 +156,7 @@ struct SoundRegressionTests {
         }
     }
 
-    @Test("Every program sounds as it did when it was compared with the MPC plugin",
+    @Test("Every program sounds as it did when its reference was taken",
           arguments: Programs.names.indices, [44100.0, 48000.0])
     func unchanged(program: Int, sampleRate: Double) throws {
         let samples = Self.render(program: program, sampleRate: sampleRate)

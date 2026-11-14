@@ -6,16 +6,17 @@ struct ParameterTests {
 
     @Test("The table starts with the MPC plugin's 25 parameters in its order; newer ones follow")
     func tableMatchesThePlugin() {
-        #expect(Parameters.all.count == 26)
+        #expect(Parameters.all.count == 33)
         #expect(Parameters.all.first?.identifier == "volume")
-        #expect(Parameters.all.map(\.identifier).dropFirst(24) == ["drift", "octave"])
-        #expect(Parameters.all.map(\.index) == Array(0..<26))
+        #expect(Parameters.all.map(\.identifier).dropFirst(24)
+                == ["drift", "octave", "tongue", "tube", "tootlen", "voice", "rhypattern", "rhyaccent", "rhybreath"])
+        #expect(Parameters.all.map(\.index) == Array(0..<33))
     }
 
     @Test("Every parameter sits in exactly one section")
     func sectionsCoverEverything() {
         let placed = ParameterSection.all.flatMap(\.parameters).map(\.identifier)
-        #expect(placed.count == 26)
+        #expect(placed.count == 33)
         #expect(Set(placed) == Set(Parameters.all.map(\.identifier)))
     }
 
@@ -58,23 +59,23 @@ struct ParameterTests {
 
     @Test("The sections and the order of their knobs are the window's")
     func sectionLayout() {
-        #expect(ParameterSection.all.map(\.title) == ["Mouth", "Lips", "Rhythm"])
-        #expect(ParameterSection.all[0].parameters.map(\.identifier)
-                == ["vowel", "formant", "reso", "tone", "wobblerate", "wobbledepth", "wheelvowel", "volume"])
-        #expect(ParameterSection.all[1].parameters.map(\.identifier)
-                == ["buzz", "body", "drive", "breath", "growl", "growlpitch", "drift", "glide",
-                    "attack", "release", "tootvel", "tootpitch"])
-        #expect(ParameterSection.all[2].parameters.map(\.identifier)
-                == ["rhythmdiv", "rhydepth", "rhyvowel", "rhydecay", "bendrange", "octave"])
+        #expect(ParameterSection.all.map(\.title) == ["Mouth", "Lips", "Tube", "Rhythm"])
+        #expect(ParameterSection.all.map { $0.parameters.map(\.identifier) } == [
+            ["vowel", "formant", "reso", "tongue", "tone", "wobblerate", "wobbledepth", "wheelvowel", "volume"],
+            ["buzz", "body", "drive", "breath", "drift", "growl", "growlpitch", "voice", "attack", "release"],
+            ["tube", "tootvel", "tootpitch", "tootlen", "glide", "bendrange", "octave"],
+            ["rhythmdiv", "rhypattern", "rhydepth", "rhyvowel", "rhydecay", "rhyaccent", "rhybreath"],
+        ])
     }
 }
 
 @Suite("Programs")
 struct ProgramTests {
 
-    @Test("The six built-in programs are there")
+    @Test("The built-in programs are there: the MPC plugin's six, then the newer ones")
     func names() {
-        #expect(Programs.names == ["Classic Drone", "Deep Earth", "Vocal Wah", "Growler", "Rhythm Breath", "Gallop"])
+        #expect(Programs.names == ["Classic Drone", "Deep Earth", "Vocal Wah", "Growler", "Rhythm Breath", "Gallop",
+                                   "Eucalyptus", "Hard Tongue", "Pipe", "Singer"])
     }
 
     @Test("Loading a program overwrites the parameters")
