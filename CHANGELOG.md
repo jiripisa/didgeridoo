@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- The keys of the app's keyboard show an ochre band at their lower end. A
+  click in the band overblows the note; a click anywhere else on a key never
+  does, wherever Toot Vel stands. Before, the lowest part of a key overblew
+  without showing it, and the key's name lay right across its edge, so a
+  click on the name sometimes played the note 16 semitones too high. The
+  names now sit above the band.
+
 ## 1.0.1 — 2026-11-14
 
 - A click on the name of a key (C2 to C6) on the app's keyboard now plays

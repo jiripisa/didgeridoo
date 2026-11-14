@@ -1,5 +1,8 @@
 # Didgeridoo — State
 
+- 2026-11-14 — phase 13 done: the overblow band on the keys of the app's
+  keyboard. A click on a key's name had sometimes overblown the note since
+  1.0.1. See `phases/13-overblow-band/VERIFICATION.md`. Not released yet.
 - 2026-11-14 — phase 12: version 1.0.1 released (phase 11). See
   `phases/12-v1.0.1-release/VERIFICATION.md`.
 - 2026-11-14 — phase 11 done: the dead spot on the names of the keys C2 to
