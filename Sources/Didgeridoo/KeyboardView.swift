@@ -30,6 +30,7 @@ struct KeyboardView: View {
                                         .font(.system(size: 9))
                                         .foregroundStyle(.black.opacity(0.55))
                                         .padding(.bottom, 3)
+                                        .allowsHitTesting(false)        // a click on the name plays the key under it
                                 }
                             }
                     }
