@@ -5,9 +5,8 @@ import Testing
 /// The instrument as the measurements describe it: one air stream through the
 /// lips, held back by the vocal tract and shaped by the tube. Each test reads
 /// the sound itself. The numbers come from
-/// `.planning/research/reports/Didgeridoo acoustics and playing.md` and, for
-/// the overblown note, from the recordings measured in
-/// `.planning/phases/15-one-model/PLAN.md`.
+/// `.planning/research/reports/Didgeridoo acoustics and playing.md` and from
+/// the recordings measured in `.planning/phases/15-one-model/PLAN.md`.
 @Suite("The model")
 struct ModelTests {
 
@@ -204,14 +203,14 @@ struct ModelTests {
         #expect((with[0] - with[2]) - (without[0] - without[2]) > 8)
     }
 
-    @Test("A cylinder, which overblows a twelfth, favours the odd harmonics; a flared tube does not")
+    @Test("A plain pipe favours the odd harmonics; a flared tube does not")
     func cylinderFavoursOddHarmonics() throws {
         /// How far harmonics 3, 5 and 7 stand above their even neighbours, in dB.
-        func odd(_ tootPitch: Float) throws -> Double {
-            let levels = harmonics(try synth(["tongue": 0, "tube": 100, "tootpitch": tootPitch]), [2, 3, 4, 5, 6, 7, 8])
+        func odd(_ flare: Float) throws -> Double {
+            let levels = harmonics(try synth(["tongue": 0, "tube": 100, "flare": flare]), [2, 3, 4, 5, 6, 7, 8])
             return (levels[1] + levels[3] + levels[5]) / 3 - (levels[0] + levels[2] + levels[4] + levels[6]) / 4
         }
-        #expect(try odd(19) - odd(15) > 5)
+        #expect(try odd(0) - odd(62) > 5)
     }
 
     @Test("The tube follows the drone to a note played legato")
@@ -228,141 +227,35 @@ struct ModelTests {
         #expect(try fundamentalOverSecond(tube: 100) - fundamentalOverSecond(tube: 0) > 8)
     }
 
-    // MARK: The toot
+    // MARK: No overblown note
 
-    /// A drone held for a second, then a hard hit on the same key; `after` seconds from the hit on.
-    private func tootAfterADrone(_ values: [String: Float], after: Double) throws -> (drone: [Float], toot: [Float]) {
-        let synth = try synth(values)
-        synth.noteOn(62, velocity: 100)
-        let drone = render(synth, seconds: 1)
-        synth.noteOn(62, velocity: 127)
-        return (drone, render(synth, seconds: after))
+    /// How far the drone's fundamental stands above anything between its second and third
+    /// harmonic, where an overblown note would sound (13 to 18 semitones above the key), in dB.
+    private func droneOverAnythingOverblown(_ samples: [Float], from: Double, to: Double) -> Double {
+        let between = (13...18).map { level(samples, at: Self.drone * pow(2, Double($0) / 12), from: from, to: to) }.max() ?? 0
+        return level(samples, at: frequency(samples, near: Self.drone, from: from, to: to), from: from, to: to) - between
     }
 
-    private func tootFrequency(_ semitones: Double = 17) -> Double { Self.drone * pow(2, semitones / 12) }
+    @Test("The hardest hit is a loud drone on the key's own pitch: the instrument does not overblow")
+    func hardHitDoesNotOverblow() throws {
+        let fromSilence = try synth()
+        fromSilence.noteOn(62, velocity: 127)
+        #expect(droneOverAnythingOverblown(render(fromSilence, seconds: 1.5), from: 0.1, to: 0.6) > 20)
 
-    @Test("An overblown note is nearly a plain tone: its second and third harmonic lie far under its fundamental")
-    func tootIsNearlyPlain() throws {
-        let synth = try synth(["tootlen": 601])                 // held as long as the key
-        synth.noteOn(62, velocity: 127)
-        let samples = render(synth, seconds: 1.5)
-        let toot = frequency(samples, near: tootFrequency(), from: 0.5, to: 1.5)
-        let partials = (1...3).map { level(samples, at: toot * Double($0), from: 0.5, to: 1.5) }
-        #expect(partials[1] - partials[0] < -18)
-        #expect(partials[2] - partials[0] < -18)
+        let onADrone = try synth()
+        onADrone.noteOn(62, velocity: 90)
+        let before = render(onADrone, seconds: 1)
+        onADrone.noteOn(62, velocity: 127)
+        let after = render(onADrone, seconds: 1)
+        #expect(droneOverAnythingOverblown(after, from: 0.02, to: 0.5) > 20)
+        #expect(rms(after, from: 0.5, to: 1) > rms(before, from: 0.5, to: 1) + 1)       // louder, as a harder hit is
     }
 
-    @Test("The lips jump to the overblown note: the pitch does not slide through the ones between")
-    func tootJumps() throws {
-        // Two octaves up, so that 40 ms tell the pitches apart: the drone at 294 Hz, the toot at 784 Hz.
-        let (_, toot) = try tootAfterADrone(["octave": 2, "tootlen": 601], after: 0.3)
-        let there = Self.drone * 4 * pow(2, 17.0 / 12)
-        let onTheWay = level(toot, at: 700, from: 0.012, to: 0.052) - level(toot, at: there, from: 0.012, to: 0.052)
-        #expect(onTheWay < -18)
-        #expect(level(toot, at: there, from: 0.03, to: 0.07) - level(toot, at: Self.drone * 4, from: 0.03, to: 0.07) > 6)
-    }
-
-    @Test("An overblown note is louder than the drone it interrupts, and the drone is gone under it")
-    func tootIsLouderAndAlone() throws {
-        let (drone, toot) = try tootAfterADrone(["tootlen": 601], after: 0.5)
-        let louder = rms(toot, from: 0.1, to: 0.4) - rms(drone, from: 0.5, to: 1)
-        #expect(louder > 3 && louder < 9)
-        let there = frequency(toot, near: tootFrequency(), from: 0.1, to: 0.4)
-        #expect(level(toot, at: Self.drone, from: 0.1, to: 0.4) - level(toot, at: there, from: 0.1, to: 0.4) < -20)
-    }
-
-    @Test("A hard hit is a stab: the drone of the same key is back while the key is held, unless Toot Len says Hold")
-    func tootIsAStab() throws {
-        /// How far the toot's own partial stands above the drone's, in dB.
-        func tootOverDrone(_ samples: [Float], from: Double, to: Double) -> Double {
-            level(samples, at: tootFrequency(), from: from, to: to) - level(samples, at: Self.drone, from: from, to: to)
-        }
-        let stab = try synth(["attack": 5])                     // Toot Len as the instrument comes
-        stab.noteOn(62, velocity: 127)
-        let samples = render(stab, seconds: 1.2)
-        #expect(tootOverDrone(samples, from: 0.03, to: 0.1) > 10)
-        #expect(tootOverDrone(samples, from: 0.7, to: 1.2) < -10)
-
-        let held = try synth(["attack": 5, "tootlen": 601])
-        held.noteOn(62, velocity: 127)
-        #expect(tootOverDrone(render(held, seconds: 1.2), from: 0.7, to: 1.2) > 10)
-    }
-
-    // What follows was measured inside real toots after the author found the rebuilt ones still
-    // artificial: a plain tone that stands still, with the breath's hiss on it, is what a
-    // synthesizer does.
-
-    @Test("A toot carries little breath: next to nothing of it lies above 2 kHz")
-    func tootIsNotHissy() throws {
-        let synth = try synth(["tootlen": 601])
-        synth.noteOn(62, velocity: 127)
-        let samples = render(synth, seconds: 1.5)
-        let toot = frequency(samples, near: tootFrequency(), from: 0.5, to: 1.5)
-        // Noise is measured in short stretches: 25 ms resolve about 40 Hz, so steps of 40 Hz
-        // add up to the power of the whole band. The recordings were measured the same way.
-        var above = 0.0
-        let starts = stride(from: 0.5, to: 1.4, by: 0.1)
-        for start in starts {
-            for hz in stride(from: 2000.0, to: 8000.0, by: 40) { above += pow(10, level(samples, at: hz, from: start, to: start + 0.025) / 10) }
-        }
-        above /= Double(Array(starts).count)
-        // Real toots: 30 to 48 dB under the fundamental in clean recordings; this one stood at -19.
-        #expect(10 * log10(above) - level(samples, at: toot, from: 0.5, to: 1.5) < -30)
-    }
-
-    @Test("A toot peaks and settles: it is louder in its first tenth of a second than later")
-    func tootPeaksAndSettles() throws {
-        let (_, toot) = try tootAfterADrone(["tootlen": 601], after: 0.8)
-        let settled = rms(toot, from: 0.5, to: 0.8)
-        #expect(rms(toot, from: 0.04, to: 0.1) - settled > 2)
-        #expect(rms(toot, from: 0.04, to: 0.1) - settled < 8)
-    }
-
-    @Test("The lips land a little under the toot's pitch and settle onto it")
-    func tootSettlesFromBelow() throws {
-        // Two octaves up, so that 40 ms measure a pitch to a few cents.
-        let (_, toot) = try tootAfterADrone(["octave": 2, "tootlen": 601, "breath": 0], after: 0.8)
-        let there = Self.drone * 4 * pow(2, 17.0 / 12)
-        let early = frequency(toot, near: there, span: 100, from: 0.03, to: 0.07)
-        let late = frequency(toot, near: there, span: 100, from: 0.5, to: 0.8)
-        let cents = 1200 * log2(early / late)
-        #expect(cents < -8 && cents > -70)
-    }
-
-    @Test("No two toots are quite the same")
-    func tootsDiffer() throws {
-        let synth = try synth(["breath": 0])
-        synth.noteOn(62, velocity: 100)
-        _ = render(synth, seconds: 0.5)
-        var levels: [Double] = []
-        for _ in 0..<4 {
-            synth.noteOn(62, velocity: 127)
-            levels.append(rms(render(synth, seconds: 0.5), from: 0.03, to: 0.12))
-        }
-        #expect((levels.max() ?? 0) - (levels.min() ?? 0) > 0.3)
-        #expect((levels.max() ?? 0) - (levels.min() ?? 0) < 4)
-    }
-
-    @Test("After a stab the drone is as loud as it was before, not as loud as the hard hit")
-    func droneKeepsItsLevelAfterAStab() throws {
-        let synth = try synth(["breath": 0])
-        synth.noteOn(62, velocity: 70)
-        let before = render(synth, seconds: 1)
-        synth.noteOn(62, velocity: 127)
-        let after = render(synth, seconds: 1.5)
-        #expect(abs(rms(after, from: 1.0, to: 1.5) - rms(before, from: 0.5, to: 1.0)) < 1)
-    }
-
-    @Test("The toot's knobs cover what tubes do: 12 to 19 semitones, a stab of 40 to 600 ms or Hold")
-    func tootRanges() throws {
-        let pitch = try #require(Parameters.named("tootpitch"))
-        #expect(pitch.range == 12...19)
-        #expect(pitch.defaultValue == 17)
-        let length = try #require(Parameters.named("tootlen"))
-        #expect(length.range == 40...601)
-        #expect(length.label(601) == "Hold")
-        #expect(length.label(120) == "120 ms")
-        #expect(length.defaultValue < 200)                      // a stab as the instrument comes
+    @Test("Flare is the tube's shape, from a plain pipe to a wide bell")
+    func flareIsAKnob() throws {
+        let flare = try #require(Parameters.named("flare"))
+        #expect(flare.range == 0...100)
+        #expect(flare.defaultValue > 20 && flare.defaultValue < 50)     // a tube that widens a little, as most do
     }
 
     // MARK: The voice
@@ -469,7 +362,7 @@ struct ModelTests {
         #expect(try value("bendrange") == 1)
         #expect(try value("voice") == 0)
         #expect(try value("rhydepth") == 0)
-        for gone in ["formant", "reso", "body", "growl", "growlpitch"] {
+        for gone in ["formant", "reso", "body", "growl", "growlpitch", "tootvel", "tootpitch", "tootlen"] {
             #expect(Parameters.named(gone) == nil)
         }
     }

@@ -67,6 +67,22 @@ this phase builds, one (a close-miked cylinder) has strong odd harmonics, a
 horn. Which the author means by an authentic toot is his to say: he gets
 both to hear (the horn as a scratch variant, not in the engine).
 
+## The author's third verdict: the toot goes
+
+He heard the toots with their inner life, and the horn variant: "Priznam se,
+ze co se tyce prefuku, tak to zni vylozene priserne a ja bych to nepouzil. A
+asi bych to ted i dal pryc. Zni to neprirozene. JInak je to ale super a zvuk
+je paradni. A radsi, nez ted resit prefuky, tak bych tam rad zapracoval na
+dalsich vecech."
+
+So the overblown note is out of the instrument, and the engine without it is
+what he approved. The two tables above stay as the record of what real toots
+measure, for whoever tries again; the last toot is in commit 54e0266. What
+the three attempts had in common is an oscillator told to sound a pitch.
+Matching every number that could be measured did not make it sound like lips
+jumping to another resonance of a tube, which is an argument for the
+waveguide model in the roadmap, or for a recording the author finds right.
+
 ## Acceptance criteria
 
 - [x] **Lips.** The source is the flow through a valve that is shut for part
@@ -78,25 +94,23 @@ both to hear (the horn as a scratch variant, not in the engine).
 - [x] **Mouth.** Only the tongue: Vowel says where the band between the
       tract's resonances sits and how far the tongue is raised, Tongue how
       deep the resonances cut. Formant and Reso are gone.
-- [x] **Tube.** Eight resonances placed by the flare that Toot Pitch
-      implies (a cylinder at 19 semitones: 1, 3, 5 … times the first), the
-      first tall and narrow just under the drone. Body is gone.
+- [x] **Tube.** Eight resonances placed by how much the tube flares (the
+      knob Flare; a cylinder at 0 %: 1, 3, 5 … times the first), the first
+      tall and narrow just under the drone. Body is gone.
 - [x] **Voice.** One voice: a second valve in the same air stream, on a
       just interval (fourth, fifth, octave, tenth, twelfth and others),
       with Rough to pull it off the lock so that it beats. Growl is gone;
       aftertouch adds voice.
 - [x] **Breath.** The noise passes the lips, so it is chopped at the
       drone's rate.
-- [x] **Toot.** A hard hit makes the lips jump to the tube's second
-      resonance: the drone stops, the pitch is there within 10 ms, the tone
-      is nearly plain (second and third harmonic at least 18 dB under its
-      fundamental on a flared tube), it is 3 to 9 dB louder than the drone
-      and lasts Toot Len (a stab by default; "Hold" at the top of the knob).
-      Toot Pitch runs from 12 to 19 semitones.
+- [x] **No overblown note.** Three builds of it did not pass the author's
+      ear (below), and he had it taken out: a hard hit is a loud drone. Toot
+      Vel, Toot Len and the band on the keyboard's keys are gone; Toot Pitch,
+      which also set the tube's shape, is the knob Flare.
 - [x] **Defaults** are the measured instrument: the tube and the tongue on,
       a small drift, a bend of one semitone.
 - [x] The ten programs keep their names and are voiced again on the model.
-- [x] 30 parameters in four groups; the table is ordered by group.
+- [x] 28 parameters in four groups; the table is ordered by group.
       Identifiers that keep their meaning keep their name.
 - [x] State saved by 1.0.x does not load into the new parameters (the
       meaning of several changed): the app starts with the default program.
@@ -104,9 +118,8 @@ both to hear (the horn as a scratch variant, not in the engine).
       CHANGELOG describe it.
 - [x] `swift test` (debug and release), `swift test --sanitize=thread`,
       `./build.sh debug`, `./build.sh release` and `auval` succeed.
-- [x] A demo that plays the same score on 1.0.2 and on this engine, and one
-      of the new toots, for the author's ear. Nothing is released before he
-      has heard them.
+- [x] A demo that plays the same score on 1.0.2 and on this engine, for the
+      author's ear: he heard it and found the new engine "o poznání lepší".
 
 ## Decisions
 
@@ -121,12 +134,12 @@ both to hear (the horn as a scratch variant, not in the engine).
   strongly up to a corner, so the source is the flow's difference from sample
   to sample, scaled by the pitch, through a one-pole low-pass. That corner is
   what Tone always was.
-- **The toot's tone comes from the model, not from a setting.** The lips at
+- *(No longer applies: the toot is gone.)* **The toot's tone comes from the model, not from a setting.** The lips at
   high tension barely close (a nearly sinusoidal flow), and the tube supports
   the toot's fundamental on its second resonance and none of its harmonics,
   unless the tube is a cylinder, where the odd ones meet resonances. The
   earlier brightening rested on sellers' words.
-- **The first resonance is damped while the lips toot.** A filter of Q 25
+- *(No longer applies.)* **The first resonance is damped while the lips toot.** A filter of Q 25
   rings on for a quarter of a second; in the recordings the drone is gone
   under a toot. The damping is a measurement, not a derivation.
 - **Voice Pitch is a list of just intervals**, not a number of semitones:
@@ -149,10 +162,18 @@ both to hear (the horn as a scratch variant, not in the engine).
   distortion at the output, so the sum is kept lower inside and the knob
   makes up for it: a drone is as loud as in 1.0.x. The limiter leaves
   everything under 60 % of full scale alone.
-- **The drone after a stab is as loud as the drone before it.** A hard hit
+- *(No longer applies.)* **The drone after a stab is as loud as the drone before it.** A hard hit
   is the toot's force, not a new level for the drone.
 - **Rhythm Breath and Gallop set Volume to +3 and +5 dB**: the pulse ducks
   the level between its steps.
+- **Flare in place of Toot Pitch.** The knob said where the toot sounds
+  and, through that, where the tube's resonances lie. Without the toot it
+  says the second thing in its own words: 0 % is a plain pipe (the second
+  resonance three times the first), 100 % the widest bell (twice). The
+  programs keep their tubes: 19, 17, 16 and 15 semitones became 0, 33, 48
+  and 62 %.
+- **The bottom of a key on the app's keyboard is the hardest hit** (127),
+  where the band that overblew used to be.
 - **Mine, set by measurement and unheard:** the pulse's shape (shut for 60 %
   of the cycle, sharp opening, soft closure), the breath's colour (pink
   noise thinned above 1.5 kHz; nobody has published its spectrum), the

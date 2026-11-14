@@ -5,7 +5,7 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 | Phase | Goal | Status |
 |---|---|---|
-| 15-one-model | One model of the instrument in place of two: lips as a valve, the tongue alone as the mouth, the tube's eight resonances, one voice, and an overblown note rebuilt from recordings of real ones. 30 knobs. Not released: the author listens first — 2026-11-14 | ✅ |
+| 15-one-model | One model of the instrument in place of two: lips as a valve, the tongue alone as the mouth, the tube's eight resonances, one voice. The author's ear approved the sound; the overblown note failed it three times and was removed. 28 knobs. Not released yet — 2026-11-14 | ✅ |
 | 14-v1.0.2-release | Version 1.0.2: phase 13 released — 2026-11-14 | ✅ |
 | 13-overblow-band | The keys of the app's keyboard show a band at their lower end: a click there overblows, a click anywhere else never does; the names sit above it — 2026-11-14 | ✅ |
 | 12-v1.0.1-release | Version 1.0.1: phase 11 released — 2026-11-14 | ✅ |
@@ -23,6 +23,10 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 ## Ideas for later phases (not planned yet)
 
+- **The overblown note**: removed in phase 15 after three builds the author
+  found unnatural, the last one matched to every number measured on real
+  toots (`phases/15-one-model/PLAN.md` has the measurements). Worth another
+  try only with a recording he finds right, or on the waveguide model below.
 - **A waveguide model**: lips as a reed on a waveguide bore, so that the
   pitch, the toot and the tube's pull on the lips come out of one mechanism
   instead of being set (phase 15 took the flow through the lips, the junction

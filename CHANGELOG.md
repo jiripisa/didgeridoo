@@ -14,27 +14,23 @@
   - Mouth: only the tongue is left. Vowel says where the tongue stands and
     Tongue how deep it cuts. Formant and Reso are gone: they added peaks
     where a real mouth takes sound away.
-  - Tube: eight resonances, placed by the flare that Toot Pitch implies.
-    Body is gone; the tube's first resonance does its work. Tone moved here.
+  - Tube: eight resonances, placed by how much the tube flares (the new knob
+    Flare). Body is gone; the tube's first resonance does its work. Tone
+    moved here.
   - Voice: one sung voice with a list of intervals that lock to the drone
     (Voice Pitch: Unison to Twelfth, the tenth as it comes) and a new knob,
     Rough, that pulls it off the lock so that it beats. Growl and Growl
     Pitch are gone; aftertouch now adds Voice.
   - Breath passes the lips, so its noise comes in bursts at the drone's
     pitch.
-- The overblown note was measured on recordings of real instruments and
-  rebuilt: the drone stops, the pitch jumps there within a hundredth of a
-  second without sliding, the tone is nearly plain (it used to be bright and
-  buzzing), it is about 6 dB louder than the drone, and it is a short stab
-  (Toot Len 120 ms) after which the drone returns. Inside, it moves as real
-  ones do: its level peaks and settles, the lips arrive with a short squeak
-  and sit a little under the pitch before they find it, there is next to no
-  breath in it, and no two toots are alike. "Hold" is now at the top of Toot
-  Len. Toot Pitch runs from 12 to 19 semitones, what tubes do, and rests at
-  17.
+- The overblown note is gone. A hard hit is a loud drone; Toot Vel and Toot
+  Len are gone, and so is the ochre band on the keys of the app's keyboard,
+  whose bottom is now simply the hardest hit. Toot Pitch, which also set the
+  tube's shape, is now the knob Flare: 0 % is a plain pipe, higher values a
+  tube that widens towards its end.
 - As it comes, the instrument has the tube and the tongue on, Drift at 12 %
   and Bend Range at 1 semitone. Volume rests at 0 dB.
-- 30 knobs instead of 33. The ten programs keep their names and were voiced
+- 28 knobs instead of 33. The ten programs keep their names and were voiced
   again.
 - Sounds stored by 1.0.x are not carried over: the app starts with Classic
   Drone, and a host project saved with the 1.0.x plug-in restores wrong

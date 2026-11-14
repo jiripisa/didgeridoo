@@ -5,17 +5,17 @@ import Testing
 @Suite("Parameters")
 struct ParameterTests {
 
-    @Test("The table holds the 30 parameters group by group")
+    @Test("The table holds the 28 parameters group by group")
     func tableFollowsTheGroups() {
-        #expect(Parameters.all.count == 30)
+        #expect(Parameters.all.count == 28)
         #expect(Parameters.all.map(\.identifier) == ParameterSection.all.flatMap(\.parameters).map(\.identifier))
-        #expect(Parameters.all.map(\.index) == Array(0..<30))
+        #expect(Parameters.all.map(\.index) == Array(0..<28))
     }
 
     @Test("Every parameter sits in exactly one section")
     func sectionsCoverEverything() {
         let placed = ParameterSection.all.flatMap(\.parameters).map(\.identifier)
-        #expect(placed.count == 30)
+        #expect(placed.count == 28)
         #expect(Set(placed) == Set(Parameters.all.map(\.identifier)))
     }
 
@@ -27,13 +27,14 @@ struct ParameterTests {
         #expect(abs(glide.plain(glide.normalised(60)) - 60) < 0.01)
     }
 
-    @Test("Values read like on the MPC")
+    @Test("Values read as the knobs show them")
     func displayText() throws {
         let volume = try #require(Parameters.named("volume"))
         #expect(volume.label(-6) == "-6.0 dB")
-        let toot = try #require(Parameters.named("tootvel"))
-        #expect(toot.text(128) == "Off")
-        #expect(toot.text(115) == "115")
+        let voicePitch = try #require(Parameters.named("voicepitch"))
+        #expect(voicePitch.text(voicePitch.defaultValue) == "Tenth")
+        let flare = try #require(Parameters.named("flare"))
+        #expect(flare.label(33) == "33 %")
         let division = try #require(Parameters.named("rhythmdiv"))
         #expect(division.text(division.defaultValue) == "1/8")
         guard case .choice(let names) = division.kind else {
@@ -62,7 +63,7 @@ struct ParameterTests {
         #expect(ParameterSection.all.map { $0.parameters.map(\.identifier) } == [
             ["vowel", "tongue", "wobblerate", "wobbledepth", "wheelvowel", "volume"],
             ["buzz", "drive", "breath", "drift", "voice", "voicepitch", "rough", "attack", "release"],
-            ["tube", "tone", "tootvel", "tootpitch", "tootlen", "glide", "bendrange", "octave"],
+            ["tube", "tone", "flare", "glide", "bendrange", "octave"],
             ["rhythmdiv", "rhypattern", "rhydepth", "rhyvowel", "rhydecay", "rhyaccent", "rhybreath"],
         ])
     }
@@ -148,7 +149,7 @@ struct SynthTests {
         }
     }
 
-    @Test("The output stays within full scale with Volume all the way up, toots and accents included")
+    @Test("The output stays within full scale with Volume all the way up, the hardest hits included")
     func loudestSettingStaysInScale() throws {
         let volume = try #require(Parameters.named("volume"))
         for program in Programs.names.indices {
@@ -157,7 +158,7 @@ struct SynthTests {
             synth.setValue(volume.range.upperBound, of: volume)
             synth.noteOn(62, velocity: 110)
             var level = peak(of: synth, seconds: 1)
-            synth.noteOn(62, velocity: 127)                 // a toot on the sounding drone
+            synth.noteOn(62, velocity: 127)                 // the hardest hit on the sounding drone
             level = max(level, peak(of: synth, seconds: 1))
             #expect(level <= 1, "program \(program) reaches \(level)")
         }
@@ -255,13 +256,13 @@ struct SynthTests {
 
     @Test("State stored by 1.0.x is left alone: its numbers belonged to another engine")
     func earlierStateIsNotApplied() throws {
-        // As 1.0.2 wrote it: no word about the engine, and values that mean something else now
-        // (Buzz was a pulse width, Toot Len 0 was "Hold").
-        let stored = Data(#"{"program":3,"values":{"vowel":90,"buzz":10,"tootlen":0,"growl":70}}"#.utf8)
+        // As 1.0.2 wrote it: no word about the engine, values that mean something else now (Buzz
+        // was a pulse width, Tube rested at 0) and knobs that are gone.
+        let stored = Data(#"{"program":3,"values":{"vowel":90,"buzz":10,"tube":0,"tootlen":0,"growl":70}}"#.utf8)
         let synth = Synth()
         try JSONDecoder().decode(SynthState.self, from: stored).apply(to: synth)
         #expect(synth.program == 0)
-        for identifier in ["vowel", "buzz", "tootlen"] {
+        for identifier in ["vowel", "buzz", "tube"] {
             let parameter = try #require(Parameters.named(identifier))
             #expect(abs(synth.value(of: parameter) - parameter.defaultValue) < 0.001)
         }

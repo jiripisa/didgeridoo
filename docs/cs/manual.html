@@ -84,11 +84,11 @@
           <dt><span class="n">4</span>Lips</dt>
           <dd>Zdroj zvuku: rty, dech, hlas a to, jak noty začínají a končí. Viz <a href="#lips">Lips</a>.</dd>
           <dt><span class="n">5</span>Tube</dt>
-          <dd>Samotný nástroj: jeho rezonance, přefouknutá nota, glide, rozsah pitch bendu a oktáva. Viz <a href="#tube">Tube</a>.</dd>
+          <dd>Samotný nástroj: jeho rezonance a tvar, glide, rozsah pitch bendu a oktáva. Viz <a href="#tube">Tube</a>.</dd>
           <dt><span class="n">6</span>Rhythm</dt>
           <dd>Pulz synchronizovaný s tempem, jeho akcenty a nádechy. Viz <a href="#rhythm">Rhythm</a>.</dd>
           <dt><span class="n">7</span>Klaviatura</dt>
-          <dd>Kliknutím na klávesu ji zahrajete. U horního okraje klávesy je úhoz tichý, níž je silnější. Okrový pruh na spodním konci každé klávesy je nejsilnější úhoz, který notu přefoukne; klik kdekoli nad pruhem ji nepřefoukne nikdy. Když je <span class="ui">Toot Vel</span> na „Off“, klávesy pruh nemají.</dd>
+          <dd>Kliknutím na klávesu ji zahrajete. U horního okraje klávesy je úhoz tichý, níž je silnější a spodní okraj klávesy je nejsilnější úhoz.</dd>
         </dl>
         <h3>Otáčení knobem</h3>
         <p>Táhněte knob nahoru nebo dolů. S klávesou <kbd>Shift</kbd> se hodnota mění jemně. Dvojklik vrátí knob na hodnotu aktuálního programu. Aplikace si knoby, program i tempo pamatuje mezi spuštěními.</p>
@@ -98,8 +98,8 @@
         <h2>Hraní</h2>
         <p>Didgeridoo hraje vždy jen jednu notu. Držená klávesa hraje dron; druhá klávesa na něj plynule přeladí (<span class="ui">Glide</span>) a po jejím puštění se ladění vrátí na klávesu, kterou stále držíte. S knobem <span class="ui">Octave</span> na nule leží rozsah skutečného nástroje kolem středu klaviatury: C3–G3 (MIDI noty 60–67).</p>
         <dl class="controls">
-          <dt>Silný úhoz</dt>
-          <dd>Velocity rovná hodnotě <span class="ui">Toot Vel</span> nebo vyšší notu přefoukne: dron ustane, rty skočí o <span class="ui">Toot Pitch</span> půltónů výš a zazní prostý tón podobný rohu, hlasitější než dron. Po době <span class="ui">Toot Len</span> se vrátí dron téže klávesy; s knobem <span class="ui">Toot Len</span> na „Hold“ přefuk trvá, dokud klávesu držíte. Na klaviatuře v okně klikněte do okrového pruhu na spodním konci klávesy.</dd>
+          <dt>Velocity</dt>
+          <dd>Silnější úhoz je hlasitější nota. Nástroj nemá přefouknutou notu: nejsilnější úhoz je hlasitý dron.</dd>
           <dt>Mod wheel</dt>
           <dd>Zvedá jazyk: posouvá <span class="ui">Vowel</span> nahoru nejvýše o tolik, kolik dovolí <span class="ui">Wheel Vowel</span>.</dd>
           <dt>Aftertouch</dt>
@@ -157,15 +157,11 @@
         <h2>Tube (trubice)</h2>
         <dl class="controls">
           <dt>Tube (0–100 %)</dt>
-          <dd>Rezonance samotného nástroje. Nejnižší leží těsně pod dronem a nechá základní tón vyniknout vysoko nad jeho harmonické, jako u skutečného didgeridoo; ostatní stojí tam, kam je položí <span class="ui">Toot Pitch</span>. Hlasitost zůstává zhruba stejná. Na nule je trubice vynechaná.</dd>
+          <dd>Rezonance samotného nástroje. Nejnižší leží těsně pod dronem a nechá základní tón vyniknout vysoko nad jeho harmonické, jako u skutečného didgeridoo; ostatní stojí tam, kam je položí <span class="ui">Flare</span>. Hlasitost zůstává zhruba stejná. Na nule je trubice vynechaná.</dd>
           <dt>Tone (200–8000 Hz)</dt>
           <dd>Do této frekvence trubice vyzařuje vyšší harmonické silněji než nižší; nad ní už ne. Nižší hodnota je temnější.</dd>
-          <dt>Toot Vel (64–127, Off)</dt>
-          <dd>Velocity, od které se nota přefoukne. Úplně nahoře („Off“) je přefuk vypnutý.</dd>
-          <dt>Toot Pitch (12–19 st)</dt>
-          <dd>O kolik půltónů nad hranou klávesou přefouknutá nota zní: druhá rezonance trubice. Říká také, o jakou trubici jde: 19 st je rovná roura, která zvýrazňuje liché harmonické dronu; nižší hodnoty jsou rozšiřující se přírodní nástroje, jejichž harmonické nad základním tónem jsou slabé. Skutečné nástroje se přefukují o 15 až 19 půltónů nad dron.</dd>
-          <dt>Toot Len (40–600 ms, Hold)</dt>
-          <dd>Jak dlouho přefouknutá nota trvá. Je to krátké štěknutí, po kterém se vrátí dron téže klávesy: tak hráči vhazují přefuk do rytmu. Na horním konci knobu (<b>Hold</b>) zní, dokud držíte klávesu.</dd>
+          <dt>Flare (0–100 %)</dt>
+          <dd>Tvar trubice. Na nule je to rovná roura, která zvýrazňuje liché harmonické dronu a zní dutě; vyšší hodnoty jsou přírodní nástroje, které se ke konci rozšiřují a jejichž harmonické nad základním tónem jsou slabé.</dd>
           <dt>Glide (0–1000 ms)</dt>
           <dd>Jak dlouho trvá sklouznutí z jedné noty na druhou.</dd>
           <dt>Bend Range (0–12 st)</dt>

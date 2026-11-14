@@ -84,11 +84,11 @@
           <dt><span class="n">4</span>Lips</dt>
           <dd>The source of the sound: lips, breath, voice and how notes begin and end. See <a href="#lips">Lips</a>.</dd>
           <dt><span class="n">5</span>Tube</dt>
-          <dd>The instrument itself: its resonances, the overblown note, glide, the pitch bend range and the octave. See <a href="#tube">Tube</a>.</dd>
+          <dd>The instrument itself: its resonances and its shape, glide, the pitch bend range and the octave. See <a href="#tube">Tube</a>.</dd>
           <dt><span class="n">6</span>Rhythm</dt>
           <dd>The tempo-synced pulse with its accents and in-breaths. See <a href="#rhythm">Rhythm</a>.</dd>
           <dt><span class="n">7</span>Keyboard</dt>
-          <dd>Click a key to play it. Near the top of a key the hit is soft, further down it is firmer. The ochre band along the lower end of every key is the hardest hit, which overblows the note; a click anywhere above the band never does. With <span class="ui">Toot Vel</span> at “Off” the keys have no band.</dd>
+          <dd>Click a key to play it. Near the top of a key the hit is soft, further down it is firmer, and the bottom of a key is the hardest hit.</dd>
         </dl>
         <h3>Turning a knob</h3>
         <p>Drag a knob up or down. Hold <kbd>Shift</kbd> while dragging for fine steps. Double-click a knob to return it to the value of the current program. The app remembers the knobs, the program and the tempo between launches.</p>
@@ -98,8 +98,8 @@
         <h2>Playing</h2>
         <p>Didgeridoo plays one note at a time. Hold a key for the drone; a second key slides the pitch there (<span class="ui">Glide</span>), and releasing it falls back to the key still held. With <span class="ui">Octave</span> at 0 the range of a real instrument sits around middle C: C3–G3 (MIDI notes 60–67).</p>
         <dl class="controls">
-          <dt>Hard hit</dt>
-          <dd>A velocity at or above <span class="ui">Toot Vel</span> overblows: the drone stops, the lips jump up by <span class="ui">Toot Pitch</span> semitones and sound a plain, horn-like tone that is louder than the drone. After <span class="ui">Toot Len</span> the drone of the same key comes back; with <span class="ui">Toot Len</span> at “Hold” the toot lasts as long as you hold the key. On the keyboard in the window, click the ochre band at the lower end of a key.</dd>
+          <dt>Velocity</dt>
+          <dd>A harder hit is a louder note. The instrument has no overblown note: the hardest hit is a loud drone.</dd>
           <dt>Mod wheel</dt>
           <dd>Raises the tongue: moves <span class="ui">Vowel</span> up by as much as <span class="ui">Wheel Vowel</span> allows.</dd>
           <dt>Aftertouch</dt>
@@ -157,15 +157,11 @@
         <h2>Tube</h2>
         <dl class="controls">
           <dt>Tube (0–100 %)</dt>
-          <dd>The resonances of the instrument itself. The lowest lies just under the drone and makes the fundamental stand far above its harmonics, as on a real didgeridoo; the others stand where <span class="ui">Toot Pitch</span> puts them. The loudness stays about the same. At 0 the tube is left out.</dd>
+          <dd>The resonances of the instrument itself. The lowest lies just under the drone and makes the fundamental stand far above its harmonics, as on a real didgeridoo; the others stand where <span class="ui">Flare</span> puts them. The loudness stays about the same. At 0 the tube is left out.</dd>
           <dt>Tone (200–8000 Hz)</dt>
           <dd>Up to this frequency the tube sends out higher harmonics more strongly than lower ones; above it no more. Lower is darker.</dd>
-          <dt>Toot Vel (64–127, Off)</dt>
-          <dd>The velocity from which a note overblows. Turn it fully up (“Off”) to disable overblowing.</dd>
-          <dt>Toot Pitch (12–19 st)</dt>
-          <dd>How far above the played key an overblown note sounds: the tube's second resonance. It also says what kind of tube this is: 19 st is a plain pipe, which favours the odd harmonics of the drone; lower values are flared, natural instruments, whose harmonics above the fundamental are weak. Real instruments overblow 15 to 19 semitones above the drone.</dd>
-          <dt>Toot Len (40–600 ms, Hold)</dt>
-          <dd>How long an overblown note lasts. It is a short stab, after which the drone of the same key comes back: the way players throw a toot into a rhythm. At the top of the knob (<b>Hold</b>) it sounds as long as the key is held.</dd>
+          <dt>Flare (0–100 %)</dt>
+          <dd>The shape of the tube. At 0 it is a plain pipe, which favours the odd harmonics of the drone and sounds hollow; higher values are natural instruments that widen towards the end, whose harmonics above the fundamental are weak.</dd>
           <dt>Glide (0–1000 ms)</dt>
           <dd>How long the pitch takes to slide from one note to the next.</dd>
           <dt>Bend Range (0–12 st)</dt>

@@ -31,7 +31,7 @@ struct SoundRegressionTests {
     }
 
     /// Everything the engine reacts to: a drone, the mod wheel, a legato note and
-    /// the fall back to the held one, pitch bend, a release, an overblown note
+    /// the fall back to the held one, pitch bend, a release, the hardest hit
     /// from silence and one played legato, aftertouch and the sustain pedal.
     private static let phrase: [Event] = [
         Event(0.00, 0x90, 62, 100),     // the drone
@@ -44,9 +44,9 @@ struct SoundRegressionTests {
         Event(1.90, 0xE0, 0, 0x60),     // pitch bend half way up
         Event(2.30, 0xE0, 0, 0x40),     // and centred
         Event(2.40, 0x80, 62, 0),       // release
-        Event(2.80, 0x90, 60, 127),     // hard hit from silence: overblown
+        Event(2.80, 0x90, 60, 127),     // the hardest hit from silence
         Event(3.20, 0xD0, 100, 0),      // aftertouch adds the voice
-        Event(3.40, 0x90, 65, 127),     // hard hit while a note sounds
+        Event(3.40, 0x90, 65, 127),     // the hardest hit while a note sounds
         Event(3.50, 0xD0, 0, 0),
         Event(3.70, 0xB0, 64, 127),     // sustain pedal down
         Event(3.80, 0x80, 60, 0),
@@ -77,26 +77,26 @@ struct SoundRegressionTests {
     /// the sound of every program on purpose. A debug build and a release build
     /// rendered the same samples.
     private static let references: [Reference] = [
-        Reference(program: 0, sampleRate: 44100, fingerprint: 0x2F90178C6A792B37, levels: [0.111587, 0.10413, 0.107059, 0.122597, 0.066491, 0.0]),
-        Reference(program: 1, sampleRate: 44100, fingerprint: 0x4A9DC71661E9621F, levels: [0.127432, 0.115589, 0.075668, 0.124466, 0.077954, 0.0]),
-        Reference(program: 2, sampleRate: 44100, fingerprint: 0x84722BCBABE3468A, levels: [0.10186, 0.095268, 0.10288, 0.113628, 0.067921, 0.0]),
-        Reference(program: 3, sampleRate: 44100, fingerprint: 0x2B63EFF3ABCC69A8, levels: [0.102047, 0.095405, 0.092531, 0.108578, 0.062436, 0.0]),
-        Reference(program: 4, sampleRate: 44100, fingerprint: 0xE908D8244A79EBFB, levels: [0.071825, 0.066546, 0.055456, 0.082095, 0.048876, 0.0]),
-        Reference(program: 5, sampleRate: 44100, fingerprint: 0x8BFA9F31C4A064FC, levels: [0.051964, 0.0505, 0.060395, 0.061437, 0.033516, 0.0]),
-        Reference(program: 6, sampleRate: 44100, fingerprint: 0x9D1186E49A9CF65, levels: [0.110967, 0.101511, 0.108926, 0.127813, 0.069461, 0.0]),
-        Reference(program: 7, sampleRate: 44100, fingerprint: 0xCE6B8C6EC965A0CD, levels: [0.064424, 0.063562, 0.055068, 0.069592, 0.044065, 0.0]),
-        Reference(program: 8, sampleRate: 44100, fingerprint: 0xF5EB10501D1B5559, levels: [0.129662, 0.119645, 0.159571, 0.168261, 0.07951, 0.0]),
-        Reference(program: 9, sampleRate: 44100, fingerprint: 0xD7B64F941F399103, levels: [0.10463, 0.099605, 0.103444, 0.11541, 0.06155, 0.0]),
-        Reference(program: 0, sampleRate: 48000, fingerprint: 0xBD126DA445A56E54, levels: [0.111406, 0.104132, 0.107551, 0.121027, 0.066701, 0.0]),
-        Reference(program: 1, sampleRate: 48000, fingerprint: 0xEA1BEB3D600EE373, levels: [0.12747, 0.115496, 0.075685, 0.124578, 0.077938, 0.0]),
-        Reference(program: 2, sampleRate: 48000, fingerprint: 0xE21B86CAB13A7585, levels: [0.101384, 0.095407, 0.103585, 0.113079, 0.068066, 0.0]),
-        Reference(program: 3, sampleRate: 48000, fingerprint: 0x98A6D154A334C1B, levels: [0.1012, 0.095721, 0.093342, 0.106942, 0.063719, 0.0]),
-        Reference(program: 4, sampleRate: 48000, fingerprint: 0xA6C79A9032CBF85A, levels: [0.071484, 0.066194, 0.055696, 0.081094, 0.048153, 0.0]),
-        Reference(program: 5, sampleRate: 48000, fingerprint: 0x95C1E341227D1160, levels: [0.051982, 0.05109, 0.061674, 0.061345, 0.033044, 0.0]),
-        Reference(program: 6, sampleRate: 48000, fingerprint: 0x391750537CAD93D7, levels: [0.110698, 0.101158, 0.108935, 0.124862, 0.06942, 0.0]),
-        Reference(program: 7, sampleRate: 48000, fingerprint: 0xF4CCDAE9FDE8C45, levels: [0.064296, 0.062764, 0.055236, 0.069003, 0.044152, 0.0]),
-        Reference(program: 8, sampleRate: 48000, fingerprint: 0x874271256C98E27D, levels: [0.129717, 0.119573, 0.159631, 0.167026, 0.079498, 0.0]),
-        Reference(program: 9, sampleRate: 48000, fingerprint: 0xFBBF9DF5AAB8E45F, levels: [0.104799, 0.099195, 0.105077, 0.117276, 0.058358, 0.0]),
+        Reference(program: 0, sampleRate: 44100, fingerprint: 0xB964C7D3ACC32E7B, levels: [0.111611, 0.104153, 0.070947, 0.136649, 0.082049, 0.0]),
+        Reference(program: 1, sampleRate: 44100, fingerprint: 0x6BD8379E31669826, levels: [0.127426, 0.11558, 0.06304, 0.147373, 0.096606, 0.0]),
+        Reference(program: 2, sampleRate: 44100, fingerprint: 0xA5D6AB9471CD952C, levels: [0.101876, 0.09528, 0.069558, 0.123466, 0.084419, 0.0]),
+        Reference(program: 3, sampleRate: 44100, fingerprint: 0xA992DA25AB7A0C1, levels: [0.102046, 0.095401, 0.084225, 0.125346, 0.07906, 0.0]),
+        Reference(program: 4, sampleRate: 44100, fingerprint: 0x1F19B50E43A10B31, levels: [0.071833, 0.066558, 0.040663, 0.09013, 0.060671, 0.0]),
+        Reference(program: 5, sampleRate: 44100, fingerprint: 0x6CA0036327A3C65C, levels: [0.051981, 0.050515, 0.042585, 0.061219, 0.042063, 0.0]),
+        Reference(program: 6, sampleRate: 44100, fingerprint: 0xBB32299AFD98D174, levels: [0.110982, 0.101528, 0.076993, 0.146425, 0.08578, 0.0]),
+        Reference(program: 7, sampleRate: 44100, fingerprint: 0xC84F71D64789195C, levels: [0.064427, 0.06357, 0.040572, 0.082796, 0.054477, 0.0]),
+        Reference(program: 8, sampleRate: 44100, fingerprint: 0xE09ECA4CA6E1203B, levels: [0.130178, 0.120098, 0.099518, 0.154848, 0.09948, 0.0]),
+        Reference(program: 9, sampleRate: 44100, fingerprint: 0xF85753FFACBBACD5, levels: [0.104708, 0.099677, 0.071786, 0.138522, 0.075844, 0.0]),
+        Reference(program: 0, sampleRate: 48000, fingerprint: 0x12449559C8E590C0, levels: [0.111432, 0.104156, 0.073659, 0.136822, 0.081807, 0.0]),
+        Reference(program: 1, sampleRate: 48000, fingerprint: 0x5A86826252760384, levels: [0.127464, 0.115487, 0.06452, 0.147868, 0.096446, 0.0]),
+        Reference(program: 2, sampleRate: 48000, fingerprint: 0x5BFC0869299829BC, levels: [0.101401, 0.095418, 0.07077, 0.123656, 0.084333, 0.0]),
+        Reference(program: 3, sampleRate: 48000, fingerprint: 0x164A447E791CB42B, levels: [0.101197, 0.095714, 0.085523, 0.124391, 0.078281, 0.0]),
+        Reference(program: 4, sampleRate: 48000, fingerprint: 0xF04BBF6D0AE93460, levels: [0.071493, 0.066205, 0.041297, 0.090827, 0.060061, 0.0]),
+        Reference(program: 5, sampleRate: 48000, fingerprint: 0x89D3E257CDA03A9B, levels: [0.051997, 0.051105, 0.043826, 0.061091, 0.041838, 0.0]),
+        Reference(program: 6, sampleRate: 48000, fingerprint: 0x85717DE4FB2D3D74, levels: [0.110713, 0.101176, 0.081087, 0.146936, 0.085749, 0.0]),
+        Reference(program: 7, sampleRate: 48000, fingerprint: 0xFA16B13393DD2382, levels: [0.064299, 0.062771, 0.040125, 0.08453, 0.054588, 0.0]),
+        Reference(program: 8, sampleRate: 48000, fingerprint: 0xBBE84E18185BA187, levels: [0.130256, 0.120014, 0.100985, 0.154435, 0.099334, 0.0]),
+        Reference(program: 9, sampleRate: 48000, fingerprint: 0xFEF619EA6F18E821, levels: [0.104878, 0.099264, 0.073909, 0.139451, 0.076204, 0.0]),
     ]
 
     private static func render(program: Int, sampleRate: Double) -> [Float] {

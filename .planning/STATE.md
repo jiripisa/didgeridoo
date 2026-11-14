@@ -1,11 +1,10 @@
 # Didgeridoo — State
 
 - 2026-11-14 — phase 15 done on its branch, not merged and not released:
-  the engine is one model of the instrument (lips, tongue, tube, voice) and
-  the overblown note was rebuilt from recordings. The author asked for it
-  without compatibility with 1.0.x. He heard the first build: the engine
-  sounds "o poznání lépe", the toots still artificial. They were given what
-  moves inside a real toot; he has two more files to hear.
+  the engine is one model of the instrument (lips, tongue, tube, voice),
+  built without compatibility with 1.0.x at the author's word. His ear
+  approved it ("zvuk je parádní"). The overblown note did not pass in three
+  builds and was removed; he wants to work on other things next.
   See `phases/15-one-model/VERIFICATION.md`.
 - 2026-11-14 — phase 14: version 1.0.2 released (phase 13). See
   `phases/14-v1.0.2-release/VERIFICATION.md`.
@@ -48,6 +47,7 @@
 - 2026-11-13 — skeleton created (phase 01): `build.sh` / `run.sh`,
   Developer ID + notarization pipeline, Sparkle auto-update, website on
   GitHub Pages.
-- Open: phase 15 waits on `feature/15-one-model` for the author's ear. Next:
-  tune the model by what he hears, merge, release (a major version: saved
-  sounds and host projects of 1.0.x do not carry over).
+- Open: phase 15 waits on `feature/15-one-model` for the author's word to
+  merge and release it (a major version: saved sounds and host projects of
+  1.0.x do not carry over). Next: the things he wants to work on, which he
+  has not named yet.
