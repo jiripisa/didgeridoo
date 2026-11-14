@@ -288,6 +288,61 @@ struct ModelTests {
         #expect(tootOverDrone(render(held, seconds: 1.2), from: 0.7, to: 1.2) > 10)
     }
 
+    // What follows was measured inside real toots after the author found the rebuilt ones still
+    // artificial: a plain tone that stands still, with the breath's hiss on it, is what a
+    // synthesizer does.
+
+    @Test("A toot carries little breath: next to nothing of it lies above 2 kHz")
+    func tootIsNotHissy() throws {
+        let synth = try synth(["tootlen": 601])
+        synth.noteOn(62, velocity: 127)
+        let samples = render(synth, seconds: 1.5)
+        let toot = frequency(samples, near: tootFrequency(), from: 0.5, to: 1.5)
+        // Noise is measured in short stretches: 25 ms resolve about 40 Hz, so steps of 40 Hz
+        // add up to the power of the whole band. The recordings were measured the same way.
+        var above = 0.0
+        let starts = stride(from: 0.5, to: 1.4, by: 0.1)
+        for start in starts {
+            for hz in stride(from: 2000.0, to: 8000.0, by: 40) { above += pow(10, level(samples, at: hz, from: start, to: start + 0.025) / 10) }
+        }
+        above /= Double(Array(starts).count)
+        // Real toots: 30 to 48 dB under the fundamental in clean recordings; this one stood at -19.
+        #expect(10 * log10(above) - level(samples, at: toot, from: 0.5, to: 1.5) < -30)
+    }
+
+    @Test("A toot peaks and settles: it is louder in its first tenth of a second than later")
+    func tootPeaksAndSettles() throws {
+        let (_, toot) = try tootAfterADrone(["tootlen": 601], after: 0.8)
+        let settled = rms(toot, from: 0.5, to: 0.8)
+        #expect(rms(toot, from: 0.04, to: 0.1) - settled > 2)
+        #expect(rms(toot, from: 0.04, to: 0.1) - settled < 8)
+    }
+
+    @Test("The lips land a little under the toot's pitch and settle onto it")
+    func tootSettlesFromBelow() throws {
+        // Two octaves up, so that 40 ms measure a pitch to a few cents.
+        let (_, toot) = try tootAfterADrone(["octave": 2, "tootlen": 601, "breath": 0], after: 0.8)
+        let there = Self.drone * 4 * pow(2, 17.0 / 12)
+        let early = frequency(toot, near: there, span: 100, from: 0.03, to: 0.07)
+        let late = frequency(toot, near: there, span: 100, from: 0.5, to: 0.8)
+        let cents = 1200 * log2(early / late)
+        #expect(cents < -8 && cents > -70)
+    }
+
+    @Test("No two toots are quite the same")
+    func tootsDiffer() throws {
+        let synth = try synth(["breath": 0])
+        synth.noteOn(62, velocity: 100)
+        _ = render(synth, seconds: 0.5)
+        var levels: [Double] = []
+        for _ in 0..<4 {
+            synth.noteOn(62, velocity: 127)
+            levels.append(rms(render(synth, seconds: 0.5), from: 0.03, to: 0.12))
+        }
+        #expect((levels.max() ?? 0) - (levels.min() ?? 0) > 0.3)
+        #expect((levels.max() ?? 0) - (levels.min() ?? 0) < 4)
+    }
+
     @Test("After a stab the drone is as loud as it was before, not as loud as the hard hit")
     func droneKeepsItsLevelAfterAStab() throws {
         let synth = try synth(["breath": 0])

@@ -507,6 +507,9 @@ struct DidgeEngine
         driftEase_ = sr_ == 44100.0f ? 0.004f : 1.0f - std::pow(1.0f - 0.004f, 44100.0f / sr_);
         breathEase_ = 1.0f - std::exp(-(float)kControlInterval / (0.006f * sr_));      // an in-breath sets in within 6 ms
         registerEase_ = 1.0f - std::exp(-(float)kControlInterval / (0.003f * sr_));    // the lips change register within 3 ms
+        squeakFade_ = std::exp(-(float)kControlInterval / (0.005f * sr_));             // the squeak is over in a hundredth of a second
+        scoopFade_ = std::exp(-(float)kControlInterval / (0.120f * sr_));              // the lips find the pitch in a few tenths
+        swellFade_ = std::exp(-(float)kControlInterval / (0.150f * sr_));              // and the level settles as fast
     }
 
     void reset()
@@ -574,7 +577,12 @@ private:
     static constexpr float kSwitchMs = 9.0f;      // ... and are on the other one this long after
     static constexpr float kTootRiseMs = 12.0f;   // time constant of the toot's rise: there within 40 ms
     static constexpr float kDroneRiseMs = 22.0f;  // the drone comes back more slowly
-    static constexpr float kTootLevel = 3.0f;     // the toot's flow against the drone's
+    static constexpr float kTootLevel = 3.4f;     // the toot's flow at its peak, against the drone's
+    // Inside a toot, as recordings measure it: the level peaks and settles lower, the lips arrive
+    // with a short squeak from above and then sit a little under the pitch before they find it,
+    // the pitch wanders, there is little breath in it, and no toot is the copy of another.
+    static constexpr float kTootSettled = 0.62f;  // where the level settles, against its peak
+    static constexpr float kTootSoftness = 0.88f; // how softly tense lips close: nearly a plain tone
     static constexpr float kFirstQ = 25.0f;       // the first resonance: measured 12 to 86
     static constexpr float kLevel = 0.2f;         // brings the sum to the level the limiter leaves alone
 
@@ -697,8 +705,19 @@ private:
     void raiseFlow()
     {
         gate_.setTime(tooting_ ? kTootRiseMs : kDroneRiseMs, sr_);
-        gate_.setTarget(tooting_ ? kTootLevel : 1.0f);
+        gate_.setTarget(tooting_ ? tootLevel() : 1.0f);
     }
+
+    // The lips arrive on the toot: each time a little differently.
+    void beginToot()
+    {
+        squeak_ = 150.0f + 150.0f * rng_.nextFloat();       // cents above the pitch, gone at once
+        scoop_ = 25.0f + 35.0f * rng_.nextFloat();          // cents under it, for a moment
+        swell_ = 1.0f;
+        tootForce_ = 0.88f + 0.24f * rng_.nextFloat();      // a decibel either way
+    }
+
+    float tootLevel() const { return kTootLevel * tootForce_ * (kTootSettled + (1.0f - kTootSettled) * swell_); }
 
     // velocity < 0 means "returning to a note that is still held": keep the level, never toot.
     void startNote(int note, int velocity, bool fresh)
@@ -711,7 +730,8 @@ private:
             base_.snap(target);
             tooting_ = wantsToot_ = toot; switchTicks_ = 0;
             tootNow_ = toot ? 1.0f : 0.0f;
-            gate_.snap(toot ? kTootLevel : 1.0f);
+            if (toot) beginToot();
+            gate_.snap(toot ? tootLevel() : 1.0f);
             lips_.reset(0.5); glottis_.reset(0.0);      // the lips start shut
             primeFlow_ = latch_ = true;
         }
@@ -752,13 +772,23 @@ private:
         const Settings& s = s_;
 
         // The registers: a change that is due, and a stab that is over.
-        if (switchTicks_ > 0 && --switchTicks_ == 0) { tooting_ = wantsToot_; raiseFlow(); }
+        if (switchTicks_ > 0 && --switchTicks_ == 0)
+        {
+            tooting_ = wantsToot_;
+            if (tooting_) beginToot();
+            raiseFlow();
+        }
         else if (tooting_ && switchTicks_ == 0 && tootTicks_ > 0 && --tootTicks_ == 0)
         {
             changeRegister(false);
             velocity_.setTarget(droneLevel_);
         }
         tootNow_ += registerEase_ * ((tooting_ ? 1.0f : 0.0f) - tootNow_);
+        if (tooting_ && switchTicks_ == 0)
+        {
+            squeak_ *= squeakFade_; scoop_ *= scoopFade_; swell_ *= swellFade_;
+            gate_.setTarget(tootLevel());
+        }
 
         // Slow random pitch drift: a new random target a few times a second, eased in.
         if (--driftCountdown_ <= 0)
@@ -773,7 +803,8 @@ private:
         // cents). The toot stands Toot Pitch above the drone, and the lips are there at once.
         const float drone = base_.value() + bend_.value() * s.bendRange + drift_ * s.drift;
         const float droneHz = clamp(midiToHz(drone + 0.35f * tongueNow_), 16.0f, 4000.0f);
-        const float hz = tooting_ ? clamp(midiToHz(drone + s.tootPitch), 16.0f, 8000.0f) : droneHz;
+        // The toot's pitch wanders by a tenth of a semitone either way whatever Drift says.
+        const float hz = tooting_ ? clamp(midiToHz(drone + s.tootPitch + 0.01f * (squeak_ - scoop_) + 0.1f * drift_), 16.0f, 8000.0f) : droneHz;
         const float inc = clamp(hz / sr_, 1.0e-5f, 0.45f);
         lips_.setIncrement((double)inc);
         lips_.normalise();
@@ -801,7 +832,8 @@ private:
             if (seconds < 0.2f) breath = s.breathIn * (0.35f + 0.65f * seconds / 0.2f);
         }
         breathing_ += breathEase_ * (breath - breathing_);
-        breathNow_ = s.breath * (1.0f + 3.0f * breathing_);                 // the in-breath is heard
+        // The in-breath is heard. Tense lips on the toot let little breath through.
+        breathNow_ = s.breath * (1.0f + 3.0f * breathing_) * (1.0f - 0.85f * tootNow_);
 
         // Rhythm pulse: 1 at the start of each division, decaying towards 0.
         rhythmGain_.setTarget((1.0f - s.rhyDepth * (1.0f - rhythmPulse_)) * surge * (1.0f - 0.6f * breathing_));
@@ -810,7 +842,7 @@ private:
         // closure soft, and how soft is what Buzz sets. Tense lips on the toot barely close at
         // all, which leaves a nearly plain tone. The softness never falls under what the sample
         // rate can carry at this pitch.
-        const float softness = clamp(0.7f * (1.0f - s.buzz) - 0.25f * flash, 0.0f, 1.0f) * (1.0f - tootNow_) + tootNow_;
+        const float softness = clamp(0.7f * (1.0f - s.buzz) - 0.25f * flash, 0.0f, 1.0f) * (1.0f - tootNow_) + kTootSoftness * tootNow_;
         const float floorSoftness = 2.0f * kTwoPi * inc;
         wanted_.softOpen = std::fmax(0.02f * std::pow(50.0f, softness), floorSoftness);
         // (exp2 of a product, not a power of 8: an optimised build turns that power into this and an
@@ -1021,6 +1053,8 @@ private:
     float  tubeGain_[kNumModes] = {}, tubeLevel_ = 1.0f;
     float  tootNow_ = 0.0f;                       // 0 on the drone, 1 on the toot, eased over a few milliseconds
     float  droneLevel_ = 0.7f;                    // the level of the last drone: what a stab falls back to
+    float  squeak_ = 0.0f, scoop_ = 0.0f, swell_ = 0.0f, tootForce_ = 1.0f;       // this toot's own way in (beginToot)
+    float  squeakFade_ = 0.9f, scoopFade_ = 0.99f, swellFade_ = 0.99f;
     int    switchTicks_ = 0;                      // control ticks until the lips are on the register they want
     int    tootTicks_ = 0;                        // control ticks left of a toot that is a stab
     bool   tooting_ = false, wantsToot_ = false, primeFlow_ = true, latch_ = true;

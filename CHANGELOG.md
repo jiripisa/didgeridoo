@@ -26,9 +26,12 @@
   rebuilt: the drone stops, the pitch jumps there within a hundredth of a
   second without sliding, the tone is nearly plain (it used to be bright and
   buzzing), it is about 6 dB louder than the drone, and it is a short stab
-  (Toot Len 120 ms) after which the drone returns. "Hold" is now at the top
-  of Toot Len. Toot Pitch runs from 12 to 19 semitones, what tubes do, and
-  rests at 17.
+  (Toot Len 120 ms) after which the drone returns. Inside, it moves as real
+  ones do: its level peaks and settles, the lips arrive with a short squeak
+  and sit a little under the pitch before they find it, there is next to no
+  breath in it, and no two toots are alike. "Hold" is now at the top of Toot
+  Len. Toot Pitch runs from 12 to 19 semitones, what tubes do, and rests at
+  17.
 - As it comes, the instrument has the tube and the tongue on, Drift at 12 %
   and Bend Range at 1 semitone. Volume rests at 0 dB.
 - 30 knobs instead of 33. The ten programs keep their names and were voiced

@@ -3,7 +3,9 @@
 - 2026-11-14 — phase 15 done on its branch, not merged and not released:
   the engine is one model of the instrument (lips, tongue, tube, voice) and
   the overblown note was rebuilt from recordings. The author asked for it
-  without compatibility with 1.0.x and listens to three demo files first.
+  without compatibility with 1.0.x. He heard the first build: the engine
+  sounds "o poznání lépe", the toots still artificial. They were given what
+  moves inside a real toot; he has two more files to hear.
   See `phases/15-one-model/VERIFICATION.md`.
 - 2026-11-14 — phase 14: version 1.0.2 released (phase 13). See
   `phases/14-v1.0.2-release/VERIFICATION.md`.

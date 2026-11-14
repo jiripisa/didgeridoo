@@ -42,6 +42,31 @@ two recordings of a held toot alone):
 | The drone under it (the one solo player who tooted on a drone) | −42 dB under the toot | 3 to 9 dB under it in the programs with the tube |
 | Interval | 18.4 to 19.7 semitones in these recordings; 15 to 19 in the literature | 16, equal-tempered |
 
+## The author's second verdict, and what a closer look found
+
+He heard the first build of this phase: "Tak ten novy engine zni o poznani
+lepe. Prefuky jsou lepsi, ale stale jsou ve stavu, kdy bych je nepouzival,
+protoze zneji neprirozene a umele." The engine as a whole passed his ear;
+the toot did not.
+
+The first table measured what a toot is. A second look measured what goes on
+inside one, in the same recordings, and found the rebuilt toot a plain tone
+that stood still with the breath's hiss on it:
+
+| Inside a toot | Real toots | The first build | Now |
+|---|---|---|---|
+| What lies above 2 kHz, against the fundamental (seven toots) | −21 to −48 dB, median −35 | −17 to −20 dB: the breath, which grew with the toot's flow | −34 to −40 dB |
+| Its level over its length | moves by 5 to 22 dB: a peak that settles, or a swell | within 2 dB | a peak that settles 4 dB lower |
+| Its pitch at the start (the two toots whose start can be read) | a squeak of 1.5 and 4 semitones above for 5 to 15 ms, then 10 to 50 cents under the pitch, found within a few tenths of a second | on the pitch at once | a squeak of 1.5 to 3 semitones, then 25 to 60 cents under |
+| Its pitch later | wanders over 8 to 64 cents, mostly 20 to 40 | over 15 cents | over 40 cents |
+| Harmonics 2 to 5 together (the cylinder apart) | −12 to −22 dB | −24 dB | −21 dB |
+| One toot against the next | each different | the same every time | level and pitch differ a little |
+
+Two families of tone are in the recordings: four have the nearly plain tone
+this phase builds, one (a close-miked cylinder) has strong odd harmonics, a
+horn. Which the author means by an authentic toot is his to say: he gets
+both to hear (the horn as a scratch variant, not in the engine).
+
 ## Acceptance criteria
 
 - [x] **Lips.** The source is the flow through a valve that is shut for part

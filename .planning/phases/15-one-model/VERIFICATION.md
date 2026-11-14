@@ -40,12 +40,23 @@ not a cylinder. Pipe (a cylinder) has its third, fifth and seventh harmonic
 at −10, −15 and −18 dB and the even ones at −22 to −26; the UNSW recording of
 a plastic pipe has −11, −16 and −16 dB.
 
+**Inside a toot** (after the author found the first build's toots still
+artificial): the same recordings, looked at for what moves inside a toot.
+
+| | Real toots | The first build | Now |
+|---|---|---|---|
+| Above 2 kHz, against the toot's fundamental (seven toots) | −21 to −48 dB, median −35 | −17 to −20 dB | −34 to −40 dB |
+| Level over the toot's length | moves by 5 to 22 dB | within 2 dB | 7 dB: a peak, then 4 dB lower |
+| Pitch at the start (the two toots whose start can be read) | a squeak above, then 10 to 50 cents under the pitch | on the pitch at once | a squeak above, then about 40 cents under |
+| Pitch later | wanders over 8 to 64 cents, mostly 20 to 40 | 15 cents | 40 cents |
+| Harmonics 2 to 5 together (the cylinder apart) | −12 to −22 dB | −24 dB | −21 dB |
+
 ## Checks
 
 | Check | Result |
 |---|---|
 | The new tests before the engine changed | failed: 68 tests, 44 issues (no such parameters; the old toot, lips and voice) |
-| `swift test`, and the same in a release build | 73 tests in 12 suites pass in both |
+| `swift test`, and the same in a release build | 77 tests in 12 suites pass in both |
 | A debug and a release build | render the same samples (the suite's references hold for both). They did not at first: an optimised build turned a power of 8 into `exp2` of a product, which rounds differently |
 | `swift test --sanitize=thread` | no report |
 | Lips (`ModelTests`) | harmonics 3 to 16 follow 1/n within 6 dB, odd and even alike within 3 dB; Buzz 0 loses more than 15 dB at the 24th harmonic against Buzz 100; Drive adds harmonics and leaves the tongue's notches more than 12 dB deep; the breath's noise is more than 8 dB stronger while the lips are open |
@@ -53,6 +64,7 @@ a plastic pipe has −11, −16 and −16 dB.
 | Tongue | the band stands more than 12 dB above the harmonics on the tract's resonances; no band with an open mouth; the drone rises 28 to 42 cents |
 | Tube | the fundamental gains more than 8 dB on its neighbours; a cylinder favours the odd harmonics by more than 5 dB over a flared tube; the tube follows a legato note |
 | Toot | second and third harmonic more than 18 dB under its fundamental; 40 ms after the hit nothing at a pitch between drone and toot (more than 18 dB under the toot); 3 to 9 dB louder than the drone; the drone more than 20 dB under a held toot; a stab by default, held with Toot Len at Hold; the drone after a stab within 1 dB of the drone before it |
+| Inside a toot (`ModelTests`) | what lies above 2 kHz is more than 30 dB under its fundamental; its first tenth of a second is 2 to 8 dB louder than what follows; 30 to 70 ms in, its pitch is 8 to 70 cents under where it settles; four stabs in a row differ in level by 0.3 to 4 dB. All four tests failed on the first build |
 | Voice | a fifth adds the tone an octave below the drone; aftertouch brings it in; locked it stands still (under 1 dB), with Rough at 60 % the tone under the drone wanders by more than 3 dB |
 | The loudest setting | Volume at +6 dB, a hit at 110 and a toot on it, in every program: the output stays within full scale. It did not while the limiter stood before the volume |
 | Stored state | round-trips through its stored form; state stored by 1.0.x (no model number) is not applied, the app starts with Classic Drone |
@@ -65,16 +77,19 @@ a plastic pipe has −11, −16 and −16 dB.
 | A minimal host (a scratch program) with that component | its window is 1100 × 680 with the 30 knobs; closing and disposing does not crash |
 | The app's window, from a silent stand-in (the app's real `ContentView` and `AppModel`, stand-ins for `AudioOutput` and `MIDIInput`) | 1100 × 758 as before, 30 knobs in the four groups, Volume drawn as an ordinary knob |
 | English and Czech manual and home page | the same structure, tag by tag (277 and 73 tags); no control of 1.0.x is left in them |
-| The demo of the new toots, measured after writing | 21 toots: each within 0.3 semitones of its pitch, second and third harmonic more than 15 dB under it, 2 to 8 dB louder than its part's drone, the drone more than 20 dB under the held ones |
+| The demo of the new toots, measured after writing | 21 toots: each within 0.7 semitones of its pitch (the lips land under it), second and third harmonic more than 15 dB under it, 2.6 to 9.7 dB louder than its part's drone, the drone more than 20 dB under the held ones |
 
 ## Not verified
 
 - **How any of it sounds.** The shape of the lips' pulse, the breath's
   colour, the tube's upper resonances, the toot's level and rise, and every
-  program's values were set by measurement. The three files for the author:
-  `~/Desktop/Didgeridoo-A-old-1.0.2.wav` and `Didgeridoo-B-new.wav` (one
-  score on both engines, brought to the same loudness over the whole file),
-  and `Didgeridoo-C-new-toots.wav`.
+  program's values were set by measurement. The author heard the first
+  build (`~/Desktop/Didgeridoo-A-old-1.0.2.wav`, `Didgeridoo-B-new.wav`,
+  `Didgeridoo-C-new-toots.wav`): the engine "zní o poznání lépe", the toots
+  still "nepřirozeně a uměle". For the toots as they are now he has
+  `Didgeridoo-D-toots-2.wav`, and `Didgeridoo-E-toots-2-horn.wav` with a
+  richer tone that is not in the engine (the lips close harder on the toot:
+  second and third harmonic at −15 and −20 dB), to say which way to go.
 - **The real app was not started**, and nothing was played: the system's
   output was the USB interface "M4". The window's picture on the website is
   the stand-in's drawing under the title bar of the earlier picture.
