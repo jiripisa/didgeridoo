@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.2 — 2026-11-14
 
 - The keys of the app's keyboard show an ochre band at their lower end. A
   click in the band overblows the note; a click anywhere else on a key never
