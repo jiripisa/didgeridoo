@@ -1,9 +1,11 @@
 import SwiftUI
+import DidgeridooCore
 import DidgeridooUI
 
 /// A strip of piano keys for trying the sound with the mouse. Where a key is
-/// pressed sets the velocity: near the top it is soft, at the bottom it is the
-/// hardest hit, which overblows the note.
+/// pressed sets the velocity: soft near the top, firmer further down. The
+/// ochre band at a key's lower end is the hardest hit, which overblows the
+/// note; the rest of the key never does (`KeyStrip`).
 struct KeyboardView: View {
 
     let model: AppModel
@@ -15,21 +17,26 @@ struct KeyboardView: View {
     @State private var sounding: Int?
 
     private static let blackOffsets: Set<Int> = [1, 3, 6, 8, 10]
+    /// The height of the band at a key's lower end that overblows the note.
+    private static let bandHeight: CGFloat = 10
+    private static let tootVelocity = Parameters.named("tootvel")
 
     var body: some View {
+        // Where overblowing starts (the Toot Vel knob). Past 127 it is off, and the keys show no band.
+        let tootVelocity = Self.tootVelocity.map { Int(model.value(of: $0)) } ?? 128
         GeometryReader { geometry in
             let whiteNotes = (firstNote..<(firstNote + octaves * 12 + 1)).filter { !Self.blackOffsets.contains($0 % 12) }
             let keyWidth = geometry.size.width / CGFloat(whiteNotes.count)
             ZStack(alignment: .topLeading) {
                 HStack(spacing: 0) {
                     ForEach(whiteNotes, id: \.self) { note in
-                        key(note, colour: Artwork.cream, width: keyWidth, height: geometry.size.height)
+                        key(note, colour: Artwork.cream, width: keyWidth, height: geometry.size.height, tootVelocity: tootVelocity)
                             .overlay(alignment: .bottom) {
                                 if note % 12 == 0 {
                                     Text("C\(note / 12 - 2)")
                                         .font(.system(size: 9))
                                         .foregroundStyle(.black.opacity(0.55))
-                                        .padding(.bottom, 3)
+                                        .padding(.bottom, Self.bandHeight + 2)      // above the band
                                         .allowsHitTesting(false)        // a click on the name plays the key under it
                                 }
                             }
@@ -37,7 +44,7 @@ struct KeyboardView: View {
                 }
                 ForEach(Array(whiteNotes.enumerated()), id: \.element) { index, note in
                     if Self.blackOffsets.contains((note + 1) % 12), index < whiteNotes.count - 1 {
-                        key(note + 1, colour: Color(white: 0.1), width: keyWidth * 0.62, height: geometry.size.height * 0.6)
+                        key(note + 1, colour: Color(white: 0.1), width: keyWidth * 0.62, height: geometry.size.height * 0.6, tootVelocity: tootVelocity)
                             .offset(x: CGFloat(index + 1) * keyWidth - keyWidth * 0.31)
                     }
                 }
@@ -46,18 +53,23 @@ struct KeyboardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 5))
     }
 
-    private func key(_ note: Int, colour: Color, width: CGFloat, height: CGFloat) -> some View {
-        Rectangle()
+    private func key(_ note: Int, colour: Color, width: CGFloat, height: CGFloat, tootVelocity: Int) -> some View {
+        let band = tootVelocity <= 127 ? Self.bandHeight : 0
+        return Rectangle()
             .fill(sounding == note ? Artwork.accent : colour)
+            .overlay(alignment: .bottom) {
+                // The band that overblows: a press here is the hardest hit.
+                Rectangle().fill(Artwork.accent.opacity(0.8)).frame(height: band)
+            }
             .overlay(Rectangle().stroke(Color.black.opacity(0.5), lineWidth: 0.5))
             .frame(width: width, height: height)
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         guard sounding != note else { return }
-                        let depth = min(max(value.startLocation.y / height, 0), 1)
                         sounding = note
-                        model.synth.noteOn(note, velocity: 40 + Int(depth * 87))
+                        model.synth.noteOn(note, velocity: KeyStrip.velocity(depth: value.startLocation.y / height, band: band / height,
+                                                                           tootVelocity: tootVelocity))
                     }
                     .onEnded { _ in
                         model.synth.noteOff(note)
