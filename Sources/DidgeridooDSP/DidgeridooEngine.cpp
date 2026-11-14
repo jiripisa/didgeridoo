@@ -84,6 +84,13 @@ enum Params
     kBendRange,     // st    pitch bend range
     kDrift,         // %     slow random pitch instability
     kOctave,        // -     octave of the whole instrument; 0 = two octaves below the MIDI note
+    kTongue,        // %     how hard a raised tongue cuts the bands beside the formant
+    kTube,          // %     how much the tube's own resonances colour the sound
+    kTootLen,       // ms    length of an overblown stab; 0 = as long as the key is held
+    kVoice,         // %     a voice sung through the lips (two valves in a row)
+    kRhyPattern,    // -     which steps of the rhythm are accents and which are soft
+    kRhyAccent,     // %     surge of an accented step
+    kRhyBreath,     // %     in-breath on a soft step
     kNumParams
 };
 
@@ -146,6 +153,21 @@ Param choiceParam(const char* id, const char* name, int numChoices, int def)
     return Param{ id, name, "", DIDGE_KIND_CHOICE, 0.0f, (float)(numChoices - 1), (float)def, 1.0f, false, 0 };
 }
 
+// ---------------------------------------------------------------------------------------------
+// Rhythm patterns: which steps of the pulse are accents (a surge, the tongue thrown forward) and
+// which are soft (the tongue drawn back, and the place for an in-breath). "Even" is every step
+// alike, the rhythm as the MPC plugin has it.
+// ---------------------------------------------------------------------------------------------
+struct Pattern { const char* name; int length; bool accent[6]; };
+
+const Pattern kPatterns[] = {
+    { "Even",        1, { true } },
+    { "A-b",         2, { true, false } },
+    { "A-b-b",       3, { true, false, false } },
+    { "A-b-b-A-b-A", 6, { true, false, false, true, false, true } },
+};
+constexpr int kNumPatterns = (int)(sizeof(kPatterns) / sizeof(kPatterns[0]));
+
 const Param kParams[kNumParams] = {
     floatParam ("volume",      "Volume",       -40.0f, 6.0f, -6.0f, "dB", 1),
     floatParam ("vowel",       "Vowel",        0.0f, 100.0f, 30.0f, "%", 0),
@@ -173,6 +195,13 @@ const Param kParams[kNumParams] = {
     intParam   ("bendrange",   "Bend Range",   0, 12, 2, "st"),
     floatParam ("drift",       "Drift",        0.0f, 100.0f, 30.0f, "%", 0),
     intParam   ("octave",      "Octave",       -2, 2, 0),
+    floatParam ("tongue",      "Tongue",       0.0f, 100.0f, 0.0f, "%", 0),
+    floatParam ("tube",        "Tube",         0.0f, 100.0f, 0.0f, "%", 0),
+    floatParam ("tootlen",     "Toot Len",     0.0f, 1000.0f, 0.0f, "ms", 0, 0.4f),
+    floatParam ("voice",       "Voice",        0.0f, 100.0f, 0.0f, "%", 0),
+    choiceParam("rhypattern",  "Pattern",      kNumPatterns, 0),
+    floatParam ("rhyaccent",   "Accent",       0.0f, 100.0f, 0.0f, "%", 0),
+    floatParam ("rhybreath",   "Breath In",    0.0f, 100.0f, 0.0f, "%", 0),
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -184,10 +213,10 @@ struct Section { const char* name; std::vector<int> params; };
 const std::vector<Section>& sections()
 {
     static const std::vector<Section> table = {
-        { "Mouth",  { kVowel, kFormant, kReso, kTone, kWobbleRate, kWobbleDepth, kWheelVowel, kVolume } },
-        { "Lips",   { kBuzz, kBody, kDrive, kBreath, kGrowl, kGrowlPitch, kDrift, kGlide,
-                      kAttack, kRelease, kTootVel, kTootPitch } },
-        { "Rhythm", { kRhythmDiv, kRhyDepth, kRhyVowel, kRhyDecay, kBendRange, kOctave } },
+        { "Mouth",  { kVowel, kFormant, kReso, kTongue, kTone, kWobbleRate, kWobbleDepth, kWheelVowel, kVolume } },
+        { "Lips",   { kBuzz, kBody, kDrive, kBreath, kDrift, kGrowl, kGrowlPitch, kVoice, kAttack, kRelease } },
+        { "Tube",   { kTube, kTootVel, kTootPitch, kTootLen, kGlide, kBendRange, kOctave } },
+        { "Rhythm", { kRhythmDiv, kRhyPattern, kRhyDepth, kRhyVowel, kRhyDecay, kRhyAccent, kRhyBreath } },
     };
     return table;
 }
@@ -228,12 +257,70 @@ const std::vector<Program>& programs()
                                       {kVowel, 15}, {kFormant, 90}, {kReso, 70}, {kWobbleDepth, 0}, {kBreath, 30}}),
         makeProgram("Gallop",        {{kRhyDepth, 85}, {kRhyVowel, -60}, {kRhyDecay, 75}, {kRhythmDiv, (float)kDivisionSixteenth},
                                       {kVowel, 70}, {kFormant, 85}, {kBuzz, 60}, {kDrive, 35}, {kWobbleDepth, 10}}),
+        // The programs below play the instrument as it was measured on real ones: the tube's
+        // own resonances, the tongue that takes sound away, a steady pitch, the toot as a stab.
+        makeProgram("Eucalyptus",    {{kTube, 70}, {kTongue, 60}, {kFormant, 30}, {kVowel, 45}, {kBuzz, 60}, {kBody, 30},
+                                      {kBreath, 12}, {kWobbleRate, 0.25f}, {kWobbleDepth, 35}, {kDrift, 12}, {kBendRange, 1},
+                                      {kTootLen, 150}}),
+        makeProgram("Hard Tongue",   {{kTube, 60}, {kTongue, 80}, {kFormant, 35}, {kVowel, 35}, {kBuzz, 60}, {kBody, 30},
+                                      {kWobbleDepth, 0}, {kDrift, 10}, {kBendRange, 1}, {kTootLen, 120},
+                                      {kRhythmDiv, (float)kDivisionEighth}, {kRhyPattern, 3}, {kRhyDepth, 45}, {kRhyVowel, 60},
+                                      {kRhyDecay, 50}, {kRhyAccent, 80}, {kRhyBreath, 60}}),
+        makeProgram("Pipe",          {{kTube, 100}, {kTootPitch, 19}, {kTongue, 40}, {kFormant, 40}, {kVowel, 35}, {kBuzz, 55},
+                                      {kBody, 20}, {kWobbleDepth, 15}, {kDrift, 10}, {kBendRange, 1}, {kTootLen, 200}}),
+        makeProgram("Singer",        {{kTube, 60}, {kTongue, 50}, {kFormant, 40}, {kVowel, 50}, {kBuzz, 55}, {kDrive, 25},
+                                      {kVoice, 60}, {kGrowlPitch, 7}, {kWobbleRate, 0.3f}, {kWobbleDepth, 30}, {kDrift, 15},
+                                      {kBendRange, 1}, {kTootLen, 150}}),
     };
     return table;
 }
 
+// The ratio of a sung interval: the simple ratio where there is one, so that the voice locks to
+// the lips and its sums and differences with the drone fall on a steady series.
+float justRatio(int semitones)
+{
+    switch (semitones)
+    {
+        case 0:  return 1.0f;
+        case 3:  return 6.0f / 5.0f;
+        case 4:  return 5.0f / 4.0f;
+        case 5:  return 4.0f / 3.0f;
+        case 7:  return 3.0f / 2.0f;
+        case 9:  return 5.0f / 3.0f;
+        case 12: return 2.0f;
+        case 16: return 5.0f / 2.0f;
+        case 19: return 3.0f;
+        case 24: return 4.0f;
+        default: return semitonesToRatio((float)semitones);
+    }
+}
+
 // Octave belongs to the player's keyboard, not to a sound: a program leaves it alone.
 bool programSets(int param) { return param != kOctave; }
+
+// One resonance of the vocal tract as the lip flow meets it: a band-pass (a trapezoidal
+// state-variable filter) whose answer is split into what follows its input at once (`now`) and
+// what comes from its state (`held`). Three of them load one flow, so the flow has to be solved
+// with all three in the same sample; the split makes that one division.
+struct TractResonance
+{
+    void set(float hz, float q, float sampleRate)
+    {
+        const float g = std::tan(kPi * hz / sampleRate);
+        k = 1.0f / q;
+        a1 = 1.0f / (1.0f + g * (g + k)); a2 = g * a1; a3 = g * a2;
+    }
+    float now() const { return k * a2; }                            // per unit of input
+    float held() const { return k * (a1 * ic1 - a2 * ic2); }
+    void step(float x)
+    {
+        const float v3 = x - ic2, v1 = a1 * ic1 + a2 * v3, v2 = ic2 + a2 * ic1 + a3 * v3;
+        ic1 = 2.0f * v1 - ic1; ic2 = 2.0f * v2 - ic2;
+    }
+    void reset() { ic1 = ic2 = 0.0f; }
+
+    float k = 0.1f, a1 = 1.0f, a2 = 0.0f, a3 = 0.0f, ic1 = 0.0f, ic2 = 0.0f;
+};
 
 struct MidiEvent
 {
@@ -335,6 +422,7 @@ struct DidgeEngine
         voice_.setSampleRate(sampleRate);
         formant1_.setSampleRate(sampleRate);
         formant2_.setSampleRate(sampleRate);
+        for (SVF& mode : tube_) mode.setSampleRate(sampleRate);
         body_.setSampleRate(sampleRate);
         env_.setSampleRate(sampleRate);
         dc_.prepare(sampleRate, 20.0f);
@@ -346,6 +434,7 @@ struct DidgeEngine
         toot_.setTime(12.0f, sampleRate);
         rhythmGain_.setTime(4.0f, sampleRate);
         note_.setTime(60.0f, sampleRate);
+        base_.setTime(60.0f, sampleRate);
         glideMs_ = -1.0f;
 
         // Drift is timed in control ticks. The numbers are the MPC plugin's at 44.1 kHz, where
@@ -353,6 +442,7 @@ struct DidgeEngine
         // wanders equally fast everywhere.
         driftTickScale_ = sr_ / 44100.0f;
         driftEase_ = sr_ == 44100.0f ? 0.004f : 1.0f - std::pow(1.0f - 0.004f, 44100.0f / sr_);
+        breathEase_ = 1.0f - std::exp(-(float)kControlInterval / (0.006f * sr_));      // an in-breath sets in within 6 ms
     }
 
     void reset()
@@ -360,12 +450,16 @@ struct DidgeEngine
         saw_.resetPhase(); pulse_.resetPhase(); voice_.resetPhase();
         formant1_.reset(); formant2_.reset(); body_.reset();
         toneLp_.reset(); env_.reset(); dc_.reset(); breathNoise_.reset();
+        for (TractResonance& resonance : tract_) resonance.reset();
+        for (SVF& mode : tube_) mode.reset();
         numHeld_ = 0; sustain_ = false; sustained_ = false;
         volume_.snap(dbToGain(get(kVolume)));
         velocity_.snap(0.7f);
         wheel_.snap(0.0f); bend_.snap(0.0f); pressure_.snap(0.0f); toot_.snap(0.0f);
         rhythmGain_.snap(1.0f);
         note_.snap(38.0f);
+        base_.snap(38.0f);
+        tootTicks_ = 0; tongueNow_ = 0.0f; breathing_ = 0.0f;
         drift_ = driftTarget_ = 0.0f; driftCountdown_ = 0;
         wobblePhase_ = 0.0f; rhythmPulse_ = 1.0f;
         ppq_ = 0.0;
@@ -414,7 +508,8 @@ private:
         float vowel, formant, formantK, formantGain, buzz, tone, body, breath, growl, growlRatio;
         float drivePre, drivePost, tootPitch, rhyBeats, rhyDepth, rhyVowel, rhyRate;
         float wobbleInc, wobbleDepth, wheelVowel, bendRange, drift;
-        int   tootVel;
+        float tongue, tube, tootRatio, tootLen, voice, voiceRatio, accent, breathIn;
+        int   tootVel, pattern;
         double ppqPerSample;
     };
 
@@ -447,6 +542,15 @@ private:
         s.wheelVowel  = get(kWheelVowel) * 0.01f;
         s.bendRange = get(kBendRange);
         s.drift     = get(kDrift) * 0.01f * 0.3f;                    // up to +-30 cents
+        s.tongue    = get(kTongue) * 0.01f;
+        s.tube      = get(kTube) * 0.01f;
+        s.tootRatio = semitonesToRatio(s.tootPitch);                 // the tube's second resonance is where its toot sounds
+        s.tootLen   = get(kTootLen);
+        s.voice     = get(kVoice) * 0.01f;
+        s.voiceRatio = justRatio(getInt(kGrowlPitch));               // players lock the voice to the lips: no beating
+        s.pattern   = clamp(getInt(kRhyPattern), 0, kNumPatterns - 1);
+        s.accent    = get(kRhyAccent) * 0.01f;
+        s.breathIn  = get(kRhyBreath) * 0.01f;
 
         volume_.setTarget(dbToGain(get(kVolume)));
         env_.set(get(kAttack), 1.0f, 1.0f, get(kRelease));
@@ -459,7 +563,11 @@ private:
         const int shift = 12 * (getInt(kOctave) + kOctaveAtRest);
         if (shift != noteShift_)
         {
-            if (env_.isActive()) note_.setTarget(note_.target() + (float)(shift - noteShift_));
+            if (env_.isActive())
+            {
+                note_.setTarget(note_.target() + (float)(shift - noteShift_));
+                base_.setTarget(base_.target() + (float)(shift - noteShift_));
+            }
             noteShift_ = shift;
         }
 
@@ -513,15 +621,23 @@ private:
         const bool silent = !env_.isActive();
 
         tootActive_ = toot;
+        // A toot with a length is a stab: after it the lips fall back to the drone (updateControl).
+        tootTicks_ = toot && s_.tootLen >= 0.5f ? 1 + (int)(s_.tootLen * 0.001f * sr_ / (float)kControlInterval) : 0;     // under 0.5 the knob reads "Hold"
+        base_.setTime(glideMs_, sr_);
         toot_.setTarget(toot ? 1.0f : 0.0f);
         note_.setTime(toot ? 12.0f : glideMs_, sr_);   // an overblown note snaps up fast
         if (silent)
         {
             note_.snap(target);                         // no slide into the first note
+            base_.snap((float)(note + noteShift_));
             toot_.snap(toot ? 1.0f : 0.0f);
             saw_.resetPhase(); pulse_.resetPhase(); voice_.resetPhase();
         }
-        else note_.setTarget(target);
+        else
+        {
+            note_.setTarget(target);
+            base_.setTarget((float)(note + noteShift_));
+        }
 
         if (velocity >= 0) velocity_.setTarget(0.35f + 0.65f * (float)velocity / 127.0f);
         if (silent) velocity_.snap(velocity_.target());
@@ -553,6 +669,14 @@ private:
     void updateControl()
     {
         const Settings& s = s_;
+        // A toot that is a stab ends here: back to the drone while the key is still held.
+        if (tootActive_ && tootTicks_ > 0 && --tootTicks_ == 0)
+        {
+            tootActive_ = false;
+            toot_.setTarget(0.0f);
+            note_.setTime(25.0f, sr_);
+            note_.setTarget(base_.target());
+        }
         const float toot = toot_.value();
 
         // Slow random pitch drift: a new random target a few times a second, eased in.
@@ -564,33 +688,96 @@ private:
         }
         drift_ += driftEase_ * (driftTarget_ - drift_);
 
-        const float pitch = note_.value() + bend_.value() * s.bendRange + drift_ * s.drift;
+        // A raised tongue lifts the drone by about a third of a semitone (measured: 34 cents).
+        const float pitch = note_.value() + bend_.value() * s.bendRange + drift_ * s.drift + 0.35f * tongueNow_;
         const float hz = clamp(midiToHz(pitch), 16.0f, 4000.0f);
         saw_.setFrequency(hz);
         pulse_.setFrequency(hz);
-        voice_.setFrequency(clamp(hz * s.growlRatio, 16.0f, 8000.0f));
+        voice_.setFrequency(clamp(hz * (s.voice > 0.0f ? s.voiceRatio : s.growlRatio), 16.0f, 8000.0f));
 
         // Lip shape: more buzz (and an overblown note) means a narrower pulse.
-        buzzNow_ = clamp(s.buzz + 0.3f * toot, 0.0f, 1.0f);
+        // Rhythm: where in its step the pulse is, and what kind of step it is.
+        const float phase = ppqPhase(ppq_, s.rhyBeats);
+        rhythmPulse_ = std::exp(-phase * s.rhyRate);
+        const Pattern& pattern = kPatterns[s.pattern];
+        const long long step = (long long)std::floor(ppq_ / (double)s.rhyBeats);
+        const bool accented = pattern.accent[(int)(((step % pattern.length) + pattern.length) % pattern.length)];
+        // An accent is a surge of the belly with the tongue thrown forward, and a flash of the
+        // overblown tone's brightness; a soft step draws the tongue back.
+        const float colour = accented ? 1.0f : -1.0f;
+        const float surge = accented ? 1.0f + 0.8f * s.accent * rhythmPulse_ : 1.0f - 0.3f * s.accent;
+        const float bright = toot + (accented ? 0.5f * s.accent * rhythmPulse_ * rhythmPulse_ * rhythmPulse_ * rhythmPulse_ : 0.0f);
+        // An in-breath takes the first fifth of a second of a soft step: the level drops and keeps
+        // falling, and only the closed mouth is left behind the lips.
+        float breath = 0.0f;
+        if (!accented && s.breathIn > 0.0f)
+        {
+            const float seconds = phase * s.rhyBeats / (float)(s.ppqPerSample * (double)sr_);
+            if (seconds < 0.2f) breath = s.breathIn * (0.35f + 0.65f * seconds / 0.2f);
+        }
+        breathing_ += breathEase_ * (breath - breathing_);
+
+        breathNow_ = s.breath * (1.0f + 3.0f * breathing_);                 // the in-breath is heard
+
+        buzzNow_ = clamp(s.buzz + 0.3f * bright, 0.0f, 1.0f);
         const float pw = 0.5f - 0.38f * buzzNow_;
         pulse_.setPulseWidth(pw);
         pulseDc_ = 2.0f * pw - 1.0f;
 
         // Rhythm pulse: 1 at the start of each division, decaying towards 0.
-        const float phase = ppqPhase(ppq_, s.rhyBeats);
-        rhythmPulse_ = std::exp(-phase * s.rhyRate);
-        rhythmGain_.setTarget(1.0f - s.rhyDepth * (1.0f - rhythmPulse_));
+        rhythmGain_.setTarget((1.0f - s.rhyDepth * (1.0f - rhythmPulse_)) * surge * (1.0f - 0.6f * breathing_));
 
         // Vowel position from the knob, the wheel, the wobble LFO, the rhythm and the toot.
         wobblePhase_ = wrapPhase(wobblePhase_ + s.wobbleInc);
         const float vowel = s.vowel + wheel_.value() * s.wheelVowel + fastSin01(wobblePhase_) * s.wobbleDepth
-                          + rhythmPulse_ * s.rhyVowel + toot * 0.35f;
+                          + rhythmPulse_ * (s.rhyVowel * colour) + bright * 0.35f;
         float f1, f2;
         vowelFormants(vowel, f1, f2);
         formant1_.set(f1, formantReso_);
         formant2_.set(f2, formantReso_);
         body_.set(hz, 0.8f);
-        toneLp_.setCutoff(clamp(s.tone * (1.0f + 2.0f * toot), 100.0f, 0.45f * sr_), sr_);
+        toneLp_.setCutoff(clamp(s.tone * (1.0f + 2.0f * bright), 100.0f, 0.45f * sr_), sr_);
+
+        // The tongue. A real vocal tract takes energy out: with the tongue raised it resonates
+        // near 0.83, 1.17 and 1.56 times a centre frequency, and where it resonates it holds the
+        // lip flow back (about 20 dB). Between two resonances their pulls cancel, the flow passes,
+        // and that band is the formant the ear follows (1 to 2.2 kHz). Only closed mouth shapes
+        // raise the tongue, and an in-breath drops it.
+        const float shape = clamp(vowel, 0.0f, 1.0f);
+        const float raised = clamp((shape - 0.25f) / 0.55f, 0.0f, 1.0f);
+        tongueNow_ = s.tongue * raised * raised * (3.0f - 2.0f * raised) * (1.0f - breathing_);
+        if (s.tongue > 0.0f)
+        {
+            const float centre = 1000.0f + 1200.0f * shape;
+            static const float kRatio[3] = { 0.833f, 1.167f, 1.556f };
+            float now = 0.0f;
+            for (int i = 0; i < 3; ++i)
+            {
+                tract_[i].set(clamp(centre * kRatio[i], 100.0f, 0.45f * sr_), 24.0f, sr_);
+                now += tract_[i].now();
+            }
+            tractLoad_ = 12.0f * tongueNow_;                 // the resonances' height, in lip resistances
+            tractNow_ = 1.0f / (1.0f + tractLoad_ * now);
+        }
+
+        // The tube. Its first resonance is tall and narrow and lies 2.5 % under the drone; the
+        // second is where the toot sounds, and the next two follow from it: 3, 5, 7 times the
+        // first for a cylinder (toot a twelfth up), closer together and weaker for a flared tube.
+        if (s.tube > 0.0f)
+        {
+            static const float kQ[4] = { 25.0f, 14.0f, 10.0f, 8.0f };
+            static const float kGain[4] = { 8.0f, 3.0f, 1.0f, 0.6f };
+            const float first = clamp(midiToHz(base_.value()) / 1.025f, 16.0f, 2000.0f);
+            const float flare = 3.0f - clamp(s.tootRatio, 2.0f, 3.0f);                   // 0 = cylinder
+            const float ratio[4] = { 1.0f, s.tootRatio, 5.0f - 1.833f * flare, 7.0f - 2.667f * flare };
+            for (int m = 0; m < 4; ++m)
+            {
+                const float k = 1.0f / kQ[m];
+                tube_[m].set(clamp(first * ratio[m], 16.0f, 0.45f * sr_), (2.0f - k) / 1.98f);
+                tubeGain_[m] = s.tube * kGain[m] * k * (m == 0 ? 1.0f : 1.0f - 0.8f * flare);
+            }
+            tubeLevel_ = 1.0f / (1.0f + 2.45f * s.tube);     // the tube shapes the sound, it does not make it louder
+        }
 
         growlNow_ = clamp(s.growl + pressure_.value() * 0.6f, 0.0f, 1.0f);
     }
@@ -603,7 +790,7 @@ private:
         for (int i = from; i < to; ++i)
         {
             // Smoothers and clocks run even while silent so nothing jumps on the next note.
-            note_.process(); bend_.process(); wheel_.process(); pressure_.process(); toot_.process();
+            note_.process(); base_.process(); bend_.process(); wheel_.process(); pressure_.process(); toot_.process();
             const float volume = volume_.process();
             const float velocity = velocity_.process();
             const float rhythm = rhythmGain_.process();
@@ -621,9 +808,16 @@ private:
                 float buzz = saw + (pulse - saw) * buzzNow_;
                 const float sung = voice_.process();
                 buzz *= 1.0f - 0.5f * growlNow_ + 1.3f * growlNow_ * sung;
+                // Voice: the glottis is a second valve in the same air stream, open half its cycle.
+                if (s.voice > 0.0f) buzz *= 1.0f - s.voice + 2.0f * s.voice * (sung > 0.0f ? sung : 0.0f);
 
                 // Breath joins the buzz on its way through the mouth.
-                const float excite = buzz + breathNoise_.process() * s.breath;
+                float excite = buzz + breathNoise_.process() * breathNow_;
+                if (s.tongue > 0.0f)
+                {
+                    excite = (excite - tractLoad_ * (tract_[0].held() + tract_[1].held() + tract_[2].held())) * tractNow_;
+                    for (TractResonance& resonance : tract_) resonance.step(excite);
+                }
 
                 const float direct = toneLp_.process(excite);
                 const float mouth = (formant1_.process(excite, SVF::Mode::Bandpass)
@@ -631,6 +825,11 @@ private:
                 const float body = body_.process(buzz, SVF::Mode::Bandpass) * bodyK;
 
                 y = direct * (1.0f - 0.5f * s.formant) + mouth * s.formantGain + body * s.body;
+                if (s.tube > 0.0f)
+                {
+                    for (int m = 0; m < 4; ++m) y += tubeGain_[m] * tube_[m].process(excite, SVF::Mode::Bandpass);
+                    y *= tubeLevel_;
+                }
                 y *= env * velocity * rhythm * 0.75f;
                 y = fastTanh(y * s.drivePre) * s.drivePost;
                 y = dc_.process(y) * volume;
@@ -661,9 +860,12 @@ private:
     Xorshift32    rng_{0x51D6E21Du};
     OnePoleLP     toneLp_;
     SVF           formant1_, formant2_, body_;
+    SVF           tube_[4];
+    TractResonance tract_[3];
     ADSR          env_;
     DCBlocker     dc_;
     Smoother      volume_, velocity_, wheel_, bend_, pressure_, toot_, rhythmGain_, note_;
+    Smoother      base_;                          // the drone's note without a toot: what the tube is tuned to
 
     // --- state -----------------------------------------------------------------------------
     Settings s_{};
@@ -672,13 +874,15 @@ private:
     float  formantReso_ = 0.8f;
     float  buzzNow_ = 0.5f, pulseDc_ = 0.0f, growlNow_ = 0.0f;
     float  drift_ = 0.0f, driftTarget_ = 0.0f;
-    float  driftTickScale_ = 1.0f, driftEase_ = 0.004f;
+    float  driftTickScale_ = 1.0f, driftEase_ = 0.004f, breathEase_ = 0.02f;
     float  wobblePhase_ = 0.0f, rhythmPulse_ = 1.0f;
     double ppq_ = 0.0;
     int    driftCountdown_ = 0, controlCountdown_ = 0;
     int    held_[kMaxHeld] = {};
     int    numHeld_ = 0;
     int    noteShift_ = 12 * kOctaveAtRest;      // semitones from a MIDI note to the note that sounds
+    float  tongueNow_ = 0.0f, breathing_ = 0.0f, breathNow_ = 0.0f, tractLoad_ = 0.0f, tractNow_ = 1.0f, tubeGain_[4] = {}, tubeLevel_ = 1.0f;
+    int    tootTicks_ = 0;                        // control ticks left of a toot that is a stab
     bool   sustain_ = false, sustained_ = false, tootActive_ = false;
 };
 
@@ -702,6 +906,7 @@ void didge_param_info(int index, DidgeParamInfo* out)
 
 const char* didge_param_choice(int index, int choice)
 {
+    if (index == kRhyPattern) return kPatterns[clamp(choice, 0, kNumPatterns - 1)].name;
     if (index != kRhythmDiv) return "";
     return divisionName(choice);
 }
@@ -716,6 +921,7 @@ const char* didge_param_display(int index, float plain, char* buffer, int buffer
     if (!validParam(index)) return buffer;
     const Param& p = kParams[index];
     if (index == kTootVel && plain >= 127.5f) std::snprintf(buffer, (size_t)bufferSize, "Off");   // top of the range = no overblowing
+    else if (index == kTootLen && plain < 0.5f) std::snprintf(buffer, (size_t)bufferSize, "Hold");   // as long as the key
     else if (index == kOctave && plain >= 0.5f) std::snprintf(buffer, (size_t)bufferSize, "+%d", (int)std::lround(plain));
     else if (p.kind == DIDGE_KIND_CHOICE) std::snprintf(buffer, (size_t)bufferSize, "%s", didge_param_choice(index, (int)std::lround(plain)));
     else if (p.kind == DIDGE_KIND_INT) std::snprintf(buffer, (size_t)bufferSize, "%d", (int)std::lround(plain));

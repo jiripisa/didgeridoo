@@ -5,6 +5,7 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 | Phase | Goal | Status |
 |---|---|---|
+| 09-player-and-tube | The instrument can behave like the real ones measured in acoustics research: the tongue takes sound away, the tube's own resonances, a toot that is a stab, a locked sung voice, rhythm patterns with accents and in-breaths; four programs use them — 2026-11-14 | ✅ |
 | 08-v0.6.0-release | Version 0.6.0: the plug-in's window, Octave, the icon, the website's look — 2026-11-14 | ✅ |
 | 07-audiounit-window | The Audio Unit's own window in a host: the app's panel on the unit's parameters — 2026-11-14 | ✅ |
 | 06-icon-website | The icon covers its whole tile; the website wears the app's colours, with a dotted graphic behind it — 2026-11-14 | ✅ |
@@ -16,6 +17,10 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 ## Ideas for later phases (not planned yet)
 
+- **A physical model**: lips as a valve on a waveguide bore instead of an
+  oscillator through filters, so that the toot, the lips' closing and the
+  tube's pull on the pitch come from one mechanism (the research report lists
+  the published models).
 - **Modulation**: LFOs (and perhaps an envelope) assignable to individual
   parameters.
 - **Stereo**: the instrument is mono; a room, width or a doubled voice.

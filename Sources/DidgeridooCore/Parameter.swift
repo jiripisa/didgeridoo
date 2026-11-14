@@ -49,7 +49,9 @@ public struct Parameter: Identifiable, Sendable, Equatable {
     /// The value with its unit, as shown under a knob: "1400 Hz", "1/8".
     public func label(_ plain: Float) -> String {
         let value = text(plain)
-        return unit.isEmpty || value == "Off" ? value : "\(value) \(unit)"
+        // A unit belongs to a number, not to a word such as "Off" or "Hold".
+        let isNumber = value.first.map { $0.isNumber || $0 == "-" || $0 == "+" } ?? false
+        return unit.isEmpty || !isNumber ? value : "\(value) \(unit)"
     }
 }
 
@@ -82,7 +84,7 @@ public enum Parameters {
     }
 }
 
-/// A group of controls, as on the MPC plugin's pages: Mouth, Lips, Rhythm.
+/// A group of controls: Mouth, Lips, Tube, Rhythm.
 /// The groups and the order of their parameters come from the sound engine,
 /// which also gives them to the Audio Unit.
 public struct ParameterSection: Identifiable, Sendable {

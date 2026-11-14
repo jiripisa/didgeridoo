@@ -12,6 +12,9 @@ public struct KnobView: View {
 
     @State private var dragStart: Float?
 
+    /// The room a knob takes in the panel's grid.
+    public static var width: CGFloat { 92 }
+
     private static let sweep = 270.0          // degrees of travel
     private static let size: CGFloat = 62
 
@@ -50,7 +53,7 @@ public struct KnobView: View {
                 .foregroundStyle(.white)
                 .lineLimit(1)
         }
-        .frame(width: 112)
+        .frame(width: Self.width)
         .accessibilityElement()
         .accessibilityLabel(parameter.name)
         .accessibilityValue(parameter.label(model.value(of: parameter)))

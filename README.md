@@ -5,7 +5,7 @@ A playable synthesized didgeridoo: drone, vowels, overblown toots and breath, as
 One download contains a standalone macOS app (with its own MIDI input and
 audio output settings) and an Audio Unit instrument for Ableton Live, Logic
 Pro and other hosts; the app installs the plug-in from its Settings window.
-Both share one sound engine with 26 parameters and six built-in programs.
+Both share one sound engine with 33 parameters and ten built-in programs.
 
 Native macOS (SwiftUI, macOS 14 or later), built with Swift Package Manager
 and shell scripts; no Xcode project. The sound engine is C++. The download is
