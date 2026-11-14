@@ -28,7 +28,8 @@ struct ContentView: View {
             KeyboardView(model: model)
                 .frame(height: 64)
         }
-        .frame(width: 1100, height: 720)
+        .frame(width: InstrumentPanel<EmptyView, EmptyView>.width)
+        .fixedSize(horizontal: false, vertical: true)      // as tall as the knobs and the keyboard need
         .instrumentBackground()
         .sheet(isPresented: $showingSettings) { SettingsView(model: model) }
     }

@@ -2,15 +2,21 @@ import SwiftUI
 import DidgeridooCore
 
 /// The instrument's panel, the same in the app's window and in the plug-in's:
-/// a header with the logo and the program, then the three groups of knobs
-/// (Mouth, Lips, Rhythm). `extras` join the header on the right (the app's
-/// tempo and settings); `footer` goes below the knobs (the app's keyboard).
+/// a header with the logo and the program, then the groups of knobs (Mouth,
+/// Lips, Tube, Rhythm) in two columns. `extras` join the header on the right
+/// (the app's tempo and settings); `footer` goes below the knobs (the app's
+/// keyboard).
 /// The caller gives the panel its frame and `instrumentBackground()`.
 public struct InstrumentPanel<Extras: View, Footer: View>: View {
 
     /// The panel's width; its knobs are laid out for it. Its height follows
     /// from what is in it.
     public static var width: CGFloat { 1100 }
+
+    /// Knobs in a row of a group, and the room between two of them: two
+    /// groups side by side fill the panel's width.
+    private static var knobsInRow: Int { 5 }
+    private static var knobSpacing: CGFloat { 9 }
 
     private let model: any InstrumentModel
     private let extras: Extras
@@ -27,12 +33,16 @@ public struct InstrumentPanel<Extras: View, Footer: View>: View {
     public var body: some View {
         VStack(spacing: 14) {
             header
+            // The groups fill two columns in turn: Mouth and Tube on the left,
+            // Lips and Rhythm on the right.
             HStack(alignment: .top, spacing: 14) {
-                VStack(spacing: 14) {
-                    section(ParameterSection.all[0])
-                    section(ParameterSection.all[2])
+                ForEach(0..<2, id: \.self) { column in
+                    VStack(spacing: 14) {
+                        ForEach(ParameterSection.all.indices.filter { $0 % 2 == column }, id: \.self) { index in
+                            section(ParameterSection.all[index])
+                        }
+                    }
                 }
-                section(ParameterSection.all[1])
             }
             footer
         }
@@ -67,7 +77,8 @@ public struct InstrumentPanel<Extras: View, Footer: View>: View {
                 .font(.system(size: 12, weight: .bold))
                 .kerning(1.5)
                 .foregroundStyle(Artwork.accent)
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(112), spacing: 10), count: 4), alignment: .leading, spacing: 14) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(KnobView.width), spacing: Self.knobSpacing), count: Self.knobsInRow),
+                      alignment: .leading, spacing: 14) {
                 ForEach(section.parameters) { parameter in
                     KnobView(parameter: parameter, model: model)
                 }
