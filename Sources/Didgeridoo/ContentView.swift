@@ -32,5 +32,12 @@ struct ContentView: View {
         .fixedSize(horizontal: false, vertical: true)      // as tall as the knobs and the keyboard need
         .instrumentBackground()
         .sheet(isPresented: $showingSettings) { SettingsView(model: model) }
+        .task {
+            // A MIDI controller moves knobs without telling a view. Ends with the window.
+            while !Task.isCancelled {
+                model.followMIDI()
+                try? await Task.sleep(for: .milliseconds(40))
+            }
+        }
     }
 }

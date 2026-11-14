@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- MIDI learn: every knob listens to a MIDI controller (CC). Click MIDI in
+  the header to see the controllers; click a knob and move a control to give
+  it to the knob. A double click gives a knob back the controller it came
+  with, a secondary click can take it away, Defaults puts all back.
+- Every knob comes with a controller: Volume 7, Glide 5, Vowel 11 (an
+  expression pedal opens the mouth), Drive 2 (a breath controller), Buzz 70,
+  Tongue 71, Release 72, Attack 73, Tone 74, LFO 1 Rate 76, and for the
+  others 20 to 31, 85 to 90, 102 and 103 (the manual has the list). A
+  controller's 0 is the bottom of the knob's travel and 127 the top; 64 puts
+  Rhy>Vowel on its middle. The mod wheel and the sustain pedal do what they
+  did.
+- The plug-in answers the same controllers when a host passes them on, and
+  the host saves them with the project; the app remembers them between
+  launches.
 - Two LFOs can move the knobs. Each has a Rate (0.02 to 20 Hz) and a Shape
   (Sine, Triangle, Ramp Up, Ramp Down, Square, Steps, Wander); their four
   knobs are in Mouth. Click LFO 1 or LFO 2 in the header and the knobs set

@@ -19,11 +19,17 @@ public final class AudioUnitModel: InstrumentModel {
     /// Knob positions (0...1) by parameter index.
     private var positions: [Float]
     public private(set) var program: Int
+    /// The MIDI controller of each parameter by index, -1 for none, and the
+    /// parameter that is learning, as the unit had them at the last look.
+    private var controllers: [Int32]
+    public private(set) var learning: Parameter?
 
     public init(unit: AudioUnit) {
         self.unit = unit
         positions = Parameters.all.map { Self.position(of: $0, in: unit) }
         program = Self.presentPreset(of: unit)
+        controllers = Self.controllers(of: unit)
+        learning = Self.learning(in: unit)
     }
 
     /// Takes over whatever the host changed since the last time.
@@ -34,6 +40,11 @@ public final class AudioUnitModel: InstrumentModel {
         }
         let preset = Self.presentPreset(of: unit)
         if preset != program { program = preset }
+        // A controller may have been learnt on the render thread.
+        let controllers = Self.controllers(of: unit)
+        if controllers != self.controllers { self.controllers = controllers }
+        let learning = Self.learning(in: unit)
+        if learning != self.learning { self.learning = learning }
     }
 
     // MARK: InstrumentModel
@@ -71,7 +82,64 @@ public final class AudioUnitModel: InstrumentModel {
     public func beginEditing(_ parameter: Parameter) { notify(.beginParameterChangeGesture, parameter) }
     public func endEditing(_ parameter: Parameter) { notify(.endParameterChangeGesture, parameter) }
 
+    // MARK: MIDI controllers
+
+    public func controller(of parameter: Parameter) -> Int? {
+        let controller = controllers[parameter.index]
+        return controller >= 0 ? Int(controller) : nil
+    }
+
+    public func setController(_ controller: Int?, of parameter: Parameter) {
+        var wanted = Self.controllers(of: unit)
+        if let controller {
+            guard !Controllers.isReserved(controller) else { return }
+            for index in wanted.indices where wanted[index] == Int32(controller) { wanted[index] = -1 }     // it serves one parameter
+        }
+        wanted[parameter.index] = Int32(controller ?? -1)
+        send(wanted)
+    }
+
+    public func resetControllers() {
+        send(Parameters.all.map { Int32(Controllers.standard(for: $0) ?? -1) })
+    }
+
+    public func learn(_ parameter: Parameter?) {
+        var index = Int32(parameter?.index ?? -1)
+        AudioUnitSetProperty(unit, Self.learnProperty, kAudioUnitScope_Global, 0, &index, UInt32(MemoryLayout<Int32>.size))
+        learning = Self.learning(in: unit)
+    }
+
+    private func send(_ wanted: [Int32]) {
+        var wanted = wanted
+        AudioUnitSetProperty(unit, Self.controllersProperty, kAudioUnitScope_Global, 0, &wanted,
+                             UInt32(MemoryLayout<Int32>.size * wanted.count))
+        controllers = Self.controllers(of: unit)
+    }
+
     // MARK: The Audio Unit
+
+    /// The unit's own properties for its controllers. The numbers are those of
+    /// `kDidgeridooProperty_Controllers` and `kDidgeridooProperty_Learn` in
+    /// DidgeridooAU.h and must stay in step with them.
+    private static let controllersProperty: AudioUnitPropertyID = 64001
+    private static let learnProperty: AudioUnitPropertyID = 64002
+
+    private static func controllers(of unit: AudioUnit) -> [Int32] {
+        var controllers = [Int32](repeating: -1, count: Parameters.all.count)
+        var size = UInt32(MemoryLayout<Int32>.size * controllers.count)
+        guard AudioUnitGetProperty(unit, controllersProperty, kAudioUnitScope_Global, 0, &controllers, &size) == noErr else {
+            return Parameters.all.map { Int32(Controllers.standard(for: $0) ?? -1) }
+        }
+        return controllers
+    }
+
+    private static func learning(in unit: AudioUnit) -> Parameter? {
+        var index: Int32 = -1
+        var size = UInt32(MemoryLayout<Int32>.size)
+        guard AudioUnitGetProperty(unit, learnProperty, kAudioUnitScope_Global, 0, &index, &size) == noErr,
+              Parameters.all.indices.contains(Int(index)) else { return nil }
+        return Parameters.all[Int(index)]
+    }
 
     private func address(of parameter: Parameter) -> AudioUnitParameter {
         AudioUnitParameter(mAudioUnit: unit, mParameterID: AudioUnitParameterID(parameter.index),

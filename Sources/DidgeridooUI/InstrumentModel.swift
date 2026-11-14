@@ -26,6 +26,22 @@ public protocol InstrumentModel: AnyObject, Observable {
     /// the two; the app remembers the sound at the end.
     func beginEditing(_ parameter: Parameter)
     func endEditing(_ parameter: Parameter)
+
+    /// The MIDI controller that moves a parameter, nil for none.
+    func controller(of parameter: Parameter) -> Int?
+
+    /// Gives a parameter a controller, or takes it away (nil). A controller
+    /// serves one parameter.
+    func setController(_ controller: Int?, of parameter: Parameter)
+
+    /// Every parameter back to the controller it came with.
+    func resetControllers()
+
+    /// The parameter that takes the next controller that moves.
+    var learning: Parameter? { get }
+
+    /// Starts learning for a parameter, or calls it off (nil).
+    func learn(_ parameter: Parameter?)
 }
 
 public extension InstrumentModel {

@@ -19,6 +19,17 @@
 
 #include <AudioToolbox/AudioToolbox.h>
 
+// Properties of the unit beyond Apple's, for its own window (global scope, read and write).
+// Sources/DidgeridooAUView/AudioUnitModel.swift uses the same numbers.
+//   Controllers: one SInt32 per parameter, in the parameters' order: the MIDI controller that
+//                moves it, or -1 for none.
+//   Learn:       one SInt32: the parameter that takes the next controller that moves, -1 for none.
+enum
+{
+    kDidgeridooProperty_Controllers = 64001,
+    kDidgeridooProperty_Learn       = 64002
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif

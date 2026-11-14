@@ -2,20 +2,36 @@ import AppKit
 import SwiftUI
 import DidgeridooCore
 
+/// What the knobs of the panel are for at the moment.
+public enum KnobUse: Equatable, Sendable {
+    /// Knobs: a drag turns them.
+    case value
+    /// The amounts of an LFO (0 for the first): a drag sets how far it moves the knob.
+    case amount(lfo: Int)
+    /// MIDI controllers: a click makes the knob take the next controller that moves.
+    case controller
+}
+
 /// One parameter as a knob: its name, a value arc around the cap, the value
 /// below. Drag up and down to turn it (Shift for fine steps), double-click to
 /// go back to the program's value.
 ///
 /// A knob an LFO moves shows a thin arc in that LFO's colour: the part of its
-/// travel the LFO sweeps. While an LFO's button in the header is on
-/// (`assigning`), the knob sets that LFO's amount instead of its own value:
-/// the same drag and double click, the amount below. Knobs an LFO cannot move
-/// step back meanwhile; the LFOs' own knobs stay as they are.
+/// travel the LFO sweeps. While an LFO's button in the header is on, the knob
+/// sets that LFO's amount instead of its own value: the same drag and double
+/// click, the amount below. Knobs an LFO cannot move step back meanwhile; the
+/// LFOs' own knobs stay as they are.
+///
+/// While the MIDI button is on, the knob shows its MIDI controller below. A
+/// click makes it listen: the next controller that moves is its own from then
+/// on. A second click calls that off. A double click gives it back the
+/// controller it came with; the menu under a secondary click can also take
+/// its controller away.
 public struct KnobView: View {
 
     private let parameter: Parameter
     private let model: any InstrumentModel
-    private let assigning: Int?
+    private let use: KnobUse
 
     @State private var dragStart: Float?
 
@@ -25,11 +41,20 @@ public struct KnobView: View {
     private static let sweep = 270.0          // degrees of travel
     private static let size: CGFloat = 62
 
-    public init(parameter: Parameter, model: any InstrumentModel, assigning: Int? = nil) {
+    public init(parameter: Parameter, model: any InstrumentModel, use: KnobUse = .value) {
         self.parameter = parameter
         self.model = model
-        self.assigning = assigning
+        self.use = use
     }
+
+    /// The LFO whose amounts the knobs are setting, if any.
+    private var assigning: Int? {
+        if case .amount(let lfo) = use { return lfo }
+        return nil
+    }
+
+    /// Whether this knob is waiting for a controller to move.
+    private var listening: Bool { use == .controller && model.learning == parameter }
 
     /// The amount this knob is setting right now, if an LFO's button is on and
     /// that LFO can move the knob.
@@ -73,12 +98,29 @@ public struct KnobView: View {
                     .rotationEffect(.degrees(-Self.sweep / 2 + Self.sweep * position))
             }
             .frame(width: Self.size + 10, height: Self.size + 10)
+            .overlay {
+                // Listening for a controller: a dashed ring round the knob.
+                if listening {
+                    Circle().stroke(Artwork.cream, style: StrokeStyle(lineWidth: 2, dash: [4, 4])).padding(-5)
+                }
+            }
             .contentShape(Circle())
-            .gesture(drag)
-            .onTapGesture(count: 2) { model.resetToDefault(edited) }
+            .modifier(Handling(use: use, drag: drag,
+                               doubleClick: { use == .controller ? model.setController(Controllers.standard(for: parameter), of: parameter)
+                                                                 : model.resetToDefault(edited) },
+                               click: { model.learn(listening ? nil : parameter) }))
+            .contextMenu {
+                if use == .controller {
+                    Button("No controller") { model.setController(nil, of: parameter) }
+                    if let standard = Controllers.standard(for: parameter) {
+                        Button("Back to \(Controllers.label(standard))") { model.setController(standard, of: parameter) }
+                    }
+                }
+            }
             Text(valueText)
                 .font(.system(size: 12, weight: .semibold).monospacedDigit())
-                .foregroundStyle(amount == nil ? Color.white : Artwork.lfo(assigning ?? 0))
+                .foregroundStyle(use == .controller ? (listening ? Artwork.cream : Artwork.accent)
+                                                    : amount == nil ? Color.white : Artwork.lfo(assigning ?? 0))
                 .lineLimit(1)
         }
         .frame(width: Self.width)
@@ -89,10 +131,29 @@ public struct KnobView: View {
         .accessibilityValue(valueText)
     }
 
-    /// Below the knob: its value, or the amount being set.
+    /// Below the knob: its value, the amount being set, or its controller.
     private var valueText: String {
+        if use == .controller { return listening ? "move a control" : Controllers.label(model.controller(of: parameter)) }
         if let amount { return LFOs.label(amount: model.value(of: amount)) }
         return parameter.label(model.value(of: parameter))
+    }
+
+    /// What the mouse does on the knob: a drag and a double click while it is
+    /// a knob or an amount; a click and a double click while it shows its
+    /// controller, when a drag would turn a knob nobody is looking at.
+    private struct Handling<Drag: Gesture>: ViewModifier {
+        let use: KnobUse
+        let drag: Drag
+        let doubleClick: () -> Void
+        let click: () -> Void
+
+        func body(content: Content) -> some View {
+            if use == .controller {
+                content.onTapGesture(count: 2, perform: doubleClick).onTapGesture(perform: click)
+            } else {
+                content.gesture(drag).onTapGesture(count: 2, perform: doubleClick)
+            }
+        }
     }
 
     @ViewBuilder

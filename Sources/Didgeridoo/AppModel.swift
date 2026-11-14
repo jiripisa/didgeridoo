@@ -17,6 +17,12 @@ final class AppModel: InstrumentModel {
     /// Knob positions (0...1) by parameter index, mirrored from the synth for the views.
     private(set) var positions: [Float]
     private(set) var program: Int
+    /// The MIDI controller of each parameter by index, and the parameter that is
+    /// learning one, mirrored from the synth like the positions.
+    private var controllers: [Int?]
+    private(set) var learning: Parameter?
+    /// The synth's count of what MIDI changed, as of the last look (`followMIDI`).
+    @ObservationIgnored private var seenChanges: UInt32 = 0
 
     private(set) var midiSources: [MIDISource] = []
     private(set) var audioDevices: [AudioDevice] = []
@@ -53,7 +59,7 @@ final class AppModel: InstrumentModel {
     private(set) var bpm: Double
 
     private enum Keys {
-        static let state = "synthState", midiSource = "midiSource", midiChannel = "midiChannel"
+        static let state = "synthState", controllers = "controllers", midiSource = "midiSource", midiChannel = "midiChannel"
         static let audioDevice = "audioDevice", audioChannel = "audioFirstChannel", bpm = "bpm"
         /// Names of the chosen devices, to show them while they are not connected.
         static let midiSourceName = "midiSourceName", audioDeviceName = "audioDeviceName"
@@ -67,8 +73,14 @@ final class AppModel: InstrumentModel {
            let state = try? JSONDecoder().decode(SynthState.self, from: data) {
             state.apply(to: synth)
         }
+        if let data = defaults.data(forKey: Keys.controllers),
+           let map = try? JSONDecoder().decode(ControllerMap.self, from: data) {
+            map.apply(to: synth)
+        }
         positions = Parameters.all.map(synth.normalisedValue(of:))
         program = synth.program
+        controllers = Parameters.all.map(synth.controller(of:))
+        seenChanges = synth.changes
 
         // These first assignments initialise the properties: their observers do
         // not run, so nothing is saved or restarted yet.
@@ -118,6 +130,46 @@ final class AppModel: InstrumentModel {
         program = index
         positions = Parameters.all.map(synth.normalisedValue(of:))
         saveState()
+    }
+
+    // MARK: MIDI controllers
+
+    func controller(of parameter: Parameter) -> Int? { controllers[parameter.index] }
+
+    func setController(_ controller: Int?, of parameter: Parameter) {
+        synth.setController(controller, of: parameter)
+        controllersChanged()
+    }
+
+    func resetControllers() {
+        synth.resetControllers()
+        controllersChanged()
+    }
+
+    func learn(_ parameter: Parameter?) {
+        synth.learn(parameter)
+        learning = synth.learning
+    }
+
+    /// Takes over what MIDI did since the last look: a knob moved by its
+    /// controller, a controller learnt. The window calls this many times a
+    /// second; the synth counts such changes, so a look costs nothing while
+    /// nothing happens.
+    func followMIDI() {
+        let changes = synth.changes
+        guard changes != seenChanges else { return }
+        seenChanges = changes
+        positions = Parameters.all.map(synth.normalisedValue(of:))
+        learning = synth.learning
+        controllersChanged()
+        saveState()
+    }
+
+    private func controllersChanged() {
+        controllers = Parameters.all.map(synth.controller(of:))
+        if let data = try? JSONEncoder().encode(ControllerMap(capturing: synth)) {
+            defaults.set(data, forKey: Keys.controllers)
+        }
     }
 
     /// Sets the tempo of the rhythm pulse, kept within what the app accepts.

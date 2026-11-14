@@ -8,7 +8,8 @@ import DidgeridooDSP
 /// while audio runs. `prepare` must not run while `render` does.
 public final class Synth: @unchecked Sendable {
 
-    private let engine: OpaquePointer
+    /// The engine. Internal, so that the rest of the core can add to what a synth offers.
+    let engine: OpaquePointer
 
     public init(sampleRate: Double = 44100) {
         engine = didge_create()

@@ -86,6 +86,23 @@ int  didge_get_program(const DidgeEngine* engine);
 // pulse free-runs at the given tempo.
 void didge_set_transport(DidgeEngine* engine, int playing, double bpm, double ppqPosition, int ppqValid);
 
+// MIDI controllers on the parameters. Every knob comes with a controller (a control change
+// number) and can be given another; a control change then puts the knob where its value says
+// (0 the bottom of its travel, 127 the top, and 64 the middle of a parameter that has a middle:
+// -100 … 100 %). A controller serves one parameter. All of these
+// may be called from any thread while audio runs.
+int  didge_standard_controller(int param);                 // what a parameter comes with; -1 for none
+int  didge_controller_reserved(int controller);            // 1 for one that MIDI or the engine keeps for itself
+int  didge_get_controller(const DidgeEngine* engine, int param);            // -1 for none
+void didge_set_controller(DidgeEngine* engine, int param, int controller);  // -1 takes it away; a reserved one is not taken
+void didge_reset_controllers(DidgeEngine* engine);         // back to what the parameters come with
+// Learn: the parameter takes the next controller that moves (and goes where it says). -1 calls it off.
+void didge_learn(DidgeEngine* engine, int param);
+int  didge_learning(const DidgeEngine* engine);            // the parameter that is learning, -1 for none
+// Counts what MIDI changed without the caller: a knob moved by its controller, a controller
+// learnt. A window compares it with what it saw last to know when to read the engine again.
+unsigned didge_changes(const DidgeEngine* engine);
+
 // MIDI from any thread; played in the next didge_process() call, sampleOffset frames into it
 // (0 = at its start).
 void didge_post_midi(DidgeEngine* engine, int status, int data1, int data2, int sampleOffset);

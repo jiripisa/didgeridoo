@@ -43,6 +43,7 @@
         <li><a href="#tube">Tube (trubice)</a></li>
         <li><a href="#rhythm">Rhythm (rytmus)</a></li>
         <li><a href="#lfo">LFO</a></li>
+        <li><a href="#midi">MIDI kontroléry</a></li>
         <li><a href="#settings">Nastavení</a></li>
         <li><a href="#plugin">Plugin Audio Unit</a></li>
         <li><a href="#updates">Aktualizace</a></li>
@@ -67,7 +68,7 @@
           <div class="view" style="--iw:2200;--ih:1572">
             <img src="../assets/didgeridoo-window.png" alt="Okno aplikace Didgeridoo s vyznačenými oblastmi">
             <div class="mark" style="--x:1.4;--y:5.5;--w:19.1;--h:6.4"><b>1</b></div>
-            <div class="mark" style="--x:41.0;--y:6.4;--w:57.9;--h:4.8"><b>2</b></div>
+            <div class="mark" style="--x:34.0;--y:6.4;--w:64.9;--h:4.8"><b>2</b></div>
             <div class="mark" style="--x:1.4;--y:13.1;--w:48.3;--h:36.9"><b>3</b></div>
             <div class="mark" style="--x:50.4;--y:13.1;--w:48.3;--h:36.9"><b>4</b></div>
             <div class="mark" style="--x:1.4;--y:51.1;--w:48.3;--h:36.9"><b>5</b></div>
@@ -78,8 +79,8 @@
         <dl class="controls">
           <dt><span class="n">1</span>Název</dt>
           <dd>Název nástroje.</dd>
-          <dt><span class="n">2</span>Program, LFO 1 a LFO 2, Tempo, Settings</dt>
-          <dd><b>Program</b> načte jeden z deseti vestavěných zvuků. Přepíše všechny knoby kromě <span class="ui">Octave</span> a utne znějící notu; vlastní úpravy se do programu neukládají. Všech deset hraje na stejný model nástroje, postavený na měřeních skutečných didgeridoo; liší se trubicí, ústy a způsobem hry. <b>LFO 1</b> a <b>LFO 2</b> promění knoby v míry, o které jimi dané LFO hýbe (viz <a href="#lfo">LFO</a>). <b>Tempo</b> (20–300 BPM) určuje rychlost rytmického pulzu. <b>Settings</b> otevře nastavení MIDI vstupu, zvukového výstupu a instalaci pluginu Audio Unit.</dd>
+          <dt><span class="n">2</span>Program, LFO 1 a LFO 2, MIDI, Tempo, Settings</dt>
+          <dd><b>Program</b> načte jeden z deseti vestavěných zvuků. Přepíše všechny knoby kromě <span class="ui">Octave</span> a utne znějící notu; vlastní úpravy se do programu neukládají. Všech deset hraje na stejný model nástroje, postavený na měřeních skutečných didgeridoo; liší se trubicí, ústy a způsobem hry. <b>LFO 1</b> a <b>LFO 2</b> promění knoby v míry, o které jimi dané LFO hýbe (viz <a href="#lfo">LFO</a>). <b>MIDI</b> ukáže MIDI kontrolér každého knobu a dovolí knobu naučit se jiný (viz <a href="#midi">MIDI kontroléry</a>). <b>Tempo</b> (20–300 BPM) určuje rychlost rytmického pulzu. <b>Settings</b> otevře nastavení MIDI vstupu, zvukového výstupu a instalaci pluginu Audio Unit.</dd>
           <dt><span class="n">3</span>Mouth</dt>
           <dd>Tvar úst: kde stojí jazyk a co dronu ubírá. Jsou tu i knoby obou LFO. Viz <a href="#mouth">Mouth</a>.</dd>
           <dt><span class="n">4</span>Lips</dt>
@@ -215,6 +216,34 @@
         </dl>
       </section>
 
+      <section id="midi">
+        <h2>MIDI kontroléry</h2>
+        <p>Každý knob poslouchá jeden MIDI kontrolér (control change, CC): pohnete ovladačem a knob se postaví tam, kam ovladač říká, od spodního konce dráhy při hodnotě 0 po horní při 127 (Rhy&gt;Vowel, který má střed, na něm stojí při 64). Knoby mají z výroby kontroléry uvedené níže a každý se může naučit jiný.</p>
+        <figure class="fig">
+          <div class="view" style="--iw:2200;--ih:1572">
+            <img src="../assets/manual/midi-learn.png" alt="Okno se zapnutým tlačítkem MIDI: každý knob ukazuje svůj kontrolér a Tone na jeden čeká">
+          </div>
+        </figure>
+        <dl class="controls">
+          <dt>Jak knob naučit</dt>
+          <dd>Klikněte v hlavičce na <span class="ui">MIDI</span>: pod každým knobem je jeho kontrolér. Klikněte na knob, čárkovaný kroužek ukáže, že poslouchá; teď pohněte ovladačem na svém MIDI kontroléru. Knob si ten ovladač vezme a postaví se tam, kde ovladač stojí. Jeden kontrolér hýbe jen jedním knobem, takže knob, který ho měl předtím, zůstane bez něj („—“). Dalším kliknutím na poslouchající knob učení zrušíte a dalším kliknutím na <span class="ui">MIDI</span> se vrátíte ke knobům.</dd>
+          <dt>Jak to vrátit</dt>
+          <dd>Dvojklik vrátí knobu kontrolér, který měl z výroby. Sekundární klik na knob nabídne totéž a <b>No controller</b>. Tlačítko <span class="ui">Defaults</span>, které je vedle tlačítka <span class="ui">MIDI</span>, dokud je zapnuté, to udělá pro všechny knoby.</dd>
+          <dt>Mouth</dt>
+          <dd>Vowel 11, Tongue 71, Wheel Vowel 20, LFO 1 Rate 76, LFO 1 Shape 21, LFO 2 Rate 22, LFO 2 Shape 23, Volume 7</dd>
+          <dt>Lips</dt>
+          <dd>Buzz 70, Drive 2, Breath 24, Drift 25, Voice 26, Voice Pitch 27, Rough 28, Attack 73, Release 72</dd>
+          <dt>Tube</dt>
+          <dd>Tube 29, Tone 74, Flare 30, Glide 5, Bend Range 31, Octave 103</dd>
+          <dt>Rhythm</dt>
+          <dd>Rhythm Div 85, Pattern 86, Rhy Depth 87, Rhy&gt;Vowel 88, Rhy Decay 89, Accent 90, Breath In 102</dd>
+          <dt>Co knobům nepatří</dt>
+          <dd>Mod wheel (CC 1) a sustain pedál (CC 64) dělají dál svou práci (viz <a href="#playing">Hraní</a>), stejně jako kontroléry, které si MIDI nechává pro sebe: 0, 6, 32, 38, 96–101 a 120–127. Knob se je nenaučí. Míry LFO kontroléry nemají.</dd>
+          <dt>Kde se to ukládá</dt>
+          <dd>Aplikace si kontroléry pamatuje mezi spuštěními. Nepatří k programu: načtení programu je nechá být. Knob skočí na místo svého kontroléru ve chvíli, kdy ovladačem pohnete.</dd>
+        </dl>
+      </section>
+
       <section id="settings">
         <h2>Nastavení</h2>
         <dl class="controls">
@@ -245,7 +274,7 @@
             <img src="../assets/manual/plugin-window.png" alt="Okno pluginu v hostitelském programu">
           </div>
         </figure>
-        <p>Plugin má stejný zvuk, stejné knoby a LFO a stejných deset programů (jako tovární presety) jako aplikace. Jeho okno je panel z aplikace: nabídka <span class="ui">Program</span>, tlačítka LFO a knoby skupin Mouth, Lips, Tube a Rhythm. Tempo, nastavení MIDI a zvuku i klaviaturu má hostitelský program vlastní, proto v okně nejsou. Knoby sledují automatizaci hostitelského programu a otočení knobem lze jako automatizaci nahrát. Zvuk se ukládá s projektem. Rytmický pulz sleduje tempo a pozici ve skladbě.</p>
+        <p>Plugin má stejný zvuk, stejné knoby a LFO a stejných deset programů (jako tovární presety) jako aplikace. Jeho okno je panel z aplikace: nabídka <span class="ui">Program</span>, tlačítka LFO a MIDI a knoby skupin Mouth, Lips, Tube a Rhythm. Tempo, nastavení MIDI a zvuku i klaviaturu má hostitelský program vlastní, proto v okně nejsou. Knoby sledují automatizaci hostitelského programu a otočení knobem lze jako automatizaci nahrát. Plugin také reaguje na <a href="#midi">MIDI kontroléry</a>, které mu hostitelský program předá, a má stejné tlačítko <span class="ui">MIDI</span> pro učení knobů; které kontroléry hýbou kterými knoby, se ukládá s projektem. Zvuk se ukládá s projektem. Rytmický pulz sleduje tempo a pozici ve skladbě.</p>
         <p>Po aktualizaci aplikace klikněte na <span class="ui">Install Audio Unit</span> znovu, aby se aktualizoval i plugin.</p>
       </section>
 
