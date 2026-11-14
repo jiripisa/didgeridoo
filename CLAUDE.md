@@ -1,6 +1,6 @@
 # Didgeridoo — project notes for Claude
 
-A playable synthesized didgeridoo: drone, vowels, overblown toots and breath, as an Audio Unit and a standalone app.
+A playable synthesized didgeridoo: drone, moving overtones, voice, breath and rhythm, as an Audio Unit and a standalone app.
 
 ## Code
 
@@ -34,17 +34,19 @@ A playable synthesized didgeridoo: drone, vowels, overblown toots and breath, as
 - **Identity is permanent.** Parameter identifiers (`"vowel"`, `"rhydepth"`…),
   their order, and the Audio Unit's type / subtype / manufacturer codes must
   never change: saved app state and host projects rely on them. New
-  parameters are appended at the end of the table.
+  parameters are appended at the end of the table. (2.0.0 rebuilt the table
+  once, at the author's word; what it holds since is permanent.)
 - **The audio thread** (`didge_process`, the engine's `render`) must not
   allocate, lock, log or do I/O. Expensive maths runs at control rate (every
   16 samples), as the existing code shows. After changing what threads share
   in the engine, run `swift test --sanitize=thread`; it must report nothing.
-- The engine started as the MPC plugin "Didgeridoo" and was verified
-  bit-identical to it for all six programs. Changes from here on are
-  deliberate departures; say so in the CHANGELOG. `SoundRegressionTests`
-  holds the sound as references, so a change that alters it fails
-  `swift test`: when it is deliberate, copy the lines the suite prints over
-  the references and add the CHANGELOG line.
+- The engine is one model of the instrument, built on measurements of real
+  didgeridoos: lips as a valve, the tongue, the tube's resonances, a sung
+  voice. It replaced the synthesis of the MPC plugin "Didgeridoo" in 2.0.0,
+  and it does not overblow (the overblown note did not pass the author's ear
+  and was removed). `SoundRegressionTests` holds the sound as references, so
+  a change that alters it fails `swift test`: when it is deliberate, copy
+  the lines the suite prints over the references and add the CHANGELOG line.
 - Build and run: `./run.sh` (debug, logs in the terminal), `./run.sh release`,
   `./build.sh [debug|release|dist|clean]`. Details in `development_workflow.md`.
 - Every user-visible change gets a line under `## Unreleased` in
@@ -77,6 +79,11 @@ A playable synthesized didgeridoo: drone, vowels, overblown toots and breath, as
 - **The site is bilingual.** Every change to `docs/index.html` or
   `docs/manual.html` must also go into `docs/cs/` (and the other way
   round). Shared styles live in `docs/assets/`.
+- `docs/assets/Didgeridoo.oxiindef` is an instrument definition for the OXI
+  E16 controller, linked from the manual's MIDI section: the knobs by name,
+  the MIDI controller each comes with and the controller value of its
+  default place. `E16DefinitionTests` fails when the engine's table and the
+  file part ways, and prints what the file should read.
 
 ## Planning
 
