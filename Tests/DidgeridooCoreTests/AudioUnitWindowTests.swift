@@ -273,4 +273,159 @@ struct AudioUnitWindowTests {
         #expect(restored.controller(of: tone) == nil)
         #expect(restored.controller(of: try #require(Parameters.named("volume"))) == 7)
     }
+
+    // MARK: Presets
+
+    /// A library in a folder of its own; deleting removes for good, away from anybody's Trash.
+    private func library() -> PresetLibrary {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("didgeridoo-unit-presets-\(UUID().uuidString)").appendingPathComponent("Presets")
+        return PresetLibrary(folder: folder, deletesForGood: true)
+    }
+
+    private func remove(_ library: PresetLibrary) {
+        try? FileManager.default.removeItem(at: library.folder.deletingLastPathComponent())
+    }
+
+    /// The name of the unit's present preset: what a host shows and saves with its project.
+    private func presentPresetName(of unit: AudioUnit) throws -> String? {
+        var preset = AUPreset()
+        var size = UInt32(MemoryLayout<AUPreset>.size)
+        try #require(AudioUnitGetProperty(unit, kAudioUnitProperty_PresentPreset, kAudioUnitScope_Global, 0, &preset, &size) == noErr)
+        return preset.presetName?.takeRetainedValue() as String?
+    }
+
+    /// Turns three knobs to a sound no program has: Tone 900 Hz, the octave up, LFO 2 on Tone.
+    private func makeASound(with model: AudioUnitModel) throws {
+        let tone = try #require(Parameters.named("tone")), octave = try #require(Parameters.named("octave"))
+        let amount = try #require(Parameters.named("lfo2tone"))
+        model.loadProgram(5)
+        model.setPosition(tone.normalised(900), of: tone)
+        model.setPosition(octave.normalised(1), of: octave)
+        model.setPosition(amount.normalised(30), of: amount)
+    }
+
+    @Test("The window saves the unit's sound as a preset, and loading it brings every parameter back")
+    func windowSavesAndLoadsAPreset() throws {
+        let unit = try PlugIn.make()
+        defer { AudioComponentInstanceDispose(unit) }
+        let library = library()
+        defer { remove(library) }
+        let model = AudioUnitModel(unit: unit, presets: library)
+        let tone = try #require(Parameters.named("tone")), octave = try #require(Parameters.named("octave"))
+        #expect(model.presets.isEmpty)
+        #expect(model.preset == nil)
+
+        try makeASound(with: model)
+        try model.savePreset(as: "Mine")
+        #expect(model.presets == ["Mine"])
+        #expect(model.preset == "Mine")
+        #expect(try presentPreset(of: unit) == -1)                      // not a factory preset any more
+        #expect(try presentPresetName(of: unit) == "Mine")              // what the host shows and saves
+
+        model.loadProgram(2)
+        model.setPosition(octave.normalised(-1), of: octave)
+        #expect(model.preset == nil)
+        #expect(abs(try value(of: "tone", in: unit) - 900) > 1)
+
+        try model.loadPreset("Mine")
+        #expect(model.preset == "Mine")
+        #expect(abs(try value(of: "tone", in: unit) - 900) < 0.5)
+        #expect(try value(of: "octave", in: unit) == 1)
+        #expect(abs(try value(of: "lfo2tone", in: unit) - 30) < 0.01)
+        #expect(abs(model.value(of: tone) - 900) < 0.5)                 // the window's knob too
+        #expect(try presentPresetName(of: unit) == "Mine")
+    }
+
+    @Test("A double click on a knob returns the value of the preset in use, and a program's after that")
+    func resetReturnsThePresetsValue() throws {
+        let unit = try PlugIn.make()
+        defer { AudioComponentInstanceDispose(unit) }
+        let library = library()
+        defer { remove(library) }
+        let model = AudioUnitModel(unit: unit, presets: library)
+        let tone = try #require(Parameters.named("tone"))
+        try makeASound(with: model)
+        try model.savePreset(as: "Mine")
+
+        model.setPosition(tone.normalised(5000), of: tone)
+        model.resetToDefault(tone)
+        #expect(abs(try value(of: "tone", in: unit) - 900) < 0.5)
+
+        model.loadProgram(0)
+        model.setPosition(tone.normalised(5000), of: tone)
+        model.resetToDefault(tone)
+        #expect(abs(try value(of: "tone", in: unit) - Programs.value(program: 0, parameter: tone)) < 0.5)
+    }
+
+    @Test("A host's project brings the preset's name back, and the window shows it while the folder has it")
+    func projectBringsThePresetBack() throws {
+        let unit = try PlugIn.make()
+        defer { AudioComponentInstanceDispose(unit) }
+        let library = library()
+        defer { remove(library) }
+        let model = AudioUnitModel(unit: unit, presets: library)
+        try makeASound(with: model)
+        try model.savePreset(as: "Mine")
+
+        var state: Unmanaged<CFPropertyList>?
+        var size = UInt32(MemoryLayout<Unmanaged<CFPropertyList>?>.size)
+        try #require(AudioUnitGetProperty(unit, kAudioUnitProperty_ClassInfo, kAudioUnitScope_Global, 0, &state, &size) == noErr)
+        var saved = try #require(state)
+        defer { saved.release() }
+        let other = try PlugIn.make()
+        defer { AudioComponentInstanceDispose(other) }
+        try #require(AudioUnitSetProperty(other, kAudioUnitProperty_ClassInfo, kAudioUnitScope_Global, 0, &saved,
+                                          UInt32(MemoryLayout<Unmanaged<CFPropertyList>>.size)) == noErr)
+
+        let reopened = AudioUnitModel(unit: other, presets: library)
+        #expect(reopened.preset == "Mine")
+        #expect(abs(try value(of: "tone", in: other) - 900) < 0.5)
+
+        // On a Mac whose folder does not have the preset, the sound is there and no preset is in use.
+        let elsewhere = self.library()
+        defer { remove(elsewhere) }
+        #expect(AudioUnitModel(unit: other, presets: elsewhere).preset == nil)
+
+        try library.delete("Mine")                                      // the Finder took it away
+        reopened.lookAtPresets()
+        #expect(reopened.presets.isEmpty)
+        #expect(reopened.preset == nil)
+    }
+
+    @Test("A preset saved in another window shows up after a look at the folder")
+    func presetsOfAnotherWindow() throws {
+        let unit = try PlugIn.make(), other = try PlugIn.make()
+        defer { AudioComponentInstanceDispose(unit); AudioComponentInstanceDispose(other) }
+        let library = library()
+        defer { remove(library) }
+        let mine = AudioUnitModel(unit: unit, presets: library), theirs = AudioUnitModel(unit: other, presets: library)
+        try makeASound(with: theirs)
+        try theirs.savePreset(as: "Shared")
+        #expect(mine.presets.isEmpty)
+        mine.lookAtPresets()
+        #expect(mine.presets == ["Shared"])
+        try mine.loadPreset("Shared")
+        #expect(abs(try value(of: "tone", in: unit) - 900) < 0.5)
+        #expect(try value(of: "octave", in: unit) == 1)
+    }
+
+    @Test("Deleting the preset in use leaves the sound and no preset in use; a preset that is gone is not loaded")
+    func deletingAPreset() throws {
+        let unit = try PlugIn.make()
+        defer { AudioComponentInstanceDispose(unit) }
+        let library = library()
+        defer { remove(library) }
+        let model = AudioUnitModel(unit: unit, presets: library)
+        try makeASound(with: model)
+        try model.savePreset(as: "Mine")
+        try model.deletePreset("Mine")
+        #expect(model.presets.isEmpty)
+        #expect(model.preset == nil)
+        #expect(abs(try value(of: "tone", in: unit) - 900) < 0.5)
+        model.refresh()                                                 // the unit still names it; the window does not
+        #expect(model.preset == nil)
+        #expect(throws: PresetError.missing("Mine")) { try model.loadPreset("Mine") }
+        #expect(throws: PresetError.noName) { try model.savePreset(as: " ") }
+    }
 }

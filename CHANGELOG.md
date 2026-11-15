@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Presets of your own. Program › Save Preset… stores the sound as it stands
+  under a name: every knob, the octave and the LFO amounts included. Your
+  presets are in the Program menu below the ten built-in programs; the one
+  in use is ticked, a double click on a knob returns its value, and Delete
+  moves it to the Trash.
+- The app and the plug-in share the presets: each is a file in
+  ~/Library/Application Support/Didgeridoo/Presets (Program › Show in
+  Finder), so a sound saved in the app is in the plug-in's menu a moment
+  later, and the files can be copied to another Mac. In a host the preset's
+  name is the plug-in's present preset and is saved with the project.
 - The website has an instrument definition for the OXI E16 controller: the
   knobs by name with their MIDI controllers and the value of each knob's
   default place (see MIDI controllers in the manual).

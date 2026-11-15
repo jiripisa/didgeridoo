@@ -1,5 +1,10 @@
 # Didgeridoo — State
 
+- 2026-11-15 — phase 20 done: presets of your own in the Program menu,
+  shared by the app and the plug-in. Merged into `main`, not pushed and not
+  released (the website would describe what 2.0.0 does not have); the open
+  menu itself has not been seen by anyone.
+  See `phases/20-user-presets/VERIFICATION.md`.
 - 2026-11-15 — phase 19 done: the instrument definition for the OXI E16 is
   on the website (`docs/assets/Didgeridoo.oxiindef`, linked from the
   manual's MIDI section) and `E16DefinitionTests` holds it to the engine.

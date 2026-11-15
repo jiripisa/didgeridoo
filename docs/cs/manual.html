@@ -44,6 +44,7 @@
         <li><a href="#rhythm">Rhythm (rytmus)</a></li>
         <li><a href="#lfo">LFO</a></li>
         <li><a href="#midi">MIDI kontroléry</a></li>
+        <li><a href="#presets">Presety</a></li>
         <li><a href="#settings">Nastavení</a></li>
         <li><a href="#plugin">Plugin Audio Unit</a></li>
         <li><a href="#updates">Aktualizace</a></li>
@@ -80,7 +81,7 @@
           <dt><span class="n">1</span>Název</dt>
           <dd>Název nástroje.</dd>
           <dt><span class="n">2</span>Program, LFO 1 a LFO 2, MIDI, Tempo, Settings</dt>
-          <dd><b>Program</b> načte jeden z deseti vestavěných zvuků. Přepíše všechny knoby kromě <span class="ui">Octave</span> a utne znějící notu; vlastní úpravy se do programu neukládají. Všech deset hraje na stejný model nástroje, postavený na měřeních skutečných didgeridoo; liší se trubicí, ústy a způsobem hry. <b>LFO 1</b> a <b>LFO 2</b> promění knoby v míry, o které jimi dané LFO hýbe (viz <a href="#lfo">LFO</a>). <b>MIDI</b> ukáže MIDI kontrolér každého knobu a dovolí knobu naučit se jiný (viz <a href="#midi">MIDI kontroléry</a>). <b>Tempo</b> (20–300 BPM) určuje rychlost rytmického pulzu. <b>Settings</b> otevře nastavení MIDI vstupu, zvukového výstupu a instalaci pluginu Audio Unit.</dd>
+          <dd><b>Program</b> načte jeden z deseti vestavěných zvuků. Přepíše všechny knoby kromě <span class="ui">Octave</span> a utne znějící notu; vlastní úpravy se do programu neukládají. Všech deset hraje na stejný model nástroje, postavený na měřeních skutečných didgeridoo; liší se trubicí, ústy a způsobem hry. Pod těmi deseti jsou v nabídce vaše vlastní presety a příkazy, které je ukládají a mažou (viz <a href="#presets">Presety</a>). <b>LFO 1</b> a <b>LFO 2</b> promění knoby v míry, o které jimi dané LFO hýbe (viz <a href="#lfo">LFO</a>). <b>MIDI</b> ukáže MIDI kontrolér každého knobu a dovolí knobu naučit se jiný (viz <a href="#midi">MIDI kontroléry</a>). <b>Tempo</b> (20–300 BPM) určuje rychlost rytmického pulzu. <b>Settings</b> otevře nastavení MIDI vstupu, zvukového výstupu a instalaci pluginu Audio Unit.</dd>
           <dt><span class="n">3</span>Mouth</dt>
           <dd>Tvar úst: kde stojí jazyk a co dronu ubírá. Jsou tu i knoby obou LFO. Viz <a href="#mouth">Mouth</a>.</dd>
           <dt><span class="n">4</span>Lips</dt>
@@ -93,7 +94,7 @@
           <dd>Kliknutím na klávesu ji zahrajete. U horního okraje klávesy je úhoz tichý, níž je silnější a spodní okraj klávesy je nejsilnější úhoz.</dd>
         </dl>
         <h3>Otáčení knobem</h3>
-        <p>Táhněte knob nahoru nebo dolů. S klávesou <kbd>Shift</kbd> se hodnota mění jemně. Dvojklik vrátí knob na hodnotu aktuálního programu. Aplikace si knoby, program i tempo pamatuje mezi spuštěními.</p>
+        <p>Táhněte knob nahoru nebo dolů. S klávesou <kbd>Shift</kbd> se hodnota mění jemně. Dvojklik vrátí knob na hodnotu aktuálního programu nebo presetu. Aplikace si knoby, program nebo preset i tempo pamatuje mezi spuštěními.</p>
       </section>
 
       <section id="playing">
@@ -206,7 +207,7 @@
         </figure>
         <dl class="controls">
           <dt>Nastavení míry</dt>
-          <dd>Klikněte v hlavičce na <span class="ui">LFO 1</span> nebo <span class="ui">LFO 2</span>. Knoby teď ukazují míry toho LFO, v jeho barvě: tažením nahoru nastavíte kladnou míru, dolů zápornou, která pohyb obrátí. Oblouk uvnitř prstence knobu ukazuje část dráhy, kterou LFO projíždí. Dvojklik vrátí míru na hodnotu programu. Dalším kliknutím na tlačítko se vrátíte ke knobům.</dd>
+          <dd>Klikněte v hlavičce na <span class="ui">LFO 1</span> nebo <span class="ui">LFO 2</span>. Knoby teď ukazují míry toho LFO, v jeho barvě: tažením nahoru nastavíte kladnou míru, dolů zápornou, která pohyb obrátí. Oblouk uvnitř prstence knobu ukazuje část dráhy, kterou LFO projíždí. Dvojklik vrátí míru na hodnotu programu nebo presetu. Dalším kliknutím na tlačítko se vrátíte ke knobům.</dd>
           <dt>Čím lze hýbat</dt>
           <dd>Vowel, Tongue, Volume, Buzz, Drive, Breath, Voice, Rough, Tube, Tone, Flare, Rhy Depth, Rhy&gt;Vowel, Rhy Decay, Accent a Breath In. Přepínače, časy a několik dalších knobů při zapnutém tlačítku ustoupí; vlastní knoby LFO zůstávají v provozu. Jedním knobem mohou hýbat obě LFO: jejich pohyby se sčítají a zastaví se na koncích dráhy knobu.</dd>
           <dt>Jak je to vidět</dt>
@@ -246,6 +247,23 @@
         </dl>
       </section>
 
+      <section id="presets">
+        <h2>Presety</h2>
+        <p>Preset je váš vlastní zvuk pod jménem: všechny knoby tak, jak stojí, včetně oktávy a měr LFO. Presety jsou v nabídce Program pod deseti vestavěnými programy a ten, který se používá, je zaškrtnutý.</p>
+        <dl class="controls">
+          <dt>Uložení</dt>
+          <dd>Zvolte <span class="ui">Program</span> › <span class="ui">Save Preset…</span>, napište jméno a stiskněte Return. Zvuk se uloží tak, jak právě je, a nabídka ukáže preset jako používaný. Jméno, které už existuje, ten preset nahradí; tlačítko se pak jmenuje <span class="ui">Replace</span>.</dd>
+          <dt>Načtení</dt>
+          <dd>Zvolte preset v nabídce <span class="ui">Program</span>. Stejně jako program přepíše knoby a utne znějící notu; na rozdíl od programu nastaví i <span class="ui">Octave</span>. Dvojklik na knob pak vrací hodnotu presetu.</dd>
+          <dt>Smazání</dt>
+          <dd>Když se preset používá, <span class="ui">Delete</span> s jeho jménem ho přesune do Koše. Zvuk zůstane, jak je.</dd>
+          <dt>Soubory</dt>
+          <dd>Každý preset je soubor ve složce Library/Application Support/Didgeridoo/Presets ve vaší domovské složce; <span class="ui">Show in Finder</span> ji otevře. Zkopírováním souborů si presety přenesete na jiný Mac; přejmenováním souboru preset přejmenujete. MIDI kontroléry a tempo k presetu nepatří.</dd>
+          <dt>V hostitelském programu</dt>
+          <dd>Okno pluginu má stejnou nabídku a stejné presety: zvuk uložený v aplikaci je za okamžik i v pluginu a naopak. Hostitelský program ukazuje jméno presetu jako preset pluginu a zvuk dál ukládá se svým projektem.</dd>
+        </dl>
+      </section>
+
       <section id="settings">
         <h2>Nastavení</h2>
         <dl class="controls">
@@ -276,7 +294,7 @@
             <img src="../assets/manual/plugin-window.png" alt="Okno pluginu v hostitelském programu">
           </div>
         </figure>
-        <p>Plugin má stejný zvuk, stejné knoby a LFO a stejných deset programů (jako tovární presety) jako aplikace. Jeho okno je panel z aplikace: nabídka <span class="ui">Program</span>, tlačítka LFO a MIDI a knoby skupin Mouth, Lips, Tube a Rhythm. Tempo, nastavení MIDI a zvuku i klaviaturu má hostitelský program vlastní, proto v okně nejsou. Knoby sledují automatizaci hostitelského programu a otočení knobem lze jako automatizaci nahrát. Plugin také reaguje na <a href="#midi">MIDI kontroléry</a>, které mu hostitelský program předá, a má stejné tlačítko <span class="ui">MIDI</span> pro učení knobů; které kontroléry hýbou kterými knoby, se ukládá s projektem. Zvuk se ukládá s projektem. Rytmický pulz sleduje tempo a pozici ve skladbě.</p>
+        <p>Plugin má stejný zvuk, stejné knoby a LFO a stejných deset programů (jako tovární presety) jako aplikace. Jeho okno je panel z aplikace: nabídka <span class="ui">Program</span>, tlačítka LFO a MIDI a knoby skupin Mouth, Lips, Tube a Rhythm. Tempo, nastavení MIDI a zvuku i klaviaturu má hostitelský program vlastní, proto v okně nejsou. Knoby sledují automatizaci hostitelského programu a otočení knobem lze jako automatizaci nahrát. Plugin také reaguje na <a href="#midi">MIDI kontroléry</a>, které mu hostitelský program předá, a má stejné tlačítko <span class="ui">MIDI</span> pro učení knobů; které kontroléry hýbou kterými knoby, se ukládá s projektem. Vaše vlastní <a href="#presets">presety</a> jsou tytéž jako v aplikaci: nabídka je i tady ukazuje a ukládá. Zvuk se ukládá s projektem. Rytmický pulz sleduje tempo a pozici ve skladbě.</p>
         <p>Po aktualizaci aplikace klikněte na <span class="ui">Install Audio Unit</span> znovu, aby se aktualizoval i plugin.</p>
       </section>
 
