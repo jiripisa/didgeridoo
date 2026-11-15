@@ -17,6 +17,8 @@ final class AppModel: InstrumentModel {
     /// Knob positions (0...1) by parameter index, mirrored from the synth for the views.
     private(set) var positions: [Float]
     private(set) var program: Int
+    /// The player's presets and the one in use.
+    private var shelf: PresetShelf
     /// The MIDI controller of each parameter by index, and the parameter that is
     /// learning one, mirrored from the synth like the positions.
     private var controllers: [Int?]
@@ -59,13 +61,16 @@ final class AppModel: InstrumentModel {
     private(set) var bpm: Double
 
     private enum Keys {
-        static let state = "synthState", controllers = "controllers", midiSource = "midiSource", midiChannel = "midiChannel"
+        static let state = "synthState", preset = "preset", controllers = "controllers"
+        static let midiSource = "midiSource", midiChannel = "midiChannel"
         static let audioDevice = "audioDevice", audioChannel = "audioFirstChannel", bpm = "bpm"
         /// Names of the chosen devices, to show them while they are not connected.
         static let midiSourceName = "midiSourceName", audioDeviceName = "audioDeviceName"
     }
 
-    init() {
+    /// `presets` is where the player's presets are kept: the folder the
+    /// plug-in reads too.
+    init(presets library: PresetLibrary = .standard) {
         audio = AudioOutput(synth: synth)
         midi = MIDIInput(synth: synth)
 
@@ -79,6 +84,7 @@ final class AppModel: InstrumentModel {
         }
         positions = Parameters.all.map(synth.normalisedValue(of:))
         program = synth.program
+        shelf = PresetShelf(library: library, inUse: defaults.string(forKey: Keys.preset))
         controllers = Parameters.all.map(synth.controller(of:))
         seenChanges = synth.changes
 
@@ -116,7 +122,8 @@ final class AppModel: InstrumentModel {
     }
 
     func resetToDefault(_ parameter: Parameter) {
-        setPosition(parameter.normalised(Programs.value(program: program, parameter: parameter)), of: parameter)
+        let plain = shelf.value(of: parameter) ?? Programs.value(program: program, parameter: parameter)
+        setPosition(parameter.normalised(plain), of: parameter)
         saveState()
     }
 
@@ -129,7 +136,45 @@ final class AppModel: InstrumentModel {
         synth.loadProgram(index)
         program = index
         positions = Parameters.all.map(synth.normalisedValue(of:))
+        shelf.leave()
+        rememberPreset()
         saveState()
+    }
+
+    // MARK: Presets
+
+    var presets: [String] { shelf.names }
+    var preset: String? { shelf.inUse }
+    var presetLibrary: PresetLibrary { shelf.library }
+
+    func loadPreset(_ name: String) throws {
+        try shelf.load(name).apply(to: synth)
+        program = synth.program
+        positions = Parameters.all.map(synth.normalisedValue(of:))
+        rememberPreset()
+        saveState()
+    }
+
+    func savePreset(as name: String) throws {
+        try shelf.save(SynthState(capturing: synth), as: name)
+        rememberPreset()
+    }
+
+    func deletePreset(_ name: String) throws {
+        try shelf.delete(name)
+        rememberPreset()
+    }
+
+    func lookAtPresets() {
+        var looked = shelf              // the model changes only when the folder did
+        guard looked.look() else { return }
+        shelf = looked
+        rememberPreset()
+    }
+
+    /// Remembers the preset in use for the next launch.
+    private func rememberPreset() {
+        defaults.set(shelf.inUse, forKey: Keys.preset)
     }
 
     // MARK: MIDI controllers

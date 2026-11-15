@@ -44,6 +44,7 @@
         <li><a href="#rhythm">Rhythm</a></li>
         <li><a href="#lfo">LFOs</a></li>
         <li><a href="#midi">MIDI controllers</a></li>
+        <li><a href="#presets">Presets</a></li>
         <li><a href="#settings">Settings</a></li>
         <li><a href="#plugin">The Audio Unit plug-in</a></li>
         <li><a href="#updates">Updates</a></li>
@@ -80,7 +81,7 @@
           <dt><span class="n">1</span>Name</dt>
           <dd>The instrument's name.</dd>
           <dt><span class="n">2</span>Program, LFO 1 and LFO 2, MIDI, Tempo, Settings</dt>
-          <dd><b>Program</b> loads one of the ten built-in sounds. It overwrites every knob except <span class="ui">Octave</span> and cuts off a sounding note; your own changes are not kept in the program. All ten play the same model of the instrument, built on measurements of real ones; they differ in the tube, the mouth and the way of playing. <b>LFO 1</b> and <b>LFO 2</b> turn the knobs into the amounts by which that LFO moves them (see <a href="#lfo">LFOs</a>). <b>MIDI</b> shows the MIDI controller of every knob and lets a knob learn another (see <a href="#midi">MIDI controllers</a>). <b>Tempo</b> (20–300 BPM) sets the speed of the rhythm pulse. <b>Settings</b> opens MIDI input, audio output and the Audio Unit installer.</dd>
+          <dd><b>Program</b> loads one of the ten built-in sounds. It overwrites every knob except <span class="ui">Octave</span> and cuts off a sounding note; your own changes are not kept in the program. All ten play the same model of the instrument, built on measurements of real ones; they differ in the tube, the mouth and the way of playing. Below the ten the menu holds your own presets and the commands that save and delete them (see <a href="#presets">Presets</a>). <b>LFO 1</b> and <b>LFO 2</b> turn the knobs into the amounts by which that LFO moves them (see <a href="#lfo">LFOs</a>). <b>MIDI</b> shows the MIDI controller of every knob and lets a knob learn another (see <a href="#midi">MIDI controllers</a>). <b>Tempo</b> (20–300 BPM) sets the speed of the rhythm pulse. <b>Settings</b> opens MIDI input, audio output and the Audio Unit installer.</dd>
           <dt><span class="n">3</span>Mouth</dt>
           <dd>The shape of the mouth: where the tongue stands and what it takes away from the drone. The knobs of the two LFOs are here too. See <a href="#mouth">Mouth</a>.</dd>
           <dt><span class="n">4</span>Lips</dt>
@@ -93,7 +94,7 @@
           <dd>Click a key to play it. Near the top of a key the hit is soft, further down it is firmer, and the bottom of a key is the hardest hit.</dd>
         </dl>
         <h3>Turning a knob</h3>
-        <p>Drag a knob up or down. Hold <kbd>Shift</kbd> while dragging for fine steps. Double-click a knob to return it to the value of the current program. The app remembers the knobs, the program and the tempo between launches.</p>
+        <p>Drag a knob up or down. Hold <kbd>Shift</kbd> while dragging for fine steps. Double-click a knob to return it to the value of the current program or preset. The app remembers the knobs, the program or preset and the tempo between launches.</p>
       </section>
 
       <section id="playing">
@@ -206,7 +207,7 @@
         </figure>
         <dl class="controls">
           <dt>Setting an amount</dt>
-          <dd>Click <span class="ui">LFO 1</span> or <span class="ui">LFO 2</span> in the header. The knobs now show that LFO's amounts, in its colour: drag a knob up for a positive amount, down for a negative one, which turns the movement round. An arc inside the knob's ring shows the part of its travel the LFO sweeps. Double-click a knob to put its amount back to the program's. Click the button again to get the knobs back.</dd>
+          <dd>Click <span class="ui">LFO 1</span> or <span class="ui">LFO 2</span> in the header. The knobs now show that LFO's amounts, in its colour: drag a knob up for a positive amount, down for a negative one, which turns the movement round. An arc inside the knob's ring shows the part of its travel the LFO sweeps. Double-click a knob to put its amount back to the program's or the preset's. Click the button again to get the knobs back.</dd>
           <dt>What can be moved</dt>
           <dd>Vowel, Tongue, Volume, Buzz, Drive, Breath, Voice, Rough, Tube, Tone, Flare, Rhy Depth, Rhy&gt;Vowel, Rhy Decay, Accent and Breath In. The switches, the times and a few others step back while a button is on; the LFOs' own knobs stay in use. Both LFOs can move the same knob: their movements add up and stop at the ends of the knob's travel.</dd>
           <dt>Seeing it</dt>
@@ -246,6 +247,23 @@
         </dl>
       </section>
 
+      <section id="presets">
+        <h2>Presets</h2>
+        <p>A preset is a sound of your own under a name: every knob as it stands, the octave and the LFO amounts included. Presets live in the Program menu, below the ten built-in programs, and the one in use is ticked.</p>
+        <dl class="controls">
+          <dt>Saving</dt>
+          <dd>Choose <span class="ui">Program</span> › <span class="ui">Save Preset…</span>, type a name and press Return. The sound as it stands is stored, and the menu shows the preset as the one in use. A name that exists replaces that preset; the button then reads <span class="ui">Replace</span>.</dd>
+          <dt>Loading</dt>
+          <dd>Choose the preset in the <span class="ui">Program</span> menu. Like a program it overwrites the knobs and cuts off a sounding note; unlike a program it sets <span class="ui">Octave</span> too. A double click on a knob then returns the preset's value.</dd>
+          <dt>Deleting</dt>
+          <dd>With a preset in use, <span class="ui">Delete</span> with its name moves it to the Trash. The sound stays as it is.</dd>
+          <dt>Files</dt>
+          <dd>Each preset is a file in Library/Application Support/Didgeridoo/Presets in your home folder; <span class="ui">Show in Finder</span> opens the folder. Copy the files to another Mac to take your presets along; renaming a file renames the preset. MIDI controllers and the tempo are not part of a preset.</dd>
+          <dt>In a host</dt>
+          <dd>The plug-in's window has the same menu and the same presets: a sound saved in the app is there in the plug-in a moment later, and the other way round. The host shows the preset's name as the plug-in's preset and still saves the sound with its project.</dd>
+        </dl>
+      </section>
+
       <section id="settings">
         <h2>Settings</h2>
         <dl class="controls">
@@ -276,7 +294,7 @@
             <img src="assets/manual/plugin-window.png" alt="The plug-in's window in a host">
           </div>
         </figure>
-        <p>The plug-in has the same sound, the same knobs and LFOs and the same ten programs (as factory presets) as the app. Its window is the app's panel: the <span class="ui">Program</span> menu, the LFO and MIDI buttons and the knobs of Mouth, Lips, Tube and Rhythm. The tempo, the MIDI and audio settings and a keyboard are the host's own, so the window leaves them out. The knobs follow the host's automation, and turning one can be recorded as automation. The plug-in also answers the <a href="#midi">MIDI controllers</a> the host passes on to it, with the same <span class="ui">MIDI</span> button to teach the knobs; the host saves which controller moves which knob with the project. The host saves the sound with the project. The rhythm pulse follows the host's tempo and song position.</p>
+        <p>The plug-in has the same sound, the same knobs and LFOs and the same ten programs (as factory presets) as the app. Its window is the app's panel: the <span class="ui">Program</span> menu, the LFO and MIDI buttons and the knobs of Mouth, Lips, Tube and Rhythm. The tempo, the MIDI and audio settings and a keyboard are the host's own, so the window leaves them out. The knobs follow the host's automation, and turning one can be recorded as automation. The plug-in also answers the <a href="#midi">MIDI controllers</a> the host passes on to it, with the same <span class="ui">MIDI</span> button to teach the knobs; the host saves which controller moves which knob with the project. Your own <a href="#presets">presets</a> are the app's: the menu lists and saves them here too. The host saves the sound with the project. The rhythm pulse follows the host's tempo and song position.</p>
         <p>After updating the app, click <span class="ui">Install Audio Unit</span> again to update the plug-in.</p>
       </section>
 

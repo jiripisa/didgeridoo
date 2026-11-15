@@ -2,7 +2,9 @@ import SwiftUI
 import DidgeridooCore
 
 /// The instrument's panel, the same in the app's window and in the plug-in's:
-/// a header with the logo, the program and the buttons LFO 1, LFO 2 and MIDI,
+/// a header with the logo, the Program menu (the built-in programs, the
+/// player's own presets and the commands that save and delete them) and the
+/// buttons LFO 1, LFO 2 and MIDI,
 /// then the groups of knobs (Mouth, Lips, Tube, Rhythm) in two columns. With
 /// an LFO's button on, the knobs set how far that LFO moves them; with MIDI on
 /// they show their MIDI controllers and learn new ones (`KnobView`). `extras` join the header on the right
@@ -27,6 +29,12 @@ public struct InstrumentPanel<Extras: View, Footer: View>: View {
     /// What the knobs are for at the moment: their values, an LFO's amounts,
     /// or their MIDI controllers.
     @State private var use: KnobUse
+
+    /// Save Preset…: the name being typed, and whether its field is open.
+    @State private var naming = false
+    @State private var name = ""
+    /// What went wrong with a preset, in words, until the player has read it.
+    @State private var problem: String?
 
     /// `showing` is what the panel opens with, for a picture of that state; a
     /// window opens with the knobs as knobs.
@@ -57,6 +65,18 @@ public struct InstrumentPanel<Extras: View, Footer: View>: View {
             footer
         }
         .padding(18)
+        .alert("Presets", isPresented: Binding(get: { problem != nil }, set: { if !$0 { problem = nil } })) {
+            Button("OK") {}
+        } message: {
+            Text(problem ?? "")
+        }
+        // Another window may save a preset: the app's while the plug-in's is open, or the other way round.
+        .task {
+            while !Task.isCancelled {
+                model.lookAtPresets()
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
     }
 
     private var header: some View {
@@ -67,15 +87,7 @@ public struct InstrumentPanel<Extras: View, Footer: View>: View {
                 Text("Didgeridoo").font(.system(size: 30, weight: .bold)).foregroundStyle(Artwork.cream)
             }
             Spacer()
-            Picker("Program", selection: Binding(get: { model.program }, set: { model.loadProgram($0) })) {
-                ForEach(Programs.names.indices, id: \.self) { index in
-                    Text(Programs.names[index]).tag(index)
-                }
-                if !Programs.names.indices.contains(model.program) {
-                    Text("—").tag(model.program)        // a host's own preset
-                }
-            }
-            .frame(width: 230)
+            programMenu
             // One at a time: the knobs can be one thing.
             ForEach(0..<LFOs.count, id: \.self) { lfo in
                 useButton("LFO \(lfo + 1)", .amount(lfo: lfo), colour: Artwork.lfo(lfo),
@@ -90,6 +102,89 @@ public struct InstrumentPanel<Extras: View, Footer: View>: View {
             extras
         }
         .frame(height: 46)
+    }
+
+    // MARK: Programs and presets
+
+    /// Where the sound came from: a built-in program, one of the player's
+    /// presets, or neither (a host's own preset).
+    private enum Source: Equatable {
+        case program(Int), preset(String), elsewhere
+    }
+
+    private var source: Source {
+        if let preset = model.preset { return .preset(preset) }
+        return Programs.names.indices.contains(model.program) ? .program(model.program) : .elsewhere
+    }
+
+    private var sourceName: String {
+        switch source {
+        case .program(let index): Programs.names[index]
+        case .preset(let name): name
+        case .elsewhere: "—"
+        }
+    }
+
+    /// The Program menu: the built-in programs, below them the player's
+    /// presets, each ticked while it is in use, and the commands.
+    private var programMenu: some View {
+        HStack(spacing: 8) {
+            Text("Program")
+            Menu {
+                Section {
+                    ForEach(Programs.names.indices, id: \.self) { index in
+                        Toggle(Programs.names[index], isOn: Binding(get: { source == .program(index) },
+                                                                    set: { _ in model.loadProgram(index) }))
+                    }
+                }
+                if !model.presets.isEmpty {
+                    Section("Your presets") {
+                        ForEach(model.presets, id: \.self) { preset in
+                            Toggle(preset, isOn: Binding(get: { source == .preset(preset) },
+                                                         set: { _ in attempt { try model.loadPreset(preset) } }))
+                        }
+                    }
+                }
+                Section {
+                    Button("Save Preset…") {
+                        name = model.preset ?? ""
+                        naming = true
+                    }
+                    if let preset = model.preset {
+                        Button("Delete “\(preset)”") { attempt { try model.deletePreset(preset) } }
+                    }
+                    Button("Show in Finder") { showPresets() }
+                }
+            } label: {
+                // One width for every name, so that the header stands still.
+                Text(sourceName).lineLimit(1).truncationMode(.tail).frame(width: 136, alignment: .leading)
+            }
+            .fixedSize()
+            .help("Built-in programs and your own presets")
+            .accessibilityLabel("Program")
+            .popover(isPresented: $naming, arrowEdge: .bottom) {
+                PresetNameView(name: $name, presets: model.presets, save: saveNamed, cancel: { naming = false })
+            }
+        }
+        .fixedSize()            // its own size, whatever the header has to share out: the label must not wrap
+    }
+
+    private func saveNamed() {
+        guard naming else { return }            // Return and the button may both ask
+        naming = false
+        attempt { try model.savePreset(as: name) }
+    }
+
+    private func showPresets() {
+        attempt {
+            try model.presetLibrary.makeFolder()
+            NSWorkspace.shared.open(model.presetLibrary.folder)
+        }
+    }
+
+    /// Runs something that may fail and keeps the reason for the player.
+    private func attempt(_ action: () throws -> Void) {
+        do { try action() } catch { problem = error.localizedDescription }
     }
 
     /// A button that turns the knobs into something else and back: its colour

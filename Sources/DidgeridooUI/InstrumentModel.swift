@@ -11,16 +11,40 @@ public protocol InstrumentModel: AnyObject, Observable {
     /// did not come from one (a host's own preset).
     var program: Int { get }
 
+    /// The player's own presets, in the order the menu shows them.
+    var presets: [String] { get }
+
+    /// The preset the sound came from; nil when it came from a built-in
+    /// program or from a host.
+    var preset: String? { get }
+
+    /// Where the presets are kept, for showing the folder.
+    var presetLibrary: PresetLibrary { get }
+
     /// Knob position (0...1) of a parameter.
     func position(of parameter: Parameter) -> Float
 
     /// Turns a knob. Integers and choices snap to their steps.
     func setPosition(_ position: Float, of parameter: Parameter)
 
-    /// Puts a parameter back to the value its program gives it.
+    /// Puts a parameter back to the value its program gives it, or the
+    /// preset in use.
     func resetToDefault(_ parameter: Parameter)
 
     func loadProgram(_ index: Int)
+
+    /// Loads a preset: every parameter, the octave included.
+    func loadPreset(_ name: String) throws
+
+    /// Saves the sound as it stands under a name, replacing a preset of that
+    /// name, and makes it the preset in use.
+    func savePreset(as name: String) throws
+
+    /// Moves a preset to the Trash. The sound stays as it is.
+    func deletePreset(_ name: String) throws
+
+    /// Reads the presets' folder again: another window may have saved one.
+    func lookAtPresets()
 
     /// A drag on a knob begins and ends. A host records automation between
     /// the two; the app remembers the sound at the end.

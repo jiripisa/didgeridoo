@@ -6,8 +6,8 @@ One download contains a standalone macOS app (with its own MIDI input and
 audio output settings) and an Audio Unit instrument for Ableton Live, Logic
 Pro and other hosts; the app installs the plug-in from its Settings window.
 Both share one sound engine with 30 knobs, two LFOs that can move them, a MIDI
-controller on every knob (MIDI learn gives a knob another) and ten built-in
-programs.
+controller on every knob (MIDI learn gives a knob another), ten built-in
+programs and presets of your own, which the app and the plug-in share.
 
 Native macOS (SwiftUI, macOS 14 or later), built with Swift Package Manager
 and shell scripts; no Xcode project. The sound engine is C++. The download is

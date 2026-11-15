@@ -7,6 +7,11 @@ import Observation
 /// parameters and factory presets. Parameter values of the Audio Unit are the
 /// engine's plain values, and a parameter's index is its ID.
 ///
+/// The player's own presets are files the app shares with the plug-in
+/// (`PresetLibrary`). One in use is the unit's present preset by name, with
+/// the number -1 a host's own presets have: the host shows that name and
+/// saves it with its project.
+///
 /// A host changes parameters without telling a view (automation, its own
 /// controls), so the window asks for the present values many times a second:
 /// see `refresh`.
@@ -19,15 +24,27 @@ public final class AudioUnitModel: InstrumentModel {
     /// Knob positions (0...1) by parameter index.
     private var positions: [Float]
     public private(set) var program: Int
+    /// The presets and the one in use.
+    private var shelf: PresetShelf
+    /// The name of the unit's present preset when it is not a factory one, as
+    /// of the last look: the shelf is asked again only when it changes.
+    @ObservationIgnored private var presentName: String?
+    /// The built-in program the sound last came from: what a preset saved
+    /// from here grows from.
+    @ObservationIgnored private var base: Int
     /// The MIDI controller of each parameter by index, -1 for none, and the
     /// parameter that is learning, as the unit had them at the last look.
     private var controllers: [Int32]
     public private(set) var learning: Parameter?
 
-    public init(unit: AudioUnit) {
+    public init(unit: AudioUnit, presets library: PresetLibrary = .standard) {
         self.unit = unit
         positions = Parameters.all.map { Self.position(of: $0, in: unit) }
-        program = Self.presentPreset(of: unit)
+        let present = Self.presentPreset(of: unit)
+        program = present.number
+        base = Programs.names.indices.contains(present.number) ? present.number : 0
+        presentName = present.number < 0 ? present.name : nil
+        shelf = PresetShelf(library: library, inUse: presentName)
         controllers = Self.controllers(of: unit)
         learning = Self.learning(in: unit)
     }
@@ -38,8 +55,14 @@ public final class AudioUnitModel: InstrumentModel {
             let position = Self.position(of: parameter, in: unit)
             if position != positions[parameter.index] { positions[parameter.index] = position }
         }
-        let preset = Self.presentPreset(of: unit)
-        if preset != program { program = preset }
+        let present = Self.presentPreset(of: unit)
+        if present.number != program { program = present.number }
+        if Programs.names.indices.contains(present.number) { base = present.number }
+        let name = present.number < 0 ? present.name : nil
+        if name != presentName {
+            presentName = name
+            shelf.follow(name)
+        }
         // A controller may have been learnt on the render thread.
         let controllers = Self.controllers(of: unit)
         if controllers != self.controllers { self.controllers = controllers }
@@ -59,20 +82,71 @@ public final class AudioUnitModel: InstrumentModel {
     }
 
     public func resetToDefault(_ parameter: Parameter) {
-        let plain = Programs.names.indices.contains(program)
-            ? Programs.value(program: program, parameter: parameter)
-            : parameter.defaultValue
+        let plain = shelf.value(of: parameter)
+            ?? (Programs.names.indices.contains(program) ? Programs.value(program: program, parameter: parameter)
+                                                         : parameter.defaultValue)
         beginEditing(parameter)
         setPosition(parameter.normalised(plain), of: parameter)
         endEditing(parameter)
     }
 
     public func loadProgram(_ index: Int) {
-        guard Programs.names.indices.contains(index) else { return }
-        var preset = AUPreset(presetNumber: Int32(index), presetName: Unmanaged.passUnretained(Programs.names[index] as CFString))
-        guard AudioUnitSetProperty(unit, kAudioUnitProperty_PresentPreset, kAudioUnitScope_Global, 0,
-                                   &preset, UInt32(MemoryLayout<AUPreset>.size)) == noErr else { return }
-        // Every parameter may have moved: tell the host's listeners, then read them back.
+        guard Programs.names.indices.contains(index), setPresentPreset(number: index, name: Programs.names[index]) else { return }
+        everythingMoved()
+    }
+
+    // MARK: Presets
+
+    public var presets: [String] { shelf.names }
+    public var preset: String? { shelf.inUse }
+    public var presetLibrary: PresetLibrary { shelf.library }
+
+    public func loadPreset(_ name: String) throws {
+        let state = try shelf.load(name)
+        // Its program first, as the app does: that cuts a sounding note off, and a parameter
+        // the preset does not know gets its program's value.
+        if Programs.names.indices.contains(state.program) {
+            setPresentPreset(number: state.program, name: Programs.names[state.program])
+            base = state.program
+        }
+        for parameter in Parameters.all {
+            guard let value = state.values[parameter.identifier] else { continue }
+            AudioUnitSetParameter(unit, AudioUnitParameterID(parameter.index), kAudioUnitScope_Global, 0,
+                                  min(max(value, parameter.range.lowerBound), parameter.range.upperBound), 0)
+        }
+        nameThePresentPreset()
+        everythingMoved()
+    }
+
+    public func savePreset(as name: String) throws {
+        var values: [String: Float] = [:]
+        for parameter in Parameters.all { values[parameter.identifier] = Self.value(of: parameter, in: unit) }
+        try shelf.save(SynthState(program: base, values: values), as: name)
+        nameThePresentPreset()
+        refresh()
+    }
+
+    public func deletePreset(_ name: String) throws {
+        try shelf.delete(name)
+    }
+
+    public func lookAtPresets() {
+        var looked = shelf              // the model changes only when the folder did
+        guard looked.look() else { return }
+        if looked.inUse == nil { looked.follow(presentName) }
+        shelf = looked
+    }
+
+    /// Makes the preset in use the unit's present preset: a host shows its
+    /// name and saves it with the project.
+    private func nameThePresentPreset() {
+        guard let name = shelf.inUse else { return }
+        setPresentPreset(number: -1, name: name)
+        presentName = name
+    }
+
+    /// Every parameter may have moved: tell the host's listeners, then read them back.
+    private func everythingMoved() {
         var all = AudioUnitParameter(mAudioUnit: unit, mParameterID: kAUParameterListener_AnyParameter,
                                      mScope: kAudioUnitScope_Global, mElement: 0)
         AUParameterListenerNotify(nil, nil, &all)
@@ -153,21 +227,41 @@ public final class AudioUnitModel: InstrumentModel {
     }
 
     private static func position(of parameter: Parameter, in unit: AudioUnit) -> Float {
-        var plain: AudioUnitParameterValue = 0
-        guard AudioUnitGetParameter(unit, AudioUnitParameterID(parameter.index), kAudioUnitScope_Global, 0, &plain) == noErr else {
-            return parameter.normalised(parameter.defaultValue)
-        }
-        return parameter.normalised(plain)
+        parameter.normalised(value(of: parameter, in: unit))
     }
 
-    /// The number of the factory preset in use, -1 for a preset of the host's.
-    private static func presentPreset(of unit: AudioUnit) -> Int {
+    /// A parameter's plain value in the unit.
+    private static func value(of parameter: Parameter, in unit: AudioUnit) -> Float {
+        var plain: AudioUnitParameterValue = 0
+        guard AudioUnitGetParameter(unit, AudioUnitParameterID(parameter.index), kAudioUnitScope_Global, 0, &plain) == noErr else {
+            return parameter.defaultValue
+        }
+        return plain
+    }
+
+    /// The unit's present preset: the number of the factory preset in use, or
+    /// -1 and a name for one that is not the unit's own (a host's, or one of
+    /// the player's).
+    private static func presentPreset(of unit: AudioUnit) -> (number: Int, name: String?) {
         var preset = AUPreset()
         var size = UInt32(MemoryLayout<AUPreset>.size)
         guard AudioUnitGetProperty(unit, kAudioUnitProperty_PresentPreset, kAudioUnitScope_Global, 0, &preset, &size) == noErr else {
-            return -1
+            return (-1, nil)
         }
-        preset.presetName?.release()        // the property hands its name over retained
-        return Int(preset.presetNumber)
+        let name = preset.presetName?.takeRetainedValue() as String?    // the property hands its name over retained
+        return (Int(preset.presetNumber), name)
+    }
+
+    /// Chooses a factory preset by its number, or names a preset that is not
+    /// the unit's own (number -1). The unit keeps the name, so it has to live
+    /// through the call.
+    @discardableResult
+    private func setPresentPreset(number: Int, name: String) -> Bool {
+        let held = name as CFString
+        return withExtendedLifetime(held) {
+            var preset = AUPreset(presetNumber: Int32(number), presetName: Unmanaged.passUnretained(held))
+            return AudioUnitSetProperty(unit, kAudioUnitProperty_PresentPreset, kAudioUnitScope_Global, 0,
+                                        &preset, UInt32(MemoryLayout<AUPreset>.size)) == noErr
+        }
     }
 }
