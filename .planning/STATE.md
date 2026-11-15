@@ -1,5 +1,11 @@
 # Didgeridoo — State
 
+- 2026-11-15 — phase 21: version 2.1.0 released (presets of your own, the
+  E16 definition). See `phases/21-v2.1.0-release/VERIFICATION.md`. The
+  released app itself was not started on this Mac (the default output was
+  the author's interface, his 2.0.0 was running); the window was checked in
+  a stand-in marked as built for macOS 14, which is how the app is drawn
+  and how its SwiftUI behaves. Check anything in the window in that look.
 - 2026-11-15 — phase 20 done: presets of your own in the Program menu,
   shared by the app and the plug-in. Merged into `main`, not pushed and not
   released (the website would describe what 2.0.0 does not have); the open

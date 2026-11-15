@@ -5,7 +5,8 @@ Phases, newest first. One phase = one folder in `phases/`, one branch, one
 
 | Phase | Goal | Status |
 |---|---|---|
-| 20-user-presets | Presets of your own in the Program menu: Save Preset… stores every knob, the octave and the LFO amounts under a name; the app and the plug-in share them as files in one folder. Not released — 2026-11-15 | ✅ |
+| 21-v2.1.0-release | Version 2.1.0: phases 19 and 20 released. A stand-in that draws as the released app does (marked as built for macOS 14) found three defects of the presets, fixed before publishing: the name field had no keyboard, read "Replace" while closing, and a long name broke the header — 2026-11-15 | ✅ |
+| 20-user-presets | Presets of your own in the Program menu: Save Preset… stores every knob, the octave and the LFO amounts under a name; the app and the plug-in share them as files in one folder. Released in 2.1.0 — 2026-11-15 | ✅ |
 | 19-e16-definition | The instrument definition for the OXI E16 as a download in the manual's MIDI section, held to the engine's table by a test; `CLAUDE.md` says what the instrument is since 2.0.0 — 2026-11-15 | ✅ |
 | 18-v2.0.0-release | Version 2.0.0: phases 15 to 17 released — 2026-11-15 | ✅ |
 | 17-midi-learn | MIDI learn: every knob listens to a MIDI controller, comes with one (Volume 7, Tone 74, Vowel 11 …) and learns another with the MIDI button in the header and a move of a control. The same in the plug-in; the app remembers the controllers and a host saves them with the project. Released in 2.0.0 — 2026-11-15 | ✅ |
