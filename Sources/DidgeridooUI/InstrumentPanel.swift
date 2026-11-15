@@ -157,9 +157,14 @@ public struct InstrumentPanel<Extras: View, Footer: View>: View {
                 }
             } label: {
                 // One width for every name, so that the header stands still.
+                // The system's newer menu button takes its width from this
+                // label…
                 Text(sourceName).lineLimit(1).truncationMode(.tail).frame(width: 136, alignment: .leading)
             }
-            .fixedSize()
+            // …and its older one, which the app gets (it is built for
+            // macOS 14), from the name itself, whatever the label says: a long
+            // preset name pushed the header apart. Hence a width here as well.
+            .frame(width: 183)
             .help("Built-in programs and your own presets")
             .accessibilityLabel("Program")
             .popover(isPresented: $naming, arrowEdge: .bottom) {
