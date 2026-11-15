@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.1.0 — 2026-11-15
 
 - Presets of your own. Program › Save Preset… stores the sound as it stands
   under a name: every knob, the octave and the LFO amounts included. Your
